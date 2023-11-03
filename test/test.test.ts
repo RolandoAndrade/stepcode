@@ -3,7 +3,7 @@ import { CharStream, CommonTokenStream, InputStream } from 'antlr4';
 
 import StepCodeLexer from '../src/parser/StepCodeLexer';
 import StepCodeParser from '../src/parser/StepCodeParser';
-import { StepCodeInterpreter } from '../src/StepCodeInterpreter';
+import { StepCodeInterpreter } from '../src/interpreter/StepCodeInterpreter';
 import { EventBus } from '../src/event-bus';
 
 test('test parsing', async () => {
@@ -12,8 +12,9 @@ test('test parsing', async () => {
     Definir a, b, c Como Entero;
     Definir w, x, y, z Como Real;
     Escribir 'Ingrese el valor de a:';
-    Leer a;
-    Escribir 'A es igual a ', a;
+    Leer a, b;
+    c <- a + b;
+    Escribir 'El resultado es ', c;
   FinProceso
   `
   const chars = new CharStream(input, true)
