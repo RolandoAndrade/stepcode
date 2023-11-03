@@ -4,9 +4,9 @@ import {
   AssignmentStatementContext,
   IdentifierContext,
   ProgramContext,
-  ReadStatementContext, SimpleExpressionContext,
+  ReadStatementContext, SignedFactorContext, SimpleExpressionContext,
   StringContext, TermContext,
-  Type_Context,
+  Type_Context, UnsignedIntegerContext, UnsignedRealContext,
   VariableContext,
   VariableDeclarationContext,
   WriteStatementContext
@@ -16,6 +16,8 @@ import { StepCodeRuleNode } from './stepcode-rule-node.ts';
 import { ExpressionReturnType, ReturnTypes } from './visitor-return-types';
 import { getInterpreterType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
+import { and, div, integerDivision, mod, mul, sub, sum } from './operations.ts';
+import { ParseTree } from 'antlr4';
 
 export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   protected programState: Map<string, {
@@ -117,16 +119,56 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
   }
 
+  visitUnsignedInteger = async (ctx: UnsignedIntegerContext) => {
+    return {
+      identifier: ctx.getText(),
+      value: parseValue('integer', ctx.getText()),
+      type: 'integer'
+    } as const;
+  }
+
+  visitUnsignedReal = async (ctx: UnsignedRealContext) => {
+    return {
+      identifier: ctx.getText(),
+      value: parseValue('real', ctx.getText()),
+      type: 'real'
+    } as const;
+  }
+
+  visitSignedFactor = async (ctx: SignedFactorContext) => {
+    const factor = await this.visit(ctx.factor())
+    if (ctx.MINUS()) {
+      return {
+        identifier: `-${factor.identifier}`,
+        type: factor.type,
+        value: -factor.value
+      }
+    }
+    return factor
+  }
+
   visitTerm = async (ctx: TermContext) => {
     const left = await this.visit(ctx.signedFactor())
     if (ctx.multiplicativeoperator()) {
-      const operator = await this.visit(ctx.multiplicativeoperator())
+
+      const operator = ctx.multiplicativeoperator().getText()
       const right = await this.visit(ctx.term())
+      let value
+      if (ctx.multiplicativeoperator().STAR()) {
+        value = mul(left.value, right.value)
+      } else if (ctx.multiplicativeoperator().SLASH()) {
+        value = div(left.value, right.value)
+      } else if (ctx.multiplicativeoperator().MOD()) {
+        value = mod(left.value, right.value)
+      } else if (ctx.multiplicativeoperator().DIV()) {
+        value = integerDivision(left.value, right.value)
+      } else if (ctx.multiplicativeoperator().AND()) {
+        value = and(left.value, right.value)
+      }
       return {
-        identifier: `${left.identifier} ${operator.identifier} ${right.identifier}`,
+        identifier: `${left.identifier} ${operator} ${right.identifier}`,
         type: left.type,
-        // TODO: fix this
-        value: left.value * right.value
+        value: value
       }
     }
     return left
@@ -135,13 +177,20 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   visitSimpleExpression = async (ctx: SimpleExpressionContext) => {
     const left = await this.visit(ctx.term())
     if (ctx.additiveoperator()) {
-      const operator = await this.visit(ctx.additiveoperator())
       const right = await this.visit(ctx.simpleExpression())
+      let result
+      if (ctx.additiveoperator().PLUS()) {
+        result = sum(left.value, right.value)
+      } else if (ctx.additiveoperator().MINUS()) {
+        result = sub(left.value, right.value)
+      } else if (ctx.additiveoperator().OR()) {
+        result = left.value || right.value
+      }
+
       return {
-        identifier: `${left.identifier} ${operator.identifier} ${right.identifier}`,
+        identifier: `${left.identifier} ${ctx.additiveoperator().getText()} ${right.identifier}`,
         type: left.type,
-        // TODO: fix this
-        value: left.value + right.value
+        value: result
       }
     }
     return left

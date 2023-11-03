@@ -37,3 +37,4 @@ export function parseValue(type: ValidDataType, value: string): any {
       throw new Error(`Invalid type ${type}`)
   }
 }
+

@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 import { CharStream, CommonTokenStream, InputStream } from 'antlr4';
 
 import StepCodeLexer from '../src/parser/StepCodeLexer';
@@ -43,4 +43,10 @@ test('test parsing', async () => {
 
 
   // console.log(program)
+})
+describe('test interpreter', () => {
+  beforeEach(() => {
+
+  })
+  test('test basic sum operation', async () => {})
 })
