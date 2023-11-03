@@ -11,8 +11,8 @@ import {
   VariableDeclarationContext,
   WriteStatementContext
 } from '../parser/StepCodeParser.ts';
-import { EventBus } from '../event-bus.ts';
-import { StepCodeRuleNode } from './StepCodeRuleNode.ts';
+import { EventBus } from './event-bus.ts';
+import { StepCodeRuleNode } from './stepcode-rule-node.ts';
 import { ExpressionReturnType, ReturnTypes } from './visitor-return-types';
 import { getInterpreterType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';

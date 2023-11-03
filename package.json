@@ -1,8 +1,17 @@
 {
   "name": "stepcode",
-  "private": true,
-  "version": "0.0.0",
+
+  "version": "0.1.0",
   "type": "module",
+  "main": "./dist/stepcode.umd.cjs",
+  "module": "./dist/stepcode.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/stepcode.js",
+      "require": "./dist/stepcode.umd.cjs"
+    }
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -10,11 +19,16 @@
     "generate": "antlr4 -Dlanguage=TypeScript src/StepCode.g4 -o src/parser -visitor"
   },
   "devDependencies": {
+    "@types/node": "^20.8.10",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
+    "vite-plugin-dts": "^3.6.3",
     "vitest": "^0.34.6"
   },
   "dependencies": {
-    "antlr4": "^4.13.1"
-  }
+    "antlr4": "4.13.0"
+  },
+  "files": [
+    "dist"
+  ]
 }

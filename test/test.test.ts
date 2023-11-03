@@ -3,8 +3,8 @@ import { CharStream, CommonTokenStream, InputStream } from 'antlr4';
 
 import StepCodeLexer from '../src/parser/StepCodeLexer';
 import StepCodeParser from '../src/parser/StepCodeParser';
-import { StepCodeInterpreter } from '../src/interpreter/StepCodeInterpreter';
-import { EventBus } from '../src/event-bus';
+import { StepCodeInterpreter } from '../src/interpreter/stepcode-interpreter';
+import { EventBus } from '../src/interpreter/event-bus';
 
 test('test parsing', async () => {
   const input = `
