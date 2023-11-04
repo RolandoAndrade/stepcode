@@ -2,7 +2,7 @@ import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AdditiveoperatorContext,
   AssignmentStatementContext, Bool_Context, ExpressionContext, FactorContext,
-  IdentifierContext,
+  IdentifierContext, IfStatementContext,
   ProgramContext,
   ReadStatementContext, SignedFactorContext, SimpleExpressionContext,
   StringContext, TermContext,
@@ -256,6 +256,33 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       type: 'boolean',
       value: result
     } as const
+  }
+
+  visitIfStatement = async (ctx: IfStatementContext) => {
+    const expression = await this.visit(ctx.expression()) as ExpressionReturnType
+    if (expression.value) {
+      for (const child of ctx.compoundStatement_list()) {
+        const result = await this.visit(child)
+        if (result.identifier === 'return') {
+          return result
+        }
+      }
+    } /*else {
+      for (const elif of ctx.elifStatement_list()) {
+        const newExpression = await this.visit(elif.expression()) as ExpressionReturnType
+        if (newExpression.value) {
+          for (const child of elif.compoundStatement()) {
+            const result = await this.visit(child)
+            if (result.identifier === 'return') {
+              return result
+            }
+          }
+        }
+      }
+    }*/
+    return {
+      identifier: `${expression.identifier}`,
+    }
   }
 
 }

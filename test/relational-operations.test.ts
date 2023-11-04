@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { EventBus, interpret, StepCodeInterpreter } from '../src';
 
-describe('test interpreter aritmetic operations', () => {
+describe('test interpreter relational operations', () => {
   let eventBus: EventBus
   let interpreter: StepCodeInterpreter
   beforeEach(() => {

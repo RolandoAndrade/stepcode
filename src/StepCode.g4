@@ -426,7 +426,7 @@ structuredStatement
    ;
 
 compoundStatement
-   : BEGIN statements END
+   : (statements)*
    ;
 
 statements
@@ -439,11 +439,11 @@ conditionalStatement
    ;
 
 ifStatement
-   : IF expression THEN statements (elifStatement)* (: ELSE statements)? ENDIF
+   : IF expression THEN compoundStatement (elifStatement)* (: ELSE compoundStatement)? ENDIF
    ;
 
 elifStatement
-   : ELIF expression THEN statements
+   : ELIF expression THEN compoundStatement
    ;
 
 caseStatement
