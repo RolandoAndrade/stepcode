@@ -439,11 +439,15 @@ conditionalStatement
    ;
 
 ifStatement
-   : IF expression THEN compoundStatement (elifStatement)* (: ELSE compoundStatement)? ENDIF
+   : IF expression THEN compoundStatement (elifStatement | elseStatement?) ENDIF
    ;
 
 elifStatement
-   : ELIF expression THEN compoundStatement
+   : ELIF expression THEN compoundStatement (elifStatement | elseStatement?)
+   ;
+
+elseStatement
+   : ELSE compoundStatement
    ;
 
 caseStatement

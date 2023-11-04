@@ -1,7 +1,7 @@
 import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AdditiveoperatorContext,
-  AssignmentStatementContext, Bool_Context, ExpressionContext, FactorContext,
+  AssignmentStatementContext, Bool_Context, ElifStatementContext, ExpressionContext, FactorContext,
   IdentifierContext, IfStatementContext,
   ProgramContext,
   ReadStatementContext, SignedFactorContext, SimpleExpressionContext,
@@ -258,28 +258,35 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     } as const
   }
 
+  visitElifStatement = async (ctx: ElifStatementContext) => {
+    const expression = await this.visit(ctx.expression()) as ExpressionReturnType
+    if (expression.value) {
+      return await this.visit(ctx.compoundStatement())
+    } else {
+      if (ctx.elifStatement()) {
+        return await this.visit(ctx.elifStatement())
+      }
+      if (ctx.elseStatement()) {
+        return await this.visit(ctx.elseStatement())
+      }
+    }
+    return {
+      identifier: `${expression.identifier}`,
+    }
+  }
+
   visitIfStatement = async (ctx: IfStatementContext) => {
     const expression = await this.visit(ctx.expression()) as ExpressionReturnType
     if (expression.value) {
-      for (const child of ctx.compoundStatement_list()) {
-        const result = await this.visit(child)
-        if (result.identifier === 'return') {
-          return result
-        }
+      return await this.visit(ctx.compoundStatement())
+    } else {
+      if (ctx.elifStatement()) {
+        return await this.visit(ctx.elifStatement())
       }
-    } /*else {
-      for (const elif of ctx.elifStatement_list()) {
-        const newExpression = await this.visit(elif.expression()) as ExpressionReturnType
-        if (newExpression.value) {
-          for (const child of elif.compoundStatement()) {
-            const result = await this.visit(child)
-            if (result.identifier === 'return') {
-              return result
-            }
-          }
-        }
+      if (ctx.elseStatement()) {
+        return await this.visit(ctx.elseStatement())
       }
-    }*/
+    }
     return {
       identifier: `${expression.identifier}`,
     }
