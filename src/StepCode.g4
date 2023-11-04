@@ -52,7 +52,7 @@ identifier
 
 block
    : (labelDeclarationPart | constantDefinitionPart | typeDefinitionPart | variableDeclarationPart |
-   procedureAndFunctionDeclarationPart | usesUnitsPart | IMPLEMENTATION | statements | writeStatement | readStatement)*
+   procedureAndFunctionDeclarationPart | usesUnitsPart | IMPLEMENTATION | statements)*
    ;
 
 usesUnitsPart
@@ -292,6 +292,7 @@ resultType
 statement
    : label COLON unlabelledStatement
    | unlabelledStatement
+   | writeStatement | readStatement
    ;
 
 unlabelledStatement
@@ -438,7 +439,11 @@ conditionalStatement
    ;
 
 ifStatement
-   : IF expression THEN statement (: ELSE statement)?
+   : IF expression THEN statements (elifStatement)* (: ELSE statements)? ENDIF
+   ;
+
+elifStatement
+   : ELIF expression THEN statements
    ;
 
 caseStatement
@@ -549,9 +554,12 @@ DOWNTO
    : 'DOWNTO'
    ;
 
+ELIF
+   : 'ELIF' | 'SINO SI'
+   ;
 
 ELSE
-   : 'ELSE'
+   : 'ELSE' | 'SINO'
    ;
 
 
@@ -579,9 +587,12 @@ GOTO
    : 'GOTO'
    ;
 
+ENDIF
+   : 'ENDIF' | 'FINSI'
+   ;
 
 IF
-   : 'SI'
+   : 'SI' | 'IF'
    ;
 
 
@@ -665,12 +676,12 @@ SET
 
 
 THEN
-   : 'THEN'
+   : 'THEN' | 'ENTONCES'
    ;
 
 
 TO
-   : 'TO'
+   : 'TO' | 'HASTA'
    ;
 
 
