@@ -1,7 +1,7 @@
 import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AdditiveoperatorContext,
-  AssignmentStatementContext,
+  AssignmentStatementContext, Bool_Context, FactorContext,
   IdentifierContext,
   ProgramContext,
   ReadStatementContext, SignedFactorContext, SimpleExpressionContext,
@@ -147,6 +147,15 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     return factor
   }
 
+  visitFactor = async (ctx: FactorContext) => {
+    if (ctx.NOT()) {
+      const right = await this.visit(ctx.factor())
+      right.value = !right.value
+      return right
+    }
+    return this.visitChildren(ctx)
+  }
+
   visitTerm = async (ctx: TermContext) => {
     const left = await this.visit(ctx.signedFactor())
     if (ctx.multiplicativeoperator()) {
@@ -172,6 +181,14 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       }
     }
     return left
+  }
+
+  visitBool_ = async (ctx: Bool_Context) => {
+    return {
+      identifier: ctx.getText(),
+      value: !!ctx.TRUE(),
+      type: 'boolean'
+    } as const;
   }
 
   visitSimpleExpression = async (ctx: SimpleExpressionContext) => {

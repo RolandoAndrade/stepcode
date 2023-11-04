@@ -88,7 +88,70 @@ describe('test interpreter aritmetic operations', () => {
     })
   })
   describe('real operations', () => {
-
+    test('test basic sum operation', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await interpret(`Proceso prueba
+      Definir a, b, c Como Real;
+      a <- 10.5;
+      b <- 20.5;
+      c <- a + b;
+      Escribir c;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '31')
+    })
+    test('test basic sub operation', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await interpret(`Proceso prueba
+      Definir a, b, c Como Real;
+      a <- 10.5;
+      b <- 20.5;
+      c <- a - b;
+      Escribir c;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '-10')
+    })
+    test('test basic sub operation first negative', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await interpret(`Proceso prueba
+      Definir a, b, c Como Real;
+      a <- -10.5;
+      b <- 20.5;
+      c <- a - b;
+      Escribir c;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '-31')
+    })
+    test('test basic mul operation', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await interpret(`Proceso prueba
+      Definir a, b, c Como Real;
+      a <- 10.5;
+      b <- 20.5;
+      c <- a * b;
+      Escribir c;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '215.25')
+    })
+    test('test basic div operation', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await interpret(`Proceso prueba
+      Definir a, b, c Como Real;
+      a <- 20.5;
+      b <- 10.5;
+      c <- a / b;
+      Escribir c;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1.9523809523809523')
+    })
+    test('test basic mod operation', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await interpret(`Proceso prueba
+      Definir a, b Como Real;
+      a <- 5.5;
+      b <- 4.5;
+      Escribir a MOD b;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
+    })
   })
-
 })

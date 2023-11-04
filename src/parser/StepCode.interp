@@ -1,6 +1,6 @@
 token literal names:
 null
-'AND'
+null
 'ARRAY'
 'BEGIN'
 null
@@ -23,9 +23,9 @@ null
 'LABEL'
 'MOD'
 'NIL'
-'NOT'
+null
 'OF'
-'OR'
+null
 'PACKED'
 'PROCEDURE'
 null
@@ -73,8 +73,8 @@ null
 'USES'
 null
 'IMPLEMENTATION'
-'TRUE'
-'FALSE'
+null
+null
 null
 null
 null

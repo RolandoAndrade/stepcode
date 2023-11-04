@@ -203,7 +203,7 @@ export default class StepCodeParser extends Parser {
 	public static readonly RULE_recordVariableList = 96;
 	public static readonly RULE_writeStatement = 97;
 	public static readonly RULE_readStatement = 98;
-	public static readonly literalNames: (string | null)[] = [ null, "'AND'", 
+	public static readonly literalNames: (string | null)[] = [ null, null, 
                                                             "'ARRAY'", "'BEGIN'", 
                                                             null, null, 
                                                             null, "'CHR'", 
@@ -215,8 +215,8 @@ export default class StepCodeParser extends Parser {
                                                             "'GOTO'", "'SI'", 
                                                             "'IN'", null, 
                                                             "'LABEL'", "'MOD'", 
-                                                            "'NIL'", "'NOT'", 
-                                                            "'OF'", "'OR'", 
+                                                            "'NIL'", null, 
+                                                            "'OF'", null, 
                                                             "'PACKED'", 
                                                             "'PROCEDURE'", 
                                                             null, null, 
@@ -242,8 +242,7 @@ export default class StepCodeParser extends Parser {
                                                             "'COMO'", "'UNIT'", 
                                                             "'INTERFACE'", 
                                                             "'USES'", null, 
-                                                            "'IMPLEMENTATION'", 
-                                                            "'TRUE'", "'FALSE'" ];
+                                                            "'IMPLEMENTATION'" ];
 	public static readonly symbolicNames: (string | null)[] = [ null, "AND", 
                                                              "ARRAY", "BEGIN", 
                                                              "BOOLEAN", 

@@ -496,7 +496,7 @@ readStatement
    ;
 
 AND
-   : 'AND'
+   : 'AND' | 'Y'
    ;
 
 
@@ -611,7 +611,7 @@ NIL
 
 
 NOT
-   : 'NOT'
+   : 'NOT' | 'NO'
    ;
 
 
@@ -621,7 +621,7 @@ OF
 
 
 OR
-   : 'OR'
+   : 'OR' | 'O'
    ;
 
 
@@ -859,12 +859,12 @@ IMPLEMENTATION
 
 
 TRUE
-   : 'TRUE'
+   : 'TRUE' | 'VERDADERO'
    ;
 
 
 FALSE
-   : 'FALSE'
+   : 'FALSE' | 'FALSO'
    ;
 
 WRITE
