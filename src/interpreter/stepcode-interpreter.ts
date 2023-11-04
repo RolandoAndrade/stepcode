@@ -1,7 +1,7 @@
 import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AdditiveoperatorContext,
-  AssignmentStatementContext, Bool_Context, FactorContext,
+  AssignmentStatementContext, Bool_Context, ExpressionContext, FactorContext,
   IdentifierContext,
   ProgramContext,
   ReadStatementContext, SignedFactorContext, SimpleExpressionContext,
@@ -16,7 +16,7 @@ import { StepCodeRuleNode } from './stepcode-rule-node.ts';
 import { ExpressionReturnType, ReturnTypes } from './visitor-return-types';
 import { getInterpreterType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
-import { and, div, integerDivision, mod, mul, sub, sum } from './operations.ts';
+import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, sub, sum } from './operations.ts';
 import { ParseTree } from 'antlr4';
 
 export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
@@ -229,6 +229,33 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     return {
       identifier: ctx.getText(),
     }
+  }
+
+  visitExpression = async (ctx: ExpressionContext) => {
+    const left = await this.visit(ctx.simpleExpression())
+    if (!ctx.relationaloperator()) {
+      return left
+    }
+    const right = await this.visit(ctx.expression())
+    let result
+    if (ctx.relationaloperator().EQUAL()) {
+      result = eq(left.value, right.value)
+    } else if (ctx.relationaloperator().NOT_EQUAL()) {
+      result = neq(left.value, right.value)
+    } else if (ctx.relationaloperator().LT()) {
+      result = lt(left.value, right.value)
+    } else if (ctx.relationaloperator().LE()) {
+      result = lte(left.value, right.value)
+    } else if (ctx.relationaloperator().GT()) {
+      result = gt(left.value, right.value)
+    } else if (ctx.relationaloperator().GE()) {
+      result = gte(left.value, right.value)
+    }
+    return {
+      identifier: `${left.identifier} ${ctx.relationaloperator().getText()} ${right.identifier}`,
+      type: 'boolean',
+      value: result
+    } as const
   }
 
 }

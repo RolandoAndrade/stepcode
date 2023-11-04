@@ -153,5 +153,15 @@ describe('test interpreter aritmetic operations', () => {
       FinProceso`, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
     })
+    test('test complex operations with constants', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await interpret(`Proceso prueba
+      Definir a, b Como Real;
+      a <- 5.5;
+      b <- 4.5;
+      Escribir a + b * 2;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '14.5')
+    })
   })
 })
