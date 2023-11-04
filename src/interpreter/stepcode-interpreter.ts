@@ -1,19 +1,30 @@
 import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AdditiveoperatorContext,
-  AssignmentStatementContext, Bool_Context, ElifStatementContext, ExpressionContext, FactorContext,
-  IdentifierContext, IfStatementContext,
+  AssignmentStatementContext,
+  Bool_Context, CaseListElementContext,
+  CaseStatementContext,
+  ElifStatementContext,
+  ExpressionContext,
+  FactorContext,
+  IdentifierContext,
+  IfStatementContext,
   ProgramContext,
-  ReadStatementContext, SignedFactorContext, SimpleExpressionContext,
-  StringContext, TermContext,
-  Type_Context, UnsignedIntegerContext, UnsignedRealContext,
+  ReadStatementContext,
+  SignedFactorContext,
+  SimpleExpressionContext,
+  StringContext,
+  TermContext,
+  Type_Context,
+  UnsignedIntegerContext,
+  UnsignedRealContext,
   VariableContext,
   VariableDeclarationContext,
   WriteStatementContext
 } from '../parser/StepCodeParser.ts';
 import { EventBus } from './event-bus.ts';
 import { StepCodeRuleNode } from './stepcode-rule-node.ts';
-import { ExpressionReturnType, ReturnTypes } from './visitor-return-types';
+import { ExpressionReturnType, ReturnTypes, VariableReturnType } from './visitor-return-types';
 import { getInterpreterType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
 import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, sub, sum } from './operations.ts';
@@ -292,4 +303,21 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
   }
 
+  visitCaseStatement = async (ctx: CaseStatementContext) => {
+    const expression = await this.visit(ctx.expression()) as ExpressionReturnType;
+    for (const caseListElement of ctx.caseListElement_list()) {
+      for (const caseConstant of caseListElement.constList().constant_list()) {
+        const values = await this.visit(caseConstant) as VariableReturnType;
+        if (values.value === expression.value) {
+          return await this.visit(caseListElement.compoundStatement())
+        }
+      }
+    }
+    if (ctx.caseOtherWise()) {
+      return await this.visit(ctx.caseOtherWise())
+    }
+    return {
+      identifier: `${expression.identifier}`,
+    }
+  }
 }

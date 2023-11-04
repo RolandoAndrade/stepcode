@@ -184,4 +184,101 @@ describe('test interpreter conditional operations', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'b=2')
     })
   })
+
+  describe('test case statement', () => {
+    test('test enter first case', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const code = `
+      Proceso prueba
+        Definir a, b Como Entero;
+        a <- 1;
+        Segun a Hacer
+          1: Escribir 'a=1';
+          2: Escribir 'a=2';
+          De Otro Modo: Escribir 'a!=1,2';
+        FinSegun
+      FinProceso
+      `
+      await interpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=1')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=2')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1,2')
+    })
+    test('test enter second case', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const code = `
+      Proceso prueba
+        Definir a, b Como Entero;
+        a <- 2;
+        Segun a Hacer
+          1: Escribir 'a=1';
+          2: Escribir 'a=2';
+          De Otro Modo: Escribir 'a!=1,2';
+        FinSegun
+      FinProceso
+      `
+      await interpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=2')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=1')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1,2')
+    })
+    test('test enter default case', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const code = `
+      Proceso prueba
+        Definir a, b Como Entero;
+        a <- 3;
+        Segun a Hacer
+          1: Escribir 'a=1';
+          2: Escribir 'a=2';
+          De Otro Modo: Escribir 'a!=1,2';
+        FinSegun
+      FinProceso
+      `
+      await interpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a!=1,2')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=1')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=2')
+    })
+    test('test multiple statements in case', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const code = `
+      Proceso prueba
+        Definir a, b Como Entero;
+        a <- 1;
+        Segun a Hacer
+          1: 
+             Escribir 'a=1';
+             b <- 2;
+             Escribir 'b=2';
+          2: Escribir 'a=2';
+          De Otro Modo: Escribir 'a!=1,2';
+        FinSegun
+      FinProceso
+      `
+      await interpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=1')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'b=2')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=2')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1,2')
+    })
+    test('test multiple constants in case', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const code = `
+      Proceso prueba
+        Definir a, b Como Entero;
+        a <- 2;
+        Segun a Hacer
+          1, 2: Escribir '1<=a<=2';
+          3: Escribir 'a=3';
+          De Otro Modo: Escribir 'a!=1,2,3';
+        FinSegun
+      FinProceso
+      `
+      await interpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1<=a<=2')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=3')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1,2,3')
+    })
+  })
 })

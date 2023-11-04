@@ -93,6 +93,7 @@ import { ElifStatementContext } from "./StepCodeParser";
 import { ElseStatementContext } from "./StepCodeParser";
 import { CaseStatementContext } from "./StepCodeParser";
 import { CaseListElementContext } from "./StepCodeParser";
+import { CaseOtherWiseContext } from "./StepCodeParser";
 import { RepetetiveStatementContext } from "./StepCodeParser";
 import { WhileStatementContext } from "./StepCodeParser";
 import { RepeatStatementContext } from "./StepCodeParser";
@@ -654,6 +655,12 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitCaseListElement?: (ctx: CaseListElementContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.caseOtherWise`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitCaseOtherWise?: (ctx: CaseOtherWiseContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.repetetiveStatement`.
 	 * @param ctx the parse tree

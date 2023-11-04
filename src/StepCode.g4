@@ -451,11 +451,15 @@ elseStatement
    ;
 
 caseStatement
-   : CASE expression OF caseListElement (SEMI caseListElement)* (SEMI ELSE statements)? END
+   : CASE expression OF caseListElement* caseOtherWise? ENDCASE
    ;
 
 caseListElement
-   : constList (COLON | AS) statement
+   : constList (COLON | AS) compoundStatement
+   ;
+
+caseOtherWise
+   : ((ELSE | (OTHERWISE COLON)) compoundStatement)
    ;
 
 repetetiveStatement
@@ -523,9 +527,12 @@ BOOLEAN
    : 'BOOLEAN' | 'LOGICO' | 'LÓGICO'
    ;
 
+ENDCASE
+    : 'ENDCASE' | 'FINSEGUN'
+    ;
 
 CASE
-   : 'CASO' | 'CASE'
+   : 'SEGUN' | 'CASE'
    ;
 
 
@@ -566,6 +573,9 @@ ELSE
    : 'ELSE' | 'SINO'
    ;
 
+OTHERWISE
+   : 'OTHERWISE' | 'DE OTRO MODO'
+   ;
 
 END
    : 'END'
@@ -631,7 +641,7 @@ NOT
 
 
 OF
-   : 'OF'
+   : 'OF' | 'HACER'
    ;
 
 
