@@ -2,7 +2,7 @@
   "name": "stepcode",
   "description": "A parser for STEPcode",
   "author": "Rolando Andrade",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "main": "./dist/stepcode.umd.cjs",
   "module": "./dist/stepcode.js",
