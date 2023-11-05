@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { EventBus, interpret, StepCodeInterpreter } from '../src';
+import { EventBus, StepCodeInterpreter } from '../src';
+import { internalInterpret } from '../src/interpreter/internal-interpret';
+
 
 describe('test interpreter boolean operations', () => {
   let eventBus: EventBus
@@ -12,7 +14,7 @@ describe('test interpreter boolean operations', () => {
   describe('and operation', () => {
     test('test true and true', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Logico;
       a <- Verdadero;
       b <- Verdadero;
@@ -24,7 +26,7 @@ describe('test interpreter boolean operations', () => {
 
     test('test true and false', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Logico;
       a <- Verdadero;
       b <- Falso;
@@ -36,7 +38,7 @@ describe('test interpreter boolean operations', () => {
 
     test('test false and true', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Logico;
       a <- Falso;
       b <- Verdadero;
@@ -50,7 +52,7 @@ describe('test interpreter boolean operations', () => {
   describe('or operation', () => {
     test('test true or true', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Logico;
       a <- Verdadero;
       b <- Verdadero;
@@ -62,7 +64,7 @@ describe('test interpreter boolean operations', () => {
 
     test('test true or false', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Logico;
       a <- Verdadero;
       b <- Falso;
@@ -74,7 +76,7 @@ describe('test interpreter boolean operations', () => {
 
     test('test false or true', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Logico;
       a <- Falso;
       b <- Verdadero;
@@ -88,7 +90,7 @@ describe('test interpreter boolean operations', () => {
   describe('not operation', () => {
     test('test not true', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b Como Logico;
       a <- Verdadero;
       b <- No a;
@@ -98,7 +100,7 @@ describe('test interpreter boolean operations', () => {
     })
     test('test not false', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b Como Logico;
       a <- Falso;
       b <- No a;

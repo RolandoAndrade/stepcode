@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { EventBus, interpret, StepCodeInterpreter } from '../src';
+import { EventBus, StepCodeInterpreter } from '../src';
+import { internalInterpret } from '../src/interpreter/internal-interpret';
 
 describe('test interpreter conditional operations', () => {
   let eventBus: EventBus
@@ -21,7 +22,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=1')
     })
     test('test if statement with false condition', async () => {
@@ -35,7 +36,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=1')
     })
     test('test if statement with true condition and else', async () => {
@@ -51,7 +52,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1')
     })
@@ -68,7 +69,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a!=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=1')
     })
@@ -85,7 +86,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=2')
     })
@@ -102,7 +103,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=2')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=1')
     })
@@ -121,7 +122,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=2')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1')
@@ -141,7 +142,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=2')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1')
@@ -161,7 +162,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a!=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=2')
@@ -179,7 +180,7 @@ describe('test interpreter conditional operations', () => {
         FinSi
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'b=2')
     })
@@ -199,7 +200,7 @@ describe('test interpreter conditional operations', () => {
         FinSegun
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=2')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1,2')
@@ -217,7 +218,7 @@ describe('test interpreter conditional operations', () => {
         FinSegun
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=2')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1,2')
@@ -235,7 +236,7 @@ describe('test interpreter conditional operations', () => {
         FinSegun
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a!=1,2')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=2')
@@ -256,7 +257,7 @@ describe('test interpreter conditional operations', () => {
         FinSegun
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a=1')
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'b=2')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=2')
@@ -275,7 +276,7 @@ describe('test interpreter conditional operations', () => {
         FinSegun
       FinProceso
       `
-      await interpret(code, interpreter)
+      await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1<=a<=2')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a=3')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'a!=1,2,3')

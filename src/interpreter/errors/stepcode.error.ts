@@ -7,11 +7,11 @@ type Props = {
 }
 
 export class StepCodeError {
-  protected startLine: number;
-  protected startColumn: number;
-  protected endLine: number;
-  protected endColumn: number;
-  protected message: string;
+  public readonly startLine: number;
+  public readonly startColumn: number;
+  public readonly endLine: number;
+  public readonly endColumn: number;
+  public readonly message: string;
 
   constructor({ startLine, startColumn, endLine, endColumn, message }: Props) {
     this.startLine = startLine;

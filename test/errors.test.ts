@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { EventBus, StepCodeInterpreter } from '../src';
-import { validate } from '../src/interpreter/interpreter';
+import { validate } from '../src';
 
 describe('test validation errors', () => {
   let eventBus: EventBus
@@ -19,7 +19,9 @@ describe('test validation errors', () => {
       c <- a + b;
       Escribir c;
       FinProceso`)
-      expect(errors).toEqual([])
+      expect(errors.length).toBe(1)
+      expect(errors[0].message).toBe("missing ';' at 'a'")
+      expect(errors[0].startLine).toBe(3)
     })
   })
 

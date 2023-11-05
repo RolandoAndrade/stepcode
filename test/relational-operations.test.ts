@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { EventBus, interpret, StepCodeInterpreter } from '../src';
+import { EventBus, StepCodeInterpreter } from '../src';
+import { internalInterpret } from '../src/interpreter/internal-interpret';
 
 describe('test interpreter relational operations', () => {
   let eventBus: EventBus
@@ -12,7 +13,7 @@ describe('test interpreter relational operations', () => {
   describe('test equality', () => {
     test('test two equal integers', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 10;
@@ -24,7 +25,7 @@ describe('test interpreter relational operations', () => {
 
     test('test two different integers', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 20;
@@ -36,7 +37,7 @@ describe('test interpreter relational operations', () => {
 
     test('equality between constant and variable', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- 10 = a;
@@ -47,7 +48,7 @@ describe('test interpreter relational operations', () => {
 
     test('equality between variable and constant', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- a = 10;
@@ -60,7 +61,7 @@ describe('test interpreter relational operations', () => {
   describe('test inequality', () => {
     test('test two equal integers', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 10;
@@ -72,7 +73,7 @@ describe('test interpreter relational operations', () => {
 
     test('test two different integers', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 20;
@@ -84,7 +85,7 @@ describe('test interpreter relational operations', () => {
 
     test('inequality between constant and variable', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- 10 <> a;
@@ -95,7 +96,7 @@ describe('test interpreter relational operations', () => {
 
     test('inequality between variable and constant', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- a <> 10;
@@ -108,7 +109,7 @@ describe('test interpreter relational operations', () => {
   describe('test less than', () => {
     test('test two equal integers', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 10;
@@ -120,7 +121,7 @@ describe('test interpreter relational operations', () => {
 
     test('test left less than right integer', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 5;
       b <- 10;
@@ -132,7 +133,7 @@ describe('test interpreter relational operations', () => {
 
     test('test right less than left integer', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 5;
@@ -144,7 +145,7 @@ describe('test interpreter relational operations', () => {
 
     test('less than between constant and variable', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- 10 < a;
@@ -155,7 +156,7 @@ describe('test interpreter relational operations', () => {
 
     test('less than between variable and constant', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- a < 10;
@@ -168,7 +169,7 @@ describe('test interpreter relational operations', () => {
   describe('test less than or equal', () => {
     test('test two equal integers', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 10;
@@ -180,7 +181,7 @@ describe('test interpreter relational operations', () => {
 
     test('test left less than right integer', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 5;
       b <- 10;
@@ -192,7 +193,7 @@ describe('test interpreter relational operations', () => {
 
     test('test right less than left integer', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 5;
@@ -204,7 +205,7 @@ describe('test interpreter relational operations', () => {
 
     test('less than or equal between constant and variable', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- 10 <= a;
@@ -215,7 +216,7 @@ describe('test interpreter relational operations', () => {
 
     test('less than or equal between variable and constant', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- a <= 10;
@@ -228,7 +229,7 @@ describe('test interpreter relational operations', () => {
   describe('test greater than', () => {
     test('test two equal integers', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 10;
@@ -240,7 +241,7 @@ describe('test interpreter relational operations', () => {
 
     test('test left greater than right integer', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 5;
       b <- 10;
@@ -252,7 +253,7 @@ describe('test interpreter relational operations', () => {
 
     test('test right greater than left integer', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 5;
@@ -264,7 +265,7 @@ describe('test interpreter relational operations', () => {
 
     test('greater than between constant and variable', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- 10 > a;
@@ -275,7 +276,7 @@ describe('test interpreter relational operations', () => {
 
     test('greater than between variable and constant', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- a > 10;
@@ -288,7 +289,7 @@ describe('test interpreter relational operations', () => {
   describe('test greater than or equal', () => {
     test('test two equal integers', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 10;
@@ -300,7 +301,7 @@ describe('test interpreter relational operations', () => {
 
     test('test left greater than right integer', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 5;
       b <- 10;
@@ -312,7 +313,7 @@ describe('test interpreter relational operations', () => {
 
     test('test right greater than left integer', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 5;
@@ -324,7 +325,7 @@ describe('test interpreter relational operations', () => {
 
     test('greater than or equal between constant and variable', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- 10 >= a;
@@ -335,7 +336,7 @@ describe('test interpreter relational operations', () => {
 
     test('greater than or equal between variable and constant', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, c Como Entero;
       a <- 10;
       c <- a >= 10;

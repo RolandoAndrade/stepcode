@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { EventBus, interpret, StepCodeInterpreter } from '../src';
+import { EventBus, StepCodeInterpreter } from '../src';
+import { internalInterpret } from '../src/interpreter/internal-interpret';
+
 
 describe('test interpreter aritmetic operations', () => {
   let eventBus: EventBus
@@ -11,7 +13,7 @@ describe('test interpreter aritmetic operations', () => {
   describe('integer operations', () => {
     test('test basic sum operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 20;
@@ -22,7 +24,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic sub operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 20;
@@ -33,7 +35,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic sub operation first negative', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- -10;
       b <- 20;
@@ -44,7 +46,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic mul operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 20;
@@ -55,7 +57,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic div operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 20;
       b <- 10;
@@ -66,7 +68,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic mod operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 5;
       b <- 4;
@@ -77,7 +79,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic integer division operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Entero;
       a <- 10;
       b <- 4;
@@ -90,7 +92,7 @@ describe('test interpreter aritmetic operations', () => {
   describe('real operations', () => {
     test('test basic sum operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Real;
       a <- 10.5;
       b <- 20.5;
@@ -101,7 +103,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic sub operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Real;
       a <- 10.5;
       b <- 20.5;
@@ -112,7 +114,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic sub operation first negative', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Real;
       a <- -10.5;
       b <- 20.5;
@@ -123,7 +125,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic mul operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Real;
       a <- 10.5;
       b <- 20.5;
@@ -134,7 +136,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic div operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b, c Como Real;
       a <- 20.5;
       b <- 10.5;
@@ -145,7 +147,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test basic mod operation', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b Como Real;
       a <- 5.5;
       b <- 4.5;
@@ -155,7 +157,7 @@ describe('test interpreter aritmetic operations', () => {
     })
     test('test complex operations with constants', async () => {
       vi.spyOn(eventBus, 'emit')
-      await interpret(`Proceso prueba
+      await internalInterpret(`Proceso prueba
       Definir a, b Como Real;
       a <- 5.5;
       b <- 4.5;
