@@ -293,7 +293,16 @@ statement
    : label COLON unlabelledStatement
    | unlabelledStatement
    | writeStatement | readStatement
+   | breakStatement | continueStatement
    ;
+
+breakStatement
+    : BREAK SEMI
+    ;
+
+continueStatement
+    : CONTINUE SEMI
+    ;
 
 unlabelledStatement
    : simpleStatement
@@ -670,6 +679,18 @@ PROGRAM
 
 ENDPROGRAM
    : 'FINPROCESO' | 'FINALGORITMO' | 'ENDPROGRAM'
+   ;
+
+BREAK
+   : 'BREAK' | 'ROMPER'
+   ;
+
+CONTINUE
+   : 'CONTINUE' | 'CONTINUAR'
+   ;
+
+RETURN
+   : 'RETURN' | 'REGRESAR'
    ;
 
 

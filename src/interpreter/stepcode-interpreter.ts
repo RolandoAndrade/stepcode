@@ -10,7 +10,7 @@ import {
   IdentifierContext,
   IfStatementContext,
   ProgramContext,
-  ReadStatementContext,
+  ReadStatementContext, RepetetiveStatementContext,
   SignedFactorContext,
   SimpleExpressionContext,
   StringContext,
@@ -43,7 +43,11 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   async visitChildren(node: StepCodeRuleNode) {
     const returnValues = []
     for (const child of node?.children || []) {
-      returnValues.push(await this.visit(child) as ReturnTypes)
+      const rt = await this.visit(child) as ReturnTypes;
+      if ((rt?.identifier === 'break' && this.loopStack.length) || rt?.identifier === 'return') {
+        return rt
+      }
+      returnValues.push(rt)
     }
     return returnValues.find(e => !!e) as ReturnTypes
   }
@@ -320,10 +324,20 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
   }
 
+  visitBreakStatement = async () => {
+    return {
+      identifier: 'break',
+    }
+  }
+
+  protected loopStack: RepetetiveStatementContext[] = []
+
   visitWhileStatement = async (ctx: WhileStatementContext) => {
     let expression = await this.visit(ctx.expression()) as ExpressionReturnType;
     while (expression.value) {
+      this.loopStack.push(ctx.parentCtx as RepetetiveStatementContext)
       const result = await this.visit(ctx.compoundStatement())
+      this.loopStack.pop()
       if (result.identifier === 'break') {
         break;
       }

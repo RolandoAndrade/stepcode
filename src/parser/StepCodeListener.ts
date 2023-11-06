@@ -60,6 +60,8 @@ import { ConstListContext } from "./StepCodeParser";
 import { FunctionDeclarationContext } from "./StepCodeParser";
 import { ResultTypeContext } from "./StepCodeParser";
 import { StatementContext } from "./StepCodeParser";
+import { BreakStatementContext } from "./StepCodeParser";
+import { ContinueStatementContext } from "./StepCodeParser";
 import { UnlabelledStatementContext } from "./StepCodeParser";
 import { SimpleStatementContext } from "./StepCodeParser";
 import { AssignmentStatementContext } from "./StepCodeParser";
@@ -682,6 +684,26 @@ export default class StepCodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitStatement?: (ctx: StatementContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.breakStatement`.
+	 * @param ctx the parse tree
+	 */
+	enterBreakStatement?: (ctx: BreakStatementContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.breakStatement`.
+	 * @param ctx the parse tree
+	 */
+	exitBreakStatement?: (ctx: BreakStatementContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.continueStatement`.
+	 * @param ctx the parse tree
+	 */
+	enterContinueStatement?: (ctx: ContinueStatementContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.continueStatement`.
+	 * @param ctx the parse tree
+	 */
+	exitContinueStatement?: (ctx: ContinueStatementContext) => void;
 	/**
 	 * Enter a parse tree produced by `StepCodeParser.unlabelledStatement`.
 	 * @param ctx the parse tree
