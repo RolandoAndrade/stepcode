@@ -19,7 +19,7 @@ import {
   UnsignedIntegerContext,
   UnsignedRealContext,
   VariableContext,
-  VariableDeclarationContext,
+  VariableDeclarationContext, WhileStatementContext,
   WriteStatementContext
 } from '../parser/StepCodeParser.ts';
 import { EventBus } from './event-bus.ts';
@@ -28,7 +28,6 @@ import { ExpressionReturnType, ReturnTypes, VariableReturnType } from './visitor
 import { getInterpreterType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
 import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, sub, sum } from './operations.ts';
-import { ParseTree } from 'antlr4';
 
 export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   protected programState: Map<string, {
@@ -315,6 +314,23 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
     if (ctx.caseOtherWise()) {
       return await this.visit(ctx.caseOtherWise())
+    }
+    return {
+      identifier: `${expression.identifier}`,
+    }
+  }
+
+  visitWhileStatement = async (ctx: WhileStatementContext) => {
+    let expression = await this.visit(ctx.expression()) as ExpressionReturnType;
+    while (expression.value) {
+      const result = await this.visit(ctx.compoundStatement())
+      if (result.identifier === 'break') {
+        break;
+      }
+      if (result.identifier === 'return') {
+        return result
+      }
+      expression = await this.visit(ctx.expression()) as ExpressionReturnType;
     }
     return {
       identifier: `${expression.identifier}`,

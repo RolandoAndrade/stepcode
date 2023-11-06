@@ -451,7 +451,7 @@ elseStatement
    ;
 
 caseStatement
-   : CASE expression OF caseListElement* caseOtherWise? ENDCASE
+   : CASE expression (OF | HACER) caseListElement* caseOtherWise? ENDCASE
    ;
 
 caseListElement
@@ -469,15 +469,15 @@ repetetiveStatement
    ;
 
 whileStatement
-   : WHILE expression DO statement
+   : WHILE expression (DO | HACER) compoundStatement ENDWHILE
    ;
 
 repeatStatement
-   : REPEAT statements UNTIL expression
+   : REPEAT compoundStatement UNTIL expression
    ;
 
 forStatement
-   : FOR identifier ASSIGN forList DO statement
+   : FOR identifier ASSIGN forList DO compoundStatement
    ;
 
 forList
@@ -641,8 +641,12 @@ NOT
 
 
 OF
-   : 'OF' | 'HACER'
+   : 'OF'
    ;
+
+HACER
+    : 'HACER'
+    ;
 
 
 OR
@@ -714,8 +718,12 @@ DEFINE
    ;
 
 
+ENDWHILE
+   : 'ENDWHILE' | 'FINMIENTRAS'
+   ;
+
 WHILE
-   : 'WHILE'
+   : 'WHILE' | 'MIENTRAS'
    ;
 
 
