@@ -2,7 +2,7 @@
   "name": "stepcode",
   "description": "A parser for STEPcode",
   "author": "Rolando Andrade",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "main": "./dist/stepcode.umd.cjs",
   "module": "./dist/stepcode.js",
@@ -14,8 +14,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "generate": "antlr4 -Dlanguage=TypeScript src/StepCode.g4 -o src/parser -visitor",
-    "publish": "npm run build && npm publish"
+    "generate": "antlr4 -Dlanguage=TypeScript src/StepCode.g4 -o src/parser -visitor"
   },
   "devDependencies": {
     "@types/node": "^20.8.10",
