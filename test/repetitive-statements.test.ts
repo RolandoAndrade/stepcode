@@ -92,6 +92,83 @@ describe('test interpreter loop statements', () => {
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', '7')
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', '9')
     })
+
+    describe('test nested while statement', () => {
+      test('test nested while statement', async () => {
+        vi.spyOn(eventBus, 'emit')
+        const code = `Proceso prueba
+          Definir a, b Como Entero;
+          a <- 1;
+          Mientras a <= 5 Hacer
+            b <- 1;
+            Mientras b <= 5 Hacer
+              Escribir a, ' * ', b, ' = ', a * b;
+              b <- b + 1;
+            FinMientras
+            a <- a + 1; 
+          FinMientras
+        FinProceso`
+        await internalInterpret(code, interpreter)
+        expect(eventBus.emit).toBeCalledTimes(25)
+        for (let i = 1; i <= 5; i++) {
+          for (let j = 1; j <= 5; j++) {
+            expect(eventBus.emit).toHaveBeenCalledWith('output-request', `${i} * ${j} = ${i * j}`)
+          }
+        }
+      })
+
+      test('test nested while statement with break', async () => {
+        vi.spyOn(eventBus, 'emit')
+        const code = `Proceso prueba
+          Definir a, b Como Entero;
+          a <- 1;
+          Mientras a <= 5 Hacer
+            b <- 1;
+            Mientras b <= 5 Hacer
+              Escribir a, ' * ', b, ' = ', a * b;
+              b <- b + 1;
+              Si b = 3 Entonces
+                Romper;
+              FinSi
+            FinMientras
+            a <- a + 1; 
+          FinMientras
+        FinProceso`
+        await internalInterpret(code, interpreter)
+        expect(eventBus.emit).toBeCalledTimes(10)
+        for (let i = 1; i <= 5; i++) {
+          for (let j = 1; j <= 2; j++) {
+            expect(eventBus.emit).toHaveBeenCalledWith('output-request', `${i} * ${j} = ${i * j}`)
+          }
+        }
+      })
+
+      test('test nested while statement with continue', async () => {
+        vi.spyOn(eventBus, 'emit')
+        const code = `Proceso prueba
+          Definir a, b Como Entero;
+          a <- 1;
+          Mientras a <= 5 Hacer
+            b <- 1;
+            Mientras b <= 5 Hacer
+              b <- b + 1;
+              Si b MOD 2 Entonces
+                Continuar;
+              FinSi
+              Escribir a, ' * ', b - 1, ' = ', a * (b - 1);
+            FinMientras
+            a <- a + 1; 
+          FinMientras
+        FinProceso`
+        await internalInterpret(code, interpreter)
+        expect(eventBus.emit).toBeCalledTimes(15)
+        for (let i = 1; i <= 5; i++) {
+          for (let j = 1; j <= 5; j += 2) {
+            expect(eventBus.emit).toHaveBeenCalledWith('output-request', `${i} * ${j} = ${i * j}`)
+          }
+        }
+      })
+    })
   })
 
 })
