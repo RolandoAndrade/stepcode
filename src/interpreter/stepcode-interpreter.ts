@@ -46,7 +46,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     for (const child of node?.children || []) {
       returnValues.push(await this.visit(child) as ReturnTypes)
     }
-    return returnValues[0]
+    return returnValues.find(e => !!e) as ReturnTypes
   }
 
   async start(ctx: ProgramContext) {
