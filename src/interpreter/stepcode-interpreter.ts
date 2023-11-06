@@ -44,7 +44,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     const returnValues = []
     for (const child of node?.children || []) {
       const rt = await this.visit(child) as ReturnTypes;
-      if ((rt?.identifier === 'break' && this.loopStack.length) || rt?.identifier === 'return') {
+      if ((['break', 'continue'].includes(rt?.identifier || '') && this.loopStack.length) || rt?.identifier === 'return') {
         return rt
       }
       returnValues.push(rt)
@@ -327,6 +327,12 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   visitBreakStatement = async () => {
     return {
       identifier: 'break',
+    }
+  }
+
+  visitContinueStatement = async () => {
+    return {
+      identifier: 'continue',
     }
   }
 
