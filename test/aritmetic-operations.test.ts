@@ -252,5 +252,13 @@ describe('test interpreter aritmetic operations', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '486')
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '40')
     })
+
+    test('nested divisions', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Escribir 2 / 3 / 5;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', (2 / 3 / 5).toString())
+    })
   })
 })
