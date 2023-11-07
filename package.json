@@ -1,7 +1,10 @@
 {
   "name": "stepcode",
-  "description": "A parser for STEPcode",
+  "description": "A parser for StepCode",
   "author": "Rolando Andrade",
+  "keywords": [
+    "stepcode", "parser", "pseudocode", "spanish", "antlr4", "typescript"
+  ],
   "version": "0.4.0",
   "type": "module",
   "main": "./dist/stepcode.umd.cjs",
