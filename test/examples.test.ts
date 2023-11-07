@@ -141,4 +141,26 @@ describe('test interpreter boolean operations', () => {
     })
   })
 
+  describe('print characters of a string', () => {
+    const code = `Proceso prueba
+    Definir a Como Cadena;
+    Leer a;
+    Para i ← 1 Hasta Longitud(a) Con Paso 1 Hacer
+        Escribir a[i];
+    FinPara
+    FinProceso`
+
+    test('test print characters of a string', async () => {
+      vi.spyOn(eventBus, 'emit')
+      eventBus.on('input-request', (resolve) => {
+        resolve('Hola')
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'H')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'o')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'l')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'a')
+    })
+  })
+
 })

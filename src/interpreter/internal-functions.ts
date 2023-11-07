@@ -6,9 +6,12 @@ export function length(s: string) {
   return s.length
 }
 
-const stringFunctions = {
-  substring,
-  length
+export function uppercase(s: string) {
+  return s.toUpperCase()
+}
+
+export function lowercase(s: string) {
+  return s.toLowerCase()
 }
 
 
@@ -22,6 +25,12 @@ export function getFunctionFromIdentifier(identifier: string): Return | undefine
     case 'length':
     case 'longitud':
       return length
+    case 'upper':
+    case 'mayusculas':
+      return uppercase
+    case 'lower':
+    case 'minusculas':
+      return lowercase
     default:
       return undefined
   }

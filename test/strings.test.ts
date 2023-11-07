@@ -74,4 +74,29 @@ describe('test interpreter strings operations', () => {
     })
   })
 
+  describe('uppercase', () => {
+    test('test basic uppercase', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a, b Como Cadena;
+      a <- "Hola";
+      b <- Mayusculas(a);
+      Escribir b;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'HOLA')
+    })
+  })
+
+  describe('lowercase', () => {
+    test('test basic lowercase', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a, b Como Cadena;
+      a <- "Hola";
+      b <- Minusculas(a);
+      Escribir b;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'hola')
+    })
+  })
 })
