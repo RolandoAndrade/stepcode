@@ -40,3 +40,7 @@ export function parseValue(type: ValidDataType, value: string): any {
   }
 }
 
+export function isStructuredType(type: ValidDataType): boolean {
+  return type === 'string'
+}
+

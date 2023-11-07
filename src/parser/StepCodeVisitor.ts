@@ -66,6 +66,8 @@ import { UnlabelledStatementContext } from "./StepCodeParser";
 import { SimpleStatementContext } from "./StepCodeParser";
 import { AssignmentStatementContext } from "./StepCodeParser";
 import { VariableContext } from "./StepCodeParser";
+import { AccessorContext } from "./StepCodeParser";
+import { IndexContext } from "./StepCodeParser";
 import { ExpressionContext } from "./StepCodeParser";
 import { RelationaloperatorContext } from "./StepCodeParser";
 import { SimpleExpressionContext } from "./StepCodeParser";
@@ -498,6 +500,18 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitVariable?: (ctx: VariableContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.accessor`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitAccessor?: (ctx: AccessorContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.index`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitIndex?: (ctx: IndexContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.expression`.
 	 * @param ctx the parse tree

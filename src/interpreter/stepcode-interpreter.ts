@@ -8,7 +8,7 @@ import {
   ExpressionContext,
   FactorContext, ForStatementContext,
   IdentifierContext,
-  IfStatementContext,
+  IfStatementContext, IndexContext,
   ProgramContext,
   ReadStatementContext, RepeatStatementContext, RepetetiveStatementContext,
   SignedFactorContext,
@@ -25,7 +25,7 @@ import {
 import { EventBus } from './event-bus.ts';
 import { StepCodeRuleNode } from './stepcode-rule-node.ts';
 import { ExpressionReturnType, ReturnTypes, VariableReturnType } from './visitor-return-types';
-import { getInterpreterType, parseValue } from './utils.ts';
+import { getInterpreterType, isStructuredType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
 import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, power, sub, sum } from './operations.ts';
 
@@ -56,12 +56,34 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     await this.visitChildren(ctx)
   }
 
+  visitIndex = async (ctx: IndexContext) => {
+    const result = await this.visit(ctx.expression()) as ExpressionReturnType
+    return {
+      identifier: result.identifier,
+      type: result.type,
+      value: result.value
+    }
+  }
+
   visitVariable = async (ctx: VariableContext) => {
-    const variable = this.programState.get(ctx.getText())
+    const variable = this.programState.get(ctx.identifier().getText())
+    let value = variable?.value
+    let type = variable?.type
+    for (const accessor of ctx.accessor_list()) {
+      if (variable && isStructuredType(variable.type)) {
+        const a = await this.visit(accessor)
+        let index = a.value
+        if (index > 0) {
+          index = index - 1
+        }
+        value = variable.value.at(index)
+        // TODO: fix type
+      }
+    }
     return {
       identifier: ctx.getText(),
-      value: variable?.value,
-      type: variable?.type
+      value: value,
+      type: type
     }
   }
 

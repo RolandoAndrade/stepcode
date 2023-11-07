@@ -321,8 +321,16 @@ assignmentStatement
    ;
 
 variable
-   : (AT identifier | identifier) (LBRACK expression (COMMA expression)* RBRACK | LBRACK2 expression (COMMA expression)* RBRACK2 | DOT identifier | POINTER)*
+   : identifier accessor*
    ;
+
+accessor
+    : index
+    ;
+
+index
+    : LBRACK expression RBRACK
+    ;
 
 expression
    : simpleExpression (relationaloperator expression)?

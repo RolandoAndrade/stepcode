@@ -3,7 +3,7 @@ import { EventBus, StepCodeInterpreter } from '../src';
 import { internalInterpret } from '../src/interpreter/internal-interpret';
 
 
-describe('test interpreter aritmetic operations', () => {
+describe('test interpreter arithmetic operations', () => {
   let eventBus: EventBus
   let interpreter: StepCodeInterpreter
   beforeEach(() => {
