@@ -2,7 +2,7 @@ import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AdditiveoperatorContext,
   AssignmentStatementContext, BaseTermContext,
-  Bool_Context, CaseListElementContext,
+  Bool_Context,
   CaseStatementContext,
   ElifStatementContext,
   ExpressionContext,
@@ -171,11 +171,9 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitBaseTerm = async (ctx: BaseTermContext) => {
-    const left = await this.visit(ctx.signedFactor())
-    if (!ctx.exponentiationOperator()) {
-      return left
-    }
-    const right = await this.visit(ctx.baseTerm())
+    if (ctx.signedFactor()) return this.visit(ctx.signedFactor())
+    const left = await this.visit(ctx.baseTerm(0))
+    const right = await this.visit(ctx.baseTerm(1))
     const value = power(left.value, right.value)
     return {
       identifier: `${left.identifier} ^ ${right.identifier}`,
@@ -185,29 +183,27 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitTerm = async (ctx: TermContext) => {
-    const left = await this.visit(ctx.baseTerm())
-    if (ctx.multiplicativeoperator()) {
-      const operator = ctx.multiplicativeoperator().getText()
-      const right = await this.visit(ctx.term())
-      let value
-      if (ctx.multiplicativeoperator().STAR()) {
-        value = mul(left.value, right.value)
-      } else if (ctx.multiplicativeoperator().SLASH()) {
-        value = div(left.value, right.value)
-      } else if (ctx.multiplicativeoperator().MOD()) {
-        value = mod(left.value, right.value)
-      } else if (ctx.multiplicativeoperator().DIV()) {
-        value = integerDivision(left.value, right.value)
-      } else if (ctx.multiplicativeoperator().AND()) {
-        value = and(left.value, right.value)
-      }
-      return {
-        identifier: `${left.identifier} ${operator} ${right.identifier}`,
-        type: left.type,
-        value: value
-      }
+    if (ctx.baseTerm()) return this.visit(ctx.baseTerm())
+    const left = await this.visit(ctx.term(0))
+    const operator = ctx.multiplicativeoperator().getText()
+    const right = await this.visit(ctx.term(1))
+    let value
+    if (ctx.multiplicativeoperator().STAR()) {
+      value = mul(left.value, right.value)
+    } else if (ctx.multiplicativeoperator().SLASH()) {
+      value = div(left.value, right.value)
+    } else if (ctx.multiplicativeoperator().MOD()) {
+      value = mod(left.value, right.value)
+    } else if (ctx.multiplicativeoperator().DIV()) {
+      value = integerDivision(left.value, right.value)
+    } else if (ctx.multiplicativeoperator().AND()) {
+      value = and(left.value, right.value)
     }
-    return left
+    return {
+      identifier: `${left.identifier} ${operator} ${right.identifier}`,
+      type: left.type,
+      value: value
+    }
   }
 
   visitBool_ = async (ctx: Bool_Context) => {
@@ -219,25 +215,24 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitSimpleExpression = async (ctx: SimpleExpressionContext) => {
-    const left = await this.visit(ctx.term())
-    if (ctx.additiveoperator()) {
-      const right = await this.visit(ctx.simpleExpression())
-      let result
-      if (ctx.additiveoperator().PLUS()) {
-        result = sum(left.value, right.value)
-      } else if (ctx.additiveoperator().MINUS()) {
-        result = sub(left.value, right.value)
-      } else if (ctx.additiveoperator().OR()) {
-        result = left.value || right.value
-      }
-
-      return {
-        identifier: `${left.identifier} ${ctx.additiveoperator().getText()} ${right.identifier}`,
-        type: left.type,
-        value: result
-      }
+    if (ctx.term()) {
+      return this.visit(ctx.term())
     }
-    return left
+    const left = await this.visit(ctx.simpleExpression(0))
+    const right = await this.visit(ctx.simpleExpression(1))
+    let result
+    if (ctx.additiveoperator().PLUS()) {
+      result = sum(left.value, right.value)
+    } else if (ctx.additiveoperator().MINUS()) {
+      result = sub(left.value, right.value)
+    } else if (ctx.additiveoperator().OR()) {
+      result = left.value || right.value
+    }
+    return {
+      identifier: `${left.identifier} ${ctx.additiveoperator().getText()} ${right.identifier}`,
+      type: left.type,
+      value: result
+    }
   }
 
   visitAssignmentStatement = async (ctx: AssignmentStatementContext) => {

@@ -192,4 +192,65 @@ describe('test interpreter aritmetic operations', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '14.5')
     })
   })
+  describe('order of operations', () => {
+    test('sum and sub have the same priority', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Escribir 2 - 3 + 5;
+      Escribir 2 + 3 - 5;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '4')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '0')
+    })
+
+    test('mul and div have the same priority', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Escribir 2 * 3 / 5;
+      Escribir 2 / 3 * 5;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', (2 * 3 / 5).toString())
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', (2 / 3 * 5).toString())
+    })
+
+    test('mul and div have more priority than sum and sub', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Escribir 2 + 3 * 5;
+      Escribir 2 * 3 + 5;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '17')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '11')
+    })
+
+    test('parenthesis have more priority than all operations', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Escribir (2 + 3) * 5;
+      Escribir 2 * (3 + 5);
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '25')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '16')
+    })
+
+    test('power have more priority than all operations', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Escribir 2 + 3 ^ 5;
+      Escribir 2 ^ 3 + 5;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '245')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '13')
+    })
+
+    test('power have more priority than all operations', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Escribir 2 * 3 ^ 5;
+      Escribir 2 ^ 3 * 5;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '486')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '40')
+    })
+  })
 })

@@ -339,7 +339,7 @@ relationaloperator
    ;
 
 simpleExpression
-   : term (additiveoperator simpleExpression)?
+   : term | simpleExpression additiveoperator simpleExpression
    ;
 
 additiveoperator
@@ -349,11 +349,11 @@ additiveoperator
    ;
 
 term
-   : baseTerm (multiplicativeoperator term)?
+   : baseTerm | term multiplicativeoperator term
    ;
 
 baseTerm
-   : signedFactor (exponentiationOperator baseTerm)?
+   : signedFactor | baseTerm exponentiationOperator baseTerm
    ;
 
 multiplicativeoperator
