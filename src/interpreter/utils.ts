@@ -4,8 +4,10 @@ export function getInterpreterType(type: string): ValidDataType {
   switch (type.toLowerCase()) {
     case 'entero':
     case 'integer':
-    case 'real':
       return 'integer'
+    case 'real':
+    case 'float':
+      return 'real'
     case 'cadena':
     case 'string':
       return 'string'

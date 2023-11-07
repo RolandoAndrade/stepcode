@@ -101,5 +101,44 @@ describe('test interpreter boolean operations', () => {
     })
   })
 
+  describe('imc calculator', () => {
+    const code = `Proceso CalculoIMC
+    Definir peso, altura, imc Como Real;
+    Escribir "Introduzca su peso en kg";
+    Leer peso;
+    Escribir "Introduzca su altura en m";
+    Leer altura;
+    imc ← peso / altura ** 2;
+    Si imc < 16 Entonces
+        Escribir "Delgadez severa";
+    Sino Si imc < 17 Entonces
+        Escribir "Delgadez moderada";
+    Sino Si imc < 18.5 Entonces
+        Escribir "Delgadez leve";
+    Sino Si imc < 25 Entonces
+        Escribir "Normal";
+    Sino Si imc < 30 Entonces
+        Escribir "Sobrepeso";
+    Sino Si imc < 35 Entonces
+        Escribir "Obesidad leve";
+    Sino Si imc < 40 Entonces
+        Escribir "Obesidad media";
+    Sino
+        Escribir "Obesidad morbida";
+    FinSi
+    Escribir imc;
+    FinProceso`
+
+    test('test imc calculator', async () => {
+      let i = 0;
+      const inputs = [60, 1.7]
+      eventBus.on('input-request', (resolve) => {
+        resolve(inputs[i++].toString())
+      })
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'Normal')
+    })
+  })
 
 })
