@@ -349,7 +349,11 @@ additiveoperator
    ;
 
 term
-   : signedFactor (multiplicativeoperator term)?
+   : baseTerm (multiplicativeoperator term)?
+   ;
+
+baseTerm
+   : signedFactor (exponentiationOperator baseTerm)?
    ;
 
 multiplicativeoperator
@@ -358,6 +362,10 @@ multiplicativeoperator
    | DIV
    | MOD
    | AND
+   ;
+
+exponentiationOperator
+   : POWER
    ;
 
 signedFactor
@@ -486,7 +494,7 @@ repeatStatement
    ;
 
 forStatement
-   : FOR identifier ASSIGN forList DO compoundStatement
+   : FOR identifier ASSIGN forList (WITHSTEP finalValue)? (DO | HACER) compoundStatement ENDFOR
    ;
 
 forList
@@ -596,8 +604,16 @@ FILE
    ;
 
 
+WITHSTEP
+   : 'WITH STEP' | 'CON PASO'
+   ;
+
+ENDFOR
+   : 'ENDFOR' | 'FINPARA'
+   ;
+
 FOR
-   : 'FOR'
+   : 'FOR' | 'PARA'
    ;
 
 
@@ -762,10 +778,15 @@ MINUS
    : '-'
    ;
 
+POWER
+   : '**' | '^'
+   ;
 
 STAR
    : '*'
    ;
+
+
 
 
 SLASH

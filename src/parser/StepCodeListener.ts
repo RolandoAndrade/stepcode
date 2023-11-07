@@ -71,7 +71,9 @@ import { RelationaloperatorContext } from "./StepCodeParser";
 import { SimpleExpressionContext } from "./StepCodeParser";
 import { AdditiveoperatorContext } from "./StepCodeParser";
 import { TermContext } from "./StepCodeParser";
+import { BaseTermContext } from "./StepCodeParser";
 import { MultiplicativeoperatorContext } from "./StepCodeParser";
+import { ExponentiationOperatorContext } from "./StepCodeParser";
 import { SignedFactorContext } from "./StepCodeParser";
 import { FactorContext } from "./StepCodeParser";
 import { UnsignedConstantContext } from "./StepCodeParser";
@@ -795,6 +797,16 @@ export default class StepCodeListener extends ParseTreeListener {
 	 */
 	exitTerm?: (ctx: TermContext) => void;
 	/**
+	 * Enter a parse tree produced by `StepCodeParser.baseTerm`.
+	 * @param ctx the parse tree
+	 */
+	enterBaseTerm?: (ctx: BaseTermContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.baseTerm`.
+	 * @param ctx the parse tree
+	 */
+	exitBaseTerm?: (ctx: BaseTermContext) => void;
+	/**
 	 * Enter a parse tree produced by `StepCodeParser.multiplicativeoperator`.
 	 * @param ctx the parse tree
 	 */
@@ -804,6 +816,16 @@ export default class StepCodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitMultiplicativeoperator?: (ctx: MultiplicativeoperatorContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.exponentiationOperator`.
+	 * @param ctx the parse tree
+	 */
+	enterExponentiationOperator?: (ctx: ExponentiationOperatorContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.exponentiationOperator`.
+	 * @param ctx the parse tree
+	 */
+	exitExponentiationOperator?: (ctx: ExponentiationOperatorContext) => void;
 	/**
 	 * Enter a parse tree produced by `StepCodeParser.signedFactor`.
 	 * @param ctx the parse tree

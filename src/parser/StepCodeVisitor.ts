@@ -71,7 +71,9 @@ import { RelationaloperatorContext } from "./StepCodeParser";
 import { SimpleExpressionContext } from "./StepCodeParser";
 import { AdditiveoperatorContext } from "./StepCodeParser";
 import { TermContext } from "./StepCodeParser";
+import { BaseTermContext } from "./StepCodeParser";
 import { MultiplicativeoperatorContext } from "./StepCodeParser";
+import { ExponentiationOperatorContext } from "./StepCodeParser";
 import { SignedFactorContext } from "./StepCodeParser";
 import { FactorContext } from "./StepCodeParser";
 import { UnsignedConstantContext } from "./StepCodeParser";
@@ -526,11 +528,23 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitTerm?: (ctx: TermContext) => Result;
 	/**
+	 * Visit a parse tree produced by `StepCodeParser.baseTerm`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBaseTerm?: (ctx: BaseTermContext) => Result;
+	/**
 	 * Visit a parse tree produced by `StepCodeParser.multiplicativeoperator`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitMultiplicativeoperator?: (ctx: MultiplicativeoperatorContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.exponentiationOperator`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitExponentiationOperator?: (ctx: ExponentiationOperatorContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.signedFactor`.
 	 * @param ctx the parse tree
