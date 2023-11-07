@@ -494,7 +494,7 @@ repeatStatement
    ;
 
 forStatement
-   : FOR identifier ASSIGN forList (WITHSTEP finalValue)? (DO | HACER) compoundStatement ENDFOR
+   : FOR identifier ASSIGN forList (WITHSTEP stepValue)? (DO | HACER) compoundStatement ENDFOR
    ;
 
 forList
@@ -506,6 +506,10 @@ initialValue
    ;
 
 finalValue
+   : expression
+   ;
+
+stepValue
    : expression
    ;
 

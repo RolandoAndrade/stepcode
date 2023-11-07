@@ -105,6 +105,7 @@ import { ForStatementContext } from "./StepCodeParser";
 import { ForListContext } from "./StepCodeParser";
 import { InitialValueContext } from "./StepCodeParser";
 import { FinalValueContext } from "./StepCodeParser";
+import { StepValueContext } from "./StepCodeParser";
 import { WithStatementContext } from "./StepCodeParser";
 import { RecordVariableListContext } from "./StepCodeParser";
 import { WriteStatementContext } from "./StepCodeParser";
@@ -1136,6 +1137,16 @@ export default class StepCodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitFinalValue?: (ctx: FinalValueContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.stepValue`.
+	 * @param ctx the parse tree
+	 */
+	enterStepValue?: (ctx: StepValueContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.stepValue`.
+	 * @param ctx the parse tree
+	 */
+	exitStepValue?: (ctx: StepValueContext) => void;
 	/**
 	 * Enter a parse tree produced by `StepCodeParser.withStatement`.
 	 * @param ctx the parse tree

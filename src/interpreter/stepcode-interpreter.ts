@@ -6,7 +6,7 @@ import {
   CaseStatementContext,
   ElifStatementContext,
   ExpressionContext,
-  FactorContext,
+  FactorContext, ForStatementContext,
   IdentifierContext,
   IfStatementContext,
   ProgramContext,
@@ -368,5 +368,58 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     return {
       identifier: `${expression.identifier}`,
     }
+  }
+
+  visitForStatement = async (ctx: ForStatementContext) => {
+    const identifier = await this.visit(ctx.identifier()) as VariableReturnType;
+    const initial = await this.visit(ctx.forList().initialValue());
+    const final = await this.visit(ctx.forList().finalValue());
+    let step = 1
+    if (ctx.stepValue()) {
+      const s = await this.visit(ctx.stepValue()) as VariableReturnType;
+      step = s.value
+    }
+    const insideLoop = async (i: number) => {
+      this.programState.set(identifier.identifier, {
+        type: identifier.type,
+        value: i
+      })
+      this.loopStack.push(ctx.parentCtx as RepetetiveStatementContext)
+      const result = await this.visit(ctx.compoundStatement())
+      this.loopStack.pop()
+      if (['break', 'return'].includes(result.identifier)) {
+        return result
+      }
+    }
+
+    if (step > 0) {
+      for (let i = initial.value; i <= final.value; i += step) {
+        const result = await insideLoop(i)
+        if (result) {
+          if (result.identifier === 'return') {
+            return result
+          }
+          if (result.identifier === 'break') {
+            break
+          }
+        }
+      }
+    } else {
+      for (let i = initial.value; i >= final.value; i += step) {
+        const result = await insideLoop(i)
+        if (result) {
+          if (result.identifier === 'return') {
+            return result
+          }
+          if (result.identifier === 'break') {
+            break
+          }
+        }
+      }
+    }
+    return {
+      identifier: `${identifier.identifier}`,
+    }
+
   }
 }
