@@ -10,7 +10,7 @@ import {
   IdentifierContext,
   IfStatementContext,
   ProgramContext,
-  ReadStatementContext, RepetetiveStatementContext,
+  ReadStatementContext, RepeatStatementContext, RepetetiveStatementContext,
   SignedFactorContext,
   SimpleExpressionContext,
   StringContext,
@@ -415,6 +415,29 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     return {
       identifier: `${identifier.identifier}`,
     }
+  }
 
+  visitRepeatStatement = async (ctx: RepeatStatementContext) => {
+    let repeat = false
+    do {
+      this.loopStack.push(ctx.parentCtx as RepetetiveStatementContext)
+      const result = await this.visit(ctx.compoundStatement())
+      this.loopStack.pop()
+      if (result.identifier === 'return') {
+        return result
+      }
+      if (result.identifier === 'break') {
+        break
+      }
+      const expression = await this.visit(ctx.expression()) as ExpressionReturnType;
+      if (ctx.UNTIL()) {
+        repeat = !expression.value
+      } else {
+        repeat = expression.value
+      }
+    } while (repeat)
+    return {
+      identifier: `repeat`,
+    }
   }
 }

@@ -295,4 +295,84 @@ describe('test interpreter loop statements', () => {
     })
   })
 
+  describe('test repeat statement', () => {
+    test('test simple repeat until statement', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const code = `Proceso prueba
+        Definir a Como Entero;
+        a <- 1;
+        Repetir
+          Escribir a;
+          a <- a + 1;
+        Hasta Que a > 5;
+      FinProceso`
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toBeCalledTimes(5)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '2')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '3')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '4')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '5')
+    })
+
+    test('test simple repeat until statement with break', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const code = `Proceso prueba
+        Definir a Como Entero;
+        a <- 1;
+        Repetir
+          Escribir a;
+          a <- a + 1;
+          Si a = 3 Entonces
+            Romper;
+          FinSi
+        Hasta Que a > 5;
+      FinProceso`
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toBeCalledTimes(2)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '2')
+    })
+
+    test('test simple repeat until statement with continue', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const code = `Proceso prueba
+        Definir a Como Entero;
+        a <- 0;
+        Repetir
+          Si a MOD 2 Entonces
+            a <- a + 1;
+            Continuar;
+          FinSi
+          a <- a + 1;
+          Escribir a;
+        Hasta Que a > 5;
+      FinProceso`
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toBeCalledTimes(3)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '3')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '5')
+    })
+
+    test('test repeat while statement', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const code = `Proceso prueba
+        Definir a Como Entero;
+        a <- 1;
+        Repetir
+          Escribir a;
+          a <- a + 1;
+        Mientras que a <= 5;
+      FinProceso`
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toBeCalledTimes(5)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '2')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '3')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '4')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '5')
+    })
+  })
+
 })

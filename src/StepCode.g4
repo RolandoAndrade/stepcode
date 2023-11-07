@@ -490,7 +490,7 @@ whileStatement
    ;
 
 repeatStatement
-   : REPEAT compoundStatement UNTIL expression
+   : REPEAT compoundStatement (UNTIL | MIENTRASQUE) expression SEMI
    ;
 
 forStatement
@@ -725,7 +725,7 @@ RECORD
 
 
 REPEAT
-   : 'REPEAT'
+   : 'REPEAT' | 'REPETIR'
    ;
 
 
@@ -739,20 +739,17 @@ THEN
    ;
 
 
+UNTIL
+   : 'UNTIL' | 'HASTA QUE'
+   ;
+
 TO
    : 'TO' | 'HASTA'
    ;
 
-
 TYPE
    : 'TYPE'
    ;
-
-
-UNTIL
-   : 'UNTIL'
-   ;
-
 
 DEFINE
    : 'DEFINIR' | 'VAR'
@@ -761,6 +758,10 @@ DEFINE
 
 ENDWHILE
    : 'ENDWHILE' | 'FINMIENTRAS'
+   ;
+
+MIENTRASQUE
+   : 'MIENTRAS QUE'
    ;
 
 WHILE
