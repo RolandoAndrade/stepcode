@@ -5,7 +5,7 @@
   "keywords": [
     "stepcode", "parser", "pseudocode", "spanish", "antlr4", "typescript"
   ],
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "main": "./dist/stepcode.umd.cjs",
   "module": "./dist/stepcode.js",
