@@ -57,3 +57,7 @@ export function not(a: boolean) {
 export function integerDivision(a: number, b: number) {
   return Math.trunc(a / b)
 }
+
+export function power(a: number, b: number) {
+  return Math.pow(a, b)
+}

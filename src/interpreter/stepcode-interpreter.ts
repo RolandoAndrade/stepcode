@@ -1,7 +1,7 @@
 import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AdditiveoperatorContext,
-  AssignmentStatementContext,
+  AssignmentStatementContext, BaseTermContext,
   Bool_Context, CaseListElementContext,
   CaseStatementContext,
   ElifStatementContext,
@@ -27,7 +27,7 @@ import { StepCodeRuleNode } from './stepcode-rule-node.ts';
 import { ExpressionReturnType, ReturnTypes, VariableReturnType } from './visitor-return-types';
 import { getInterpreterType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
-import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, sub, sum } from './operations.ts';
+import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, power, sub, sum } from './operations.ts';
 
 export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   protected programState: Map<string, {
@@ -170,10 +170,23 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     return this.visitChildren(ctx)
   }
 
-  visitTerm = async (ctx: TermContext) => {
+  visitBaseTerm = async (ctx: BaseTermContext) => {
     const left = await this.visit(ctx.signedFactor())
-    if (ctx.multiplicativeoperator()) {
+    if (!ctx.exponentiationOperator()) {
+      return left
+    }
+    const right = await this.visit(ctx.baseTerm())
+    const value = power(left.value, right.value)
+    return {
+      identifier: `${left.identifier} ^ ${right.identifier}`,
+      type: left.type,
+      value: value
+    }
+  }
 
+  visitTerm = async (ctx: TermContext) => {
+    const left = await this.visit(ctx.baseTerm())
+    if (ctx.multiplicativeoperator()) {
       const operator = ctx.multiplicativeoperator().getText()
       const right = await this.visit(ctx.term())
       let value

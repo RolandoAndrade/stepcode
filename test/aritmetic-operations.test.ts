@@ -88,6 +88,32 @@ describe('test interpreter aritmetic operations', () => {
       FinProceso`, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '2')
     })
+    test('test power operation', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a Como Entero;
+      a <- 10;
+      Escribir a ^ 2;
+      Escribir a ** 3;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '100')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1000')
+    })
+    test('operation order', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a Como Entero;
+      a <- 10;
+      Escribir a + 2 * 3;
+      Escribir a * 2 + 3;
+      Escribir a ^ 2 * 2 + 3;
+      Escribir a * 2 ^ 2 + 3 * 2;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '16')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '23')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '203')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '46')
+    })
   })
   describe('real operations', () => {
     test('test basic sum operation', async () => {
