@@ -48,6 +48,30 @@ describe('test interpreter strings operations', () => {
     })
   })
 
-  describe('length', () => {})
+  describe('length', () => {
+    test('test basic length', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a, b Como Cadena;
+      a <- "Hola";
+      b <- Longitud(a);
+      Escribir b;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '4')
+    })
+  })
+
+  describe('substring', () => {
+    test('test basic substring', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a, b Como Cadena;
+      a <- "Hola";
+      b <- Subcadena(a, 1, 2);
+      Escribir b;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'Ho')
+    })
+  })
 
 })

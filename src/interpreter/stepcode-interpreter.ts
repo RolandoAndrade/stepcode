@@ -8,7 +8,7 @@ import {
   ExpressionContext,
   FactorContext, ForStatementContext,
   IdentifierContext,
-  IfStatementContext, IndexContext,
+  IfStatementContext, IndexContext, ProcedureStatementContext,
   ProgramContext,
   ReadStatementContext, RepeatStatementContext, RepetetiveStatementContext,
   SignedFactorContext,
@@ -28,6 +28,7 @@ import { ExpressionReturnType, ReturnTypes, VariableReturnType } from './visitor
 import { getInterpreterType, isStructuredType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
 import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, power, sub, sum } from './operations.ts';
+import { getFunctionFromIdentifier } from './internal-functions.ts';
 
 export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   protected programState: Map<string, {
@@ -461,5 +462,25 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     return {
       identifier: `repeat`,
     }
+  }
+
+  visitProcedureStatement = async (ctx: ProcedureStatementContext) => {
+    const identifier = ctx.identifier().getText()
+    const internalFunction = getFunctionFromIdentifier(identifier)
+    if (internalFunction) {
+      const args = await Promise.all(ctx.parameterList().actualParameter_list().map(async c => this.visit(c))) as ExpressionReturnType[]
+      const result = internalFunction(...args.map(e => e.value))
+      return {
+        identifier: `${identifier}(${args.map(e => e.identifier).join(',')})`,
+        value: result
+      }
+    }
+    return {
+      identifier: `${identifier}`,
+    }
+  }
+
+  visitFunctionDesignator = async (ctx: ProcedureStatementContext) => {
+    return this.visitProcedureStatement(ctx)
   }
 }
