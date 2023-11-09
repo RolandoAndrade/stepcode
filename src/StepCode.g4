@@ -333,8 +333,16 @@ index
     ;
 
 expression
-   : simpleExpression (relationaloperator expression)?
+   : booleanMultiplicativeExpression | expression OR expression
    ;
+
+booleanMultiplicativeExpression
+    : booleanRelationalExpression | booleanMultiplicativeExpression AND booleanMultiplicativeExpression
+    ;
+
+booleanRelationalExpression
+    : simpleExpression | booleanRelationalExpression relationaloperator booleanRelationalExpression
+    ;
 
 relationaloperator
    : EQUAL
@@ -353,7 +361,6 @@ simpleExpression
 additiveoperator
    : PLUS
    | MINUS
-   | OR
    ;
 
 term
@@ -369,7 +376,6 @@ multiplicativeoperator
    | SLASH
    | DIV
    | MOD
-   | AND
    ;
 
 exponentiationOperator

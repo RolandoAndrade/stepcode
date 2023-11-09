@@ -69,6 +69,8 @@ import { VariableContext } from "./StepCodeParser";
 import { AccessorContext } from "./StepCodeParser";
 import { IndexContext } from "./StepCodeParser";
 import { ExpressionContext } from "./StepCodeParser";
+import { BooleanMultiplicativeExpressionContext } from "./StepCodeParser";
+import { BooleanRelationalExpressionContext } from "./StepCodeParser";
 import { RelationaloperatorContext } from "./StepCodeParser";
 import { SimpleExpressionContext } from "./StepCodeParser";
 import { AdditiveoperatorContext } from "./StepCodeParser";
@@ -518,6 +520,18 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitExpression?: (ctx: ExpressionContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.booleanMultiplicativeExpression`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBooleanMultiplicativeExpression?: (ctx: BooleanMultiplicativeExpressionContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.booleanRelationalExpression`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBooleanRelationalExpression?: (ctx: BooleanRelationalExpressionContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.relationaloperator`.
 	 * @param ctx the parse tree

@@ -69,6 +69,8 @@ import { VariableContext } from "./StepCodeParser";
 import { AccessorContext } from "./StepCodeParser";
 import { IndexContext } from "./StepCodeParser";
 import { ExpressionContext } from "./StepCodeParser";
+import { BooleanMultiplicativeExpressionContext } from "./StepCodeParser";
+import { BooleanRelationalExpressionContext } from "./StepCodeParser";
 import { RelationaloperatorContext } from "./StepCodeParser";
 import { SimpleExpressionContext } from "./StepCodeParser";
 import { AdditiveoperatorContext } from "./StepCodeParser";
@@ -779,6 +781,26 @@ export default class StepCodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitExpression?: (ctx: ExpressionContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.booleanMultiplicativeExpression`.
+	 * @param ctx the parse tree
+	 */
+	enterBooleanMultiplicativeExpression?: (ctx: BooleanMultiplicativeExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.booleanMultiplicativeExpression`.
+	 * @param ctx the parse tree
+	 */
+	exitBooleanMultiplicativeExpression?: (ctx: BooleanMultiplicativeExpressionContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.booleanRelationalExpression`.
+	 * @param ctx the parse tree
+	 */
+	enterBooleanRelationalExpression?: (ctx: BooleanRelationalExpressionContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.booleanRelationalExpression`.
+	 * @param ctx the parse tree
+	 */
+	exitBooleanRelationalExpression?: (ctx: BooleanRelationalExpressionContext) => void;
 	/**
 	 * Enter a parse tree produced by `StepCodeParser.relationaloperator`.
 	 * @param ctx the parse tree

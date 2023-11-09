@@ -2,7 +2,7 @@ import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AdditiveoperatorContext,
   AssignmentStatementContext, BaseTermContext,
-  Bool_Context,
+  Bool_Context, BooleanMultiplicativeExpressionContext, BooleanRelationalExpressionContext,
   CaseStatementContext,
   ElifStatementContext,
   ExpressionContext,
@@ -27,7 +27,7 @@ import { StepCodeRuleNode } from './stepcode-rule-node.ts';
 import { ExpressionReturnType, ReturnTypes, VariableReturnType } from './visitor-return-types';
 import { getInterpreterType, isStructuredType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
-import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, power, sub, sum } from './operations.ts';
+import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, or, power, sub, sum } from './operations.ts';
 import { getFunctionFromIdentifier } from './internal-functions.ts';
 
 export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
@@ -219,8 +219,6 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       value = mod(left.value, right.value)
     } else if (ctx.multiplicativeoperator().DIV()) {
       value = integerDivision(left.value, right.value)
-    } else if (ctx.multiplicativeoperator().AND()) {
-      value = and(left.value, right.value)
     }
     return {
       identifier: `${left.identifier} ${operator} ${right.identifier}`,
@@ -248,8 +246,6 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       result = sum(left.value, right.value)
     } else if (ctx.additiveoperator().MINUS()) {
       result = sub(left.value, right.value)
-    } else if (ctx.additiveoperator().OR()) {
-      result = left.value || right.value
     }
     return {
       identifier: `${left.identifier} ${ctx.additiveoperator().getText()} ${right.identifier}`,
@@ -276,12 +272,10 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
   }
 
-  visitExpression = async (ctx: ExpressionContext) => {
-    const left = await this.visit(ctx.simpleExpression())
-    if (!ctx.relationaloperator()) {
-      return left
-    }
-    const right = await this.visit(ctx.expression())
+  visitBooleanRelationalExpression = async (ctx: BooleanRelationalExpressionContext) => {
+    if (ctx.simpleExpression()) return this.visit(ctx.simpleExpression())
+    const left = await this.visit(ctx.booleanRelationalExpression(0))
+    const right = await this.visit(ctx.booleanRelationalExpression(1))
     let result
     if (ctx.relationaloperator().EQUAL()) {
       result = eq(left.value, right.value)
@@ -300,7 +294,31 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       identifier: `${left.identifier} ${ctx.relationaloperator().getText()} ${right.identifier}`,
       type: 'boolean',
       value: result
-    } as const
+    } as const;
+  }
+
+  visitBooleanMultiplicativeExpression = async (ctx: BooleanMultiplicativeExpressionContext) => {
+    if (ctx.booleanRelationalExpression()) return this.visit(ctx.booleanRelationalExpression())
+    const left = await this.visit(ctx.booleanMultiplicativeExpression(0))
+    const right = await this.visit(ctx.booleanMultiplicativeExpression(1))
+    const result = and(left.value, right.value)
+    return {
+      identifier: `${left.identifier} AND ${right.identifier}`,
+      type: 'boolean',
+      value: result
+    } as const;
+  }
+
+  visitExpression = async (ctx: ExpressionContext) => {
+    if (ctx.booleanMultiplicativeExpression()) return this.visit(ctx.booleanMultiplicativeExpression())
+    const left = await this.visit(ctx.expression(0))
+    const right = await this.visit(ctx.expression(1))
+    const result = or(left.value, right.value)
+    return {
+      identifier: `${left.identifier} OR ${right.identifier}`,
+      type: 'boolean',
+      value: result
+    } as const;
   }
 
   visitElifStatement = async (ctx: ElifStatementContext) => {
