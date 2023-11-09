@@ -106,4 +106,16 @@ describe('test interpreter array operations', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '2')
     })
   })
+
+  describe('length', () => {
+    test('test length', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a Como Entero;
+      Dimension a[3];
+      Escribir Longitud(a);
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '3')
+    })
+  })
 })
