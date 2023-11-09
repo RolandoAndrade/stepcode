@@ -468,7 +468,7 @@ ifStatement
    ;
 
 elifStatement
-   : ELIF expression THEN compoundStatement (elifStatement | elseStatement?)
+   : ELIF expression THEN compoundStatement (elifStatement | elseStatement? | ENDIF)
    ;
 
 elseStatement
