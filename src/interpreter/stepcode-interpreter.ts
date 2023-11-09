@@ -134,25 +134,63 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitReadStatement = async (ctx: ReadStatementContext) => {
-    const variables = await Promise.all(ctx.variable_list().map(async c => c.getText()))
-    let readAssignations = []
-    for (const variable of variables) {
-      const value = await new Promise<string>(resolve => {
+    for (const variable of ctx.variable_list()) {
+      const identifier = variable.identifier().getText()
+      const definition = this.programState.get(identifier)
+      if (!definition) {
+        throw new StepCodeError({
+          startLine: ctx.start.line,
+          startColumn: ctx.start.column,
+          endLine: ctx.stop?.line || ctx.start.line,
+          endColumn: ctx.stop?.column || ctx.start.column,
+          message: `Variable ${variable} not defined`
+        })
+      }
+      const stringValue = await new Promise<string>(resolve => {
         this.eventBus.emit('input-request', (value: string) => {
           resolve(value)
         })
       })
-      const definition = this.programState.get(variable)
-      if (!definition) throw new Error(`Variable ${variable} not defined`)
-      this.programState.set(variable, {
-        type: definition.type,
-        value: parseValue(definition.type, value)
-      })
-      readAssignations.push(`${variable} = ${value}`)
+
+      let value = definition.value
+      let lastValue = value
+      let entered = false
+      let type = definition.type
+      let index = 0
+      for (let i = 0; i < variable.accessor_list().length; i++) {
+        for await (const newIndex of this.getIndexes(variable.accessor(i))){
+          if (!isStructuredType(type)) {
+            throw new StepCodeError({
+              startLine: ctx.start.line,
+              startColumn: ctx.start.column,
+              endLine: ctx.stop?.line || ctx.start.line,
+              endColumn: ctx.stop?.column || ctx.start.column,
+              message: `Variable ${variable} is not an array`
+            })
+          }
+          index = newIndex.value
+          if (index > 0) {
+            index = index - 1
+          }
+          lastValue = value
+          value = value.at(index)
+          type = type.slice(0, -2)
+          entered = true
+        }
+      }
+      const valueToAssign = parseValue(type, stringValue)
+      if (entered) {
+        lastValue[index] = valueToAssign
+      } else {
+        this.programState.set(identifier, {
+          type: type,
+          value: valueToAssign
+        })
+      }
     }
 
     return {
-      identifier: readAssignations.join(','),
+      identifier: `read`,
     }
   }
 

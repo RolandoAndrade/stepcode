@@ -118,4 +118,26 @@ describe('test interpreter array operations', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '3')
     })
   })
+
+  describe('set elements with read', () => {
+    const code = `Proceso prueba
+    Definir a Como Entero;
+    Dimension a[3];
+    Leer a[1];
+    Leer a[2];
+    Leer a[3];
+    Escribir a[1], a[2], a[3];
+    FinProceso`
+
+    test('test set elements with read', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const input = [1, 2, 3]
+      let i = 0
+      eventBus.on('input-request', (resolve) => {
+        resolve(input[i++].toString())
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '123')
+    })
+  })
 })
