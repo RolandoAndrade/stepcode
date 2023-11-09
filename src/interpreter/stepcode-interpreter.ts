@@ -68,18 +68,28 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitVariable = async (ctx: VariableContext) => {
-    const variable = this.programState.get(ctx.identifier().getText())
-    let value = variable?.value
-    let type = variable?.type
+    const identifier = ctx.identifier().getText()
+    const definition = this.programState.get(identifier)
+    if (!definition) {
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Variable ${identifier} not defined`
+      })
+    }
+    let value = definition.value
+    let type = definition.type
     for (const accessor of ctx.accessor_list()) {
-      if (variable && isStructuredType(variable.type)) {
+      if (isStructuredType(type)) {
         const a = await this.visit(accessor)
         let index = a.value
         if (index > 0) {
           index = index - 1
         }
-        value = variable.value.at(index)
-        // TODO: fix type
+        value = value.at(index)
+        type = type.slice(0, -2)
       }
     }
     return {
