@@ -1,5 +1,6 @@
 import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
+  AccessorContext,
   AdditiveoperatorContext,
   AssignmentStatementContext, BaseTermContext,
   Bool_Context, BooleanMultiplicativeExpressionContext, BooleanRelationalExpressionContext,
@@ -58,12 +59,9 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     await this.visitChildren(ctx)
   }
 
-  visitIndex = async (ctx: IndexContext) => {
-    const result = await this.visit(ctx.expression()) as ExpressionReturnType
-    return {
-      identifier: result.identifier,
-      type: result.type,
-      value: result.value
+  async *getIndexes(ctx: AccessorContext) {
+    for (const expression of ctx.index().expression_list()) {
+      yield this.visit(expression)
     }
   }
 
@@ -83,13 +81,14 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     let type = definition.type
     for (const accessor of ctx.accessor_list()) {
       if (isStructuredType(type)) {
-        const a = await this.visit(accessor)
-        let index = a.value
-        if (index > 0) {
-          index = index - 1
+        for await (const a of this.getIndexes(accessor)) {
+          let index = a.value
+          if (index > 0) {
+            index = index - 1
+          }
+          value = value.at(index)
+          type = type.slice(0, -2)
         }
-        value = value.at(index)
-        type = type.slice(0, -2)
       }
     }
     return {
@@ -278,31 +277,34 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       })
     }
     let value = definition.value
+    let lastValue = value
+    let entered = false
     let type = definition.type
     let index = 0
     for (let i = 0; i < ctx.variable().accessor_list().length; i++) {
-      if (!isStructuredType(type)) {
-        throw new StepCodeError({
-          startLine: ctx.start.line,
-          startColumn: ctx.start.column,
-          endLine: ctx.stop?.line || ctx.start.line,
-          endColumn: ctx.stop?.column || ctx.start.column,
-          message: `Variable ${variable} is not an array`
-        })
-      }
-      const newIndex = await this.visit(ctx.variable().accessor(i))
-      index = newIndex.value
-      if (index > 0) {
-        index = index - 1
-      }
-      if (i != ctx.variable().accessor_list().length - 1) {
+      for await (const newIndex of this.getIndexes(ctx.variable().accessor(i))){
+        if (!isStructuredType(type)) {
+          throw new StepCodeError({
+            startLine: ctx.start.line,
+            startColumn: ctx.start.column,
+            endLine: ctx.stop?.line || ctx.start.line,
+            endColumn: ctx.stop?.column || ctx.start.column,
+            message: `Variable ${variable} is not an array`
+          })
+        }
+        index = newIndex.value
+        if (index > 0) {
+          index = index - 1
+        }
+        lastValue = value
         value = value.at(index)
+        type = type.slice(0, -2)
+        entered = true
       }
-      type = type.slice(0, -2)
     }
     const expression = await this.visit(ctx.expression()) as ExpressionReturnType
-    if (value instanceof Array) {
-      value[index] = expression.value
+    if (entered) {
+      lastValue[index] = expression.value
     } else {
       this.programState.set(variable, {
         type: expression.type,

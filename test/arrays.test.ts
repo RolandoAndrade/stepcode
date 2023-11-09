@@ -66,5 +66,44 @@ describe('test interpreter array operations', () => {
       FinProceso`, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '3')
     })
+    test('test matrix indexing', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a, b Como Entero;
+      Dimension a[3,3];
+      a[1][1] <- 1;
+      a[2][2] <- 2;
+      a[3][3] <- 3;
+      b <- a[1][1];
+      Escribir b;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
+    })
+    test('test matrix comma indexing', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a, b Como Entero;
+      Dimension a[3,3];
+      a[1][1] <- 1;
+      a[2][2] <- 2;
+      a[3][3] <- 3;
+      b <- a[1,1];
+      Escribir b;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
+    })
+    test('test matrix comma indexing 2', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Proceso prueba
+      Definir a, b Como Entero;
+      Dimension a[3,3];
+      a[1,1] <- 1;
+      a[2,2] <- 2;
+      a[3,3] <- 3;
+      b <- a[2,2];
+      Escribir b;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '2')
+    })
   })
 })

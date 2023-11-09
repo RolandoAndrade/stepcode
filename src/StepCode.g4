@@ -337,7 +337,7 @@ accessor
     ;
 
 index
-    : LBRACK expression RBRACK
+    : LBRACK expression (COMMA expression)* RBRACK
     ;
 
 expression
