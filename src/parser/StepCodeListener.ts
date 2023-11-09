@@ -33,6 +33,8 @@ import { StructuredTypeContext } from "./StepCodeParser";
 import { UnpackedStructuredTypeContext } from "./StepCodeParser";
 import { StringtypeContext } from "./StepCodeParser";
 import { ArrayTypeContext } from "./StepCodeParser";
+import { DimensionStatementContext } from "./StepCodeParser";
+import { DimensionTypeContext } from "./StepCodeParser";
 import { TypeListContext } from "./StepCodeParser";
 import { IndexTypeContext } from "./StepCodeParser";
 import { ComponentTypeContext } from "./StepCodeParser";
@@ -421,6 +423,26 @@ export default class StepCodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitArrayType?: (ctx: ArrayTypeContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.dimensionStatement`.
+	 * @param ctx the parse tree
+	 */
+	enterDimensionStatement?: (ctx: DimensionStatementContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.dimensionStatement`.
+	 * @param ctx the parse tree
+	 */
+	exitDimensionStatement?: (ctx: DimensionStatementContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.dimensionType`.
+	 * @param ctx the parse tree
+	 */
+	enterDimensionType?: (ctx: DimensionTypeContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.dimensionType`.
+	 * @param ctx the parse tree
+	 */
+	exitDimensionType?: (ctx: DimensionTypeContext) => void;
 	/**
 	 * Enter a parse tree produced by `StepCodeParser.typeList`.
 	 * @param ctx the parse tree

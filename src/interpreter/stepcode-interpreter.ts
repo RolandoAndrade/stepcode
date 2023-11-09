@@ -3,7 +3,7 @@ import {
   AdditiveoperatorContext,
   AssignmentStatementContext, BaseTermContext,
   Bool_Context, BooleanMultiplicativeExpressionContext, BooleanRelationalExpressionContext,
-  CaseStatementContext,
+  CaseStatementContext, DimensionStatementContext, DimensionTypeContext,
   ElifStatementContext,
   ExpressionContext,
   FactorContext, ForStatementContext,
@@ -24,11 +24,12 @@ import {
 } from '../parser/StepCodeParser.ts';
 import { EventBus } from './event-bus.ts';
 import { StepCodeRuleNode } from './stepcode-rule-node.ts';
-import { ExpressionReturnType, ReturnTypes, VariableReturnType } from './visitor-return-types';
-import { getInterpreterType, isStructuredType, parseValue } from './utils.ts';
+import { DimensionReturnType, ExpressionReturnType, ReturnTypes, VariableReturnType } from './visitor-return-types';
+import { createNDArray, getInterpreterType, isStructuredType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
 import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, or, power, sub, sum } from './operations.ts';
 import { getFunctionFromIdentifier } from './internal-functions.ts';
+import { StepCodeError } from './errors';
 
 export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   protected programState: Map<string, {
@@ -179,7 +180,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
         identifier: `-${factor.identifier}`,
         type: factor.type,
         value: -factor.value
-      }
+      } as ReturnTypes
     }
     return factor
   }
@@ -202,7 +203,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       identifier: `${left.identifier} ^ ${right.identifier}`,
       type: left.type,
       value: value
-    }
+    } as ReturnTypes
   }
 
   visitTerm = async (ctx: TermContext) => {
@@ -224,7 +225,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       identifier: `${left.identifier} ${operator} ${right.identifier}`,
       type: left.type,
       value: value
-    }
+    } as ReturnTypes
   }
 
   visitBool_ = async (ctx: Bool_Context) => {
@@ -251,7 +252,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       identifier: `${left.identifier} ${ctx.additiveoperator().getText()} ${right.identifier}`,
       type: left.type,
       value: result
-    }
+    } as ReturnTypes
   }
 
   visitAssignmentStatement = async (ctx: AssignmentStatementContext) => {
@@ -500,5 +501,37 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitFunctionDesignator = async (ctx: ProcedureStatementContext) => {
     return this.visitProcedureStatement(ctx)
+  }
+
+  visitDimensionType = async (ctx: DimensionTypeContext) => {
+    const list =await Promise.all(ctx.unsignedNumber_list().map(async c => this.visit(c))) as VariableReturnType[]
+    return {
+      identifier: 'dimension',
+      type: 'dimension',
+      value: list.map(e => e.value)
+    } as ReturnTypes
+  }
+
+  visitDimensionStatement = async (ctx: DimensionStatementContext) => {
+    const identifier = ctx.identifier().getText()
+    const definition = this.programState.get(identifier)
+    if (!definition) {
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Variable ${identifier} not defined`
+      })
+    }
+    const dimension = await this.visit(ctx.dimensionType()) as DimensionReturnType
+    const array = createNDArray(dimension.value, definition.type)
+    this.programState.set(identifier, {
+      type: array.type,
+      value: array.array
+    })
+    return {
+      identifier: `${identifier}(${dimension.identifier})`,
+    }
   }
 }

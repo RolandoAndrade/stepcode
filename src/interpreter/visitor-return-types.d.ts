@@ -26,8 +26,14 @@ export type CharacterVariable = IdentifierReturnType & {
   value: string
 }
 
+export type DimensionReturnType = {
+  identifier: string,
+  type: 'dimension',
+  value: number[]
+}
+
 export type VariableReturnType = NumericVariable | StringVariable | BooleanVariable | CharacterVariable
 
 export type ExpressionReturnType = VariableReturnType
 
-export type ReturnTypes = VariableReturnType | ExpressionReturnType | IdentifierReturnType
+export type ReturnTypes = VariableReturnType | ExpressionReturnType | IdentifierReturnType | DimensionReturnType

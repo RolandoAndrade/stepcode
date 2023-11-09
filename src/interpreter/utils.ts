@@ -41,6 +41,29 @@ export function parseValue(type: ValidDataType, value: string): any {
 }
 
 export function isStructuredType(type: ValidDataType): boolean {
-  return type === 'string'
+  return type === 'string' || type.includes('[]')
 }
 
+export function createNDArray(shape: number[], type: ValidDataType): {
+  array: any[],
+  type: string
+} {
+  if (shape.length === 1) {
+    return {
+      array: Array(shape[0]),
+      type: `${type}[]`
+    }
+  } else {
+    const array = Array(shape[0])
+    let newType = type
+    for (let i = 0; i < shape[0]; i++) {
+      const child = createNDArray(shape.slice(1), type)
+      array[i] = child.array
+      newType = child.type
+    }
+    return {
+      array,
+      type: `${newType}[]`
+    }
+  }
+}

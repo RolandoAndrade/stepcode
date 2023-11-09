@@ -33,6 +33,8 @@ import { StructuredTypeContext } from "./StepCodeParser";
 import { UnpackedStructuredTypeContext } from "./StepCodeParser";
 import { StringtypeContext } from "./StepCodeParser";
 import { ArrayTypeContext } from "./StepCodeParser";
+import { DimensionStatementContext } from "./StepCodeParser";
+import { DimensionTypeContext } from "./StepCodeParser";
 import { TypeListContext } from "./StepCodeParser";
 import { IndexTypeContext } from "./StepCodeParser";
 import { ComponentTypeContext } from "./StepCodeParser";
@@ -304,6 +306,18 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitArrayType?: (ctx: ArrayTypeContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.dimensionStatement`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDimensionStatement?: (ctx: DimensionStatementContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.dimensionType`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDimensionType?: (ctx: DimensionTypeContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.typeList`.
 	 * @param ctx the parse tree

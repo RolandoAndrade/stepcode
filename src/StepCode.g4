@@ -51,7 +51,7 @@ identifier
    ;
 
 block
-   : (labelDeclarationPart | constantDefinitionPart | typeDefinitionPart | variableDeclarationPart |
+   : (labelDeclarationPart | constantDefinitionPart | typeDefinitionPart | variableDeclarationPart | dimensionStatement |
    procedureAndFunctionDeclarationPart | usesUnitsPart | IMPLEMENTATION | statements)*
    ;
 
@@ -176,6 +176,14 @@ stringtype
 arrayType
    : ARRAY LBRACK typeList RBRACK OF componentType
    | ARRAY LBRACK2 typeList RBRACK2 OF componentType
+   ;
+
+dimensionStatement
+   : DIMENSION identifier dimensionType SEMI
+   ;
+
+dimensionType
+   : LBRACK unsignedNumber (COMMA unsignedNumber)* RBRACK
    ;
 
 typeList
@@ -665,6 +673,10 @@ INTEGER
 
 LABEL
    : 'LABEL'
+   ;
+
+DIMENSION
+   : 'DIMENSION'
    ;
 
 
