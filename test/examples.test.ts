@@ -141,6 +141,104 @@ describe('test interpreter boolean operations', () => {
     })
   })
 
+  describe('marathon qualifiers', () => {
+    const code = `Proceso Maraton
+    Definir edad como Entero;
+    Definir sexo como Caracter;
+    Definir tiempo como Real;
+    Escribir "Ingrese la edad de la persona: ";
+    Leer edad;
+    Escribir "Ingrese el sexo de la persona (M/F): ";
+    Leer sexo;
+    sexo ← Mayusculas(sexo);
+    Escribir "Ingrese el tiempo de calificacion en minutos: ";
+    Leer tiempo;
+    Si sexo = 'M' Entonces
+        Si edad < 40 Y tiempo < 150.0 Entonces
+            Escribir "El corredor clasifica";
+        SiNo Si (edad ≥ 40 ) Y (tiempo < 175) Entonces
+            Escribir "El corredor clasifica";
+        Sino
+            Escribir "El corredor no clasifica";
+        FinSi
+    SiNo Si sexo = 'F' Entonces
+        Si tiempo < 180 Entonces
+            Escribir "El corredor clasifica";
+        SiNo
+            Escribir "El corredor no clasifica";
+        FinSi
+    SiNo
+        Escribir "El sexo ingresado no es valido";
+    FinSi
+    FinProceso`
+
+    test('test <40 year old male', async () => {
+      let i = 0;
+      const inputs = [39, 'm', 149.9]
+      eventBus.on('input-request', (resolve) => {
+        resolve(inputs[i++].toString())
+      })
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'El corredor clasifica')
+    })
+
+    test('test <40 year old male slow', async () => {
+      let i = 0;
+      const inputs = [39, 'm', 150]
+      eventBus.on('input-request', (resolve) => {
+        resolve(inputs[i++].toString())
+      })
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'El corredor no clasifica')
+    })
+
+    test('test >= 40 year old male', async () => {
+      let i = 0;
+      const inputs = [40, 'm', 174.9]
+      eventBus.on('input-request', (resolve) => {
+        resolve(inputs[i++].toString())
+      })
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'El corredor clasifica')
+    })
+
+    test('test >= 40 year old male slow', async () => {
+      let i = 0;
+      const inputs = [40, 'm', 175]
+      eventBus.on('input-request', (resolve) => {
+        resolve(inputs[i++].toString())
+      })
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'El corredor no clasifica')
+    })
+
+    test('test females', async () => {
+      let i = 0;
+      const inputs = [40, 'f', 179.9]
+      eventBus.on('input-request', (resolve) => {
+        resolve(inputs[i++].toString())
+      })
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'El corredor clasifica')
+    })
+
+    test('test females slow', async () => {
+      let i = 0;
+      const inputs = [40, 'f', 180.0]
+      eventBus.on('input-request', (resolve) => {
+        resolve(inputs[i++].toString())
+      })
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'El corredor no clasifica')
+    })
+  })
+
   describe('print characters of a string', () => {
     const code = `Proceso prueba
     Definir a Como Cadena;
