@@ -261,4 +261,35 @@ describe('test interpreter boolean operations', () => {
     })
   })
 
+  describe('bubble sort', () => {
+    const code = `Proceso prueba
+    Definir a, aux Como Entero;
+    Dimension a[5];
+    Para i ← 1 Hasta 5 Con Paso 1 Hacer
+        Leer a[i];
+    FinPara
+    Para i ← 1 Hasta 5 Con Paso 1 Hacer
+        Para j ← 1 Hasta 5 - i Con Paso 1 Hacer
+            Si a[j] > a[j + 1] Entonces
+                aux ← a[j];
+                a[j] ← a[j + 1];
+                a[j + 1] ← aux;
+            FinSi
+        FinPara
+    FinPara
+    Escribir a;
+    FinProceso`
+
+    test('test bubble sort', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const inputs = [42, 12, 1, 15, 16]
+      let i = 0
+      eventBus.on('input-request', (resolve) => {
+        resolve(inputs[i++].toString())
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1,12,15,16,42')
+    })
+  })
+
 })
