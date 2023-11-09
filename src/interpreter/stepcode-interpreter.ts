@@ -256,14 +256,51 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitAssignmentStatement = async (ctx: AssignmentStatementContext) => {
-    const variable = ctx.variable().getText();
+    const variable = ctx.variable().identifier().getText()
+    const definition = this.programState.get(variable)
+    if (!definition) {
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Variable ${variable} not defined`
+      })
+    }
+    let value = definition.value
+    let type = definition.type
+    let index = 0
+    for (let i = 0; i < ctx.variable().accessor_list().length; i++) {
+      if (!isStructuredType(type)) {
+        throw new StepCodeError({
+          startLine: ctx.start.line,
+          startColumn: ctx.start.column,
+          endLine: ctx.stop?.line || ctx.start.line,
+          endColumn: ctx.stop?.column || ctx.start.column,
+          message: `Variable ${variable} is not an array`
+        })
+      }
+      const newIndex = await this.visit(ctx.variable().accessor(i))
+      index = newIndex.value
+      if (index > 0) {
+        index = index - 1
+      }
+      if (i != ctx.variable().accessor_list().length - 1) {
+        value = value.at(index)
+      }
+      type = type.slice(0, -2)
+    }
     const expression = await this.visit(ctx.expression()) as ExpressionReturnType
-    this.programState.set(variable, {
-      type: expression.type,
-      value: expression.value
-    })
+    if (value instanceof Array) {
+      value[index] = expression.value
+    } else {
+      this.programState.set(variable, {
+        type: expression.type,
+        value: expression.value
+      })
+    }
     return {
-      identifier: `${variable} = ${expression.value}`,
+      identifier: `${ctx.variable().getText()} = ${expression.value}`,
     }
   }
 
