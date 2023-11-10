@@ -143,7 +143,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
           startColumn: ctx.start.column,
           endLine: ctx.stop?.line || ctx.start.line,
           endColumn: ctx.stop?.column || ctx.start.column,
-          message: `Variable ${variable} not defined`
+          message: `Variable ${identifier} not defined`
         })
       }
       const stringValue = await new Promise<string>(resolve => {
