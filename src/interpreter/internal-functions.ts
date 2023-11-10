@@ -1,21 +1,36 @@
 export function substring(s: string, start: number, end: number) {
-  return s.substring(start - 1, end)
+  return {
+    value: s.substring(start - 1, end),
+    type: 'string'
+  }
 }
 
-export function length(s: string) {
-  return s.length
+export function length(s: string | any[]) {
+  return {
+    value: s.length,
+    type: 'integer'
+  }
 }
 
 export function uppercase(s: string) {
-  return s.toUpperCase()
+  return {
+    value: s.toUpperCase(),
+    type: 'string'
+  }
 }
 
 export function lowercase(s: string) {
-  return s.toLowerCase()
+  return {
+    value: s.toLowerCase(),
+    type: 'string'
+  }
 }
 
 
-type Return = (...args: any[]) => any
+type Return = (...args: any[]) => {
+  value: any,
+  type: string
+}
 
 export function getFunctionFromIdentifier(identifier: string): Return | undefined {
   switch (identifier.toLowerCase()) {

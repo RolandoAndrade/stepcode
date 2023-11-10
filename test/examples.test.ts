@@ -292,4 +292,31 @@ describe('test interpreter boolean operations', () => {
     })
   })
 
+  describe('upper lower case', () => {
+    const code = `Proceso MayusculasMinusculas
+    Definir palabra Como Cadena;
+    Definir letra Como Caracter;
+    Escribir 'Introduce palabra';
+    Leer palabra;
+    Para i ← 1 Hasta Longitud(palabra) Con Paso 1 Hacer
+        Si i MOD 2 = 0 Entonces
+            letra ← Minusculas(palabra[i]);
+        Sino
+            letra ← Mayusculas(palabra[i]);
+        FinSi
+        palabra ← Subcadena(palabra, 1, i - 1) + letra + Subcadena(palabra, i + 1, Longitud(palabra));
+    FinPara
+    Escribir palabra;
+    FinProceso`
+
+    test('test upper lower case', async () => {
+      vi.spyOn(eventBus, 'emit')
+      eventBus.on('input-request', (resolve) => {
+        resolve('Rolando Andrade')
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'RoLaNdO AnDrAdE')
+    })
+  })
+
 })

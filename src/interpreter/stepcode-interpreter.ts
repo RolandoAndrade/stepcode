@@ -87,7 +87,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
             index = index - 1
           }
           value = value.at(index)
-          type = type.slice(0, -2)
+          if (type !== 'string') type = type.slice(0, -2)
         }
       }
     }
@@ -578,8 +578,9 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       const result = internalFunction(...args.map(e => e.value))
       return {
         identifier: `${identifier}(${args.map(e => e.identifier).join(',')})`,
-        value: result
-      }
+        value: result.value,
+        type: result.type
+      } as ReturnTypes
     }
     return {
       identifier: `${identifier}`,
