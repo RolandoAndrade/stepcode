@@ -67,3 +67,16 @@ export function createNDArray(shape: number[], type: ValidDataType): {
     }
   }
 }
+
+export function isCompatibleType(expected: ValidDataType, actual: ValidDataType): boolean {
+  if (expected === actual || expected === 'inherit') {
+    return true
+  }
+  if (expected === 'real' && actual === 'integer') {
+    return true
+  }
+  if (expected === 'string' && actual === 'character') {
+    return true
+  }
+  return false
+}

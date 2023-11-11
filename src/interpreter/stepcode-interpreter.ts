@@ -1,6 +1,6 @@
 import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
-  AccessorContext,
+  AccessorContext, ActualParameterContext,
   AdditiveoperatorContext,
   AssignmentStatementContext, BaseTermContext,
   Bool_Context, BooleanMultiplicativeExpressionContext, BooleanRelationalExpressionContext,
@@ -26,7 +26,7 @@ import {
 import { EventBus } from './event-bus.ts';
 import { StepCodeRuleNode } from './stepcode-rule-node.ts';
 import { DimensionReturnType, ExpressionReturnType, ReturnTypes, VariableReturnType } from './visitor-return-types';
-import { createNDArray, getInterpreterType, isStructuredType, parseValue } from './utils.ts';
+import { createNDArray, getInterpreterType, isCompatibleType, isStructuredType, parseValue } from './utils.ts';
 import { ValidDataType } from './interpreter-types';
 import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, or, power, sub, sum } from './operations.ts';
 import { getFunctionFromIdentifier } from './internal-functions.ts';
@@ -209,10 +209,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       if (entered) {
         lastValue[index] = valueToAssign
       } else {
-        this.variables.set(identifier, {
-          type: type,
-          value: valueToAssign
-        })
+        definition.value = valueToAssign
       }
     }
 
@@ -371,10 +368,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     if (entered) {
       lastValue[index] = expression.value
     } else {
-      this.variables.set(variable, {
-        type: expression.type,
-        value: expression.value
-      })
+      definition.value = expression.value
     }
     return {
       identifier: `${ctx.variable().getText()} = ${expression.value}`,
@@ -597,6 +591,51 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
   }
 
+  getArgs(ctx: SubprogramContext) {
+    let parameterList
+    if (ctx.procedureOrFunctionDeclaration().procedureDeclaration()) {
+      parameterList = ctx.procedureOrFunctionDeclaration().procedureDeclaration().formalParameterList()?.formalParameterSection()?.paramIdentifier_list() || []
+    } else {
+      parameterList = ctx.procedureOrFunctionDeclaration().functionDeclaration().formalParameterList()?.formalParameterSection()?.paramIdentifier_list() || []
+    }
+    return parameterList.map(c => ({
+      identifier: c.identifier().getText(),
+      type: `inherit`,
+      reference: !!c.BYREFERENCE()
+    }))
+  }
+
+  async getValueOfParameter(ctx: ActualParameterContext, byReference: boolean) {
+    if (byReference) {
+      try {
+        const variable = ctx.expression().booleanMultiplicativeExpression().booleanRelationalExpression().simpleExpression().term().baseTerm().signedFactor().factor().variable()
+        const identifier = variable.identifier().getText()
+        const definition = this.variables.get(identifier)
+        if (!definition) {
+          throw new StepCodeError({
+            startLine: ctx.start.line,
+            startColumn: ctx.start.column,
+            endLine: ctx.stop?.line || ctx.start.line,
+            endColumn: ctx.stop?.column || ctx.start.column,
+            message: `Variable ${identifier} not defined`
+          })
+        }
+        return definition
+      } catch (e) {
+        if (e instanceof StepCodeError) throw e
+        throw new StepCodeError({
+          startLine: ctx.start.line,
+          startColumn: ctx.start.column,
+          endLine: ctx.stop?.line || ctx.start.line,
+          endColumn: ctx.stop?.column || ctx.start.column,
+          message: `Invalid parameter. Only variables can be passed by reference`
+        })
+      }
+    }
+    const expression = await this.visit(ctx.expression()) as ExpressionReturnType
+    return expression
+  }
+
   visitProcedureStatement = async (ctx: ProcedureStatementContext) => {
     const identifier = ctx.identifier().getText()
     const internalFunction = getFunctionFromIdentifier(identifier)
@@ -619,10 +658,54 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
         message: `Subprogram ${identifier} not defined`
       })
     }
+    const variables: typeof this.variables= new Map()
+    const parameterList = this.getArgs(subprogram)
+
+    const params = ctx.parameterList()?.actualParameter_list() || [];
+    if (parameterList.length !== params.length) {
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Invalid number of parameters for ${identifier}. Expected ${parameterList.length}, got ${params.length}`
+      })
+    }
+    for (const [i, c] of params.entries()) {
+      const byReference = parameterList[i].reference
+      const param = await this.getValueOfParameter(c, byReference)
+      const type = parameterList[i].type === 'inherit' ? param.type : parameterList[i].type
+      if (!isCompatibleType(type, param.type)) {
+        throw new StepCodeError({
+          startLine: ctx.start.line,
+          startColumn: ctx.start.column,
+          endLine: ctx.stop?.line || ctx.start.line,
+          endColumn: ctx.stop?.column || ctx.start.column,
+          message: `Invalid type for parameter ${parameterList[i].identifier}. Expected ${parameterList[i].type}, got ${param.type}`
+        })
+      }
+      if (byReference) {
+        variables.set(parameterList[i].identifier, param)
+      } else {
+        variables.set(parameterList[i].identifier, {
+          type: type,
+          value: param.value
+        })
+      }
+    }
     this.callStack.push({
       identifier: identifier,
-      variables: new Map()
+      variables: variables
     })
+    if (this.callStack.length > 100) {
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Stack overflow`
+      })
+    }
     const result = await this.visit(subprogram)
     this.callStack.pop()
     return result
@@ -661,6 +744,13 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     })
     return {
       identifier: `${identifier}(${dimension.identifier})`,
+    }
+  }
+
+  visitSubprogram = async (ctx: SubprogramContext) => {
+    await this.visitChildren(ctx)
+    return {
+      identifier: `${ctx.getText()}`,
     }
   }
 }
