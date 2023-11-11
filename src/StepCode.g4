@@ -162,7 +162,7 @@ subrangeType
 
 typeIdentifier
    : identifier
-   | (CHAR | BOOLEAN | INTEGER | REAL | STRING)
+   | (CHAR | BOOLEAN | INTEGER | REAL | STRING | VOID)
    ;
 
 structuredType
@@ -268,6 +268,7 @@ procedureAndFunctionDeclarationPart
 procedureOrFunctionDeclaration
    : procedureDeclaration
    | functionDeclaration
+   | assignationFunctionDeclaration
    ;
 
 procedureDeclaration
@@ -279,7 +280,7 @@ formalParameterList
    ;
 
 formalParameterSection
-   : paramIdentifier (COMMA paramIdentifier)*
+   : paramIdentifier? (COMMA paramIdentifier)*
    ;
 
 identifierList
@@ -295,7 +296,11 @@ constList
    ;
 
 functionDeclaration
-   : FUNCTION identifier (formalParameterList)? COLON resultType SEMI block
+   : FUNCTION identifier (formalParameterList)? COLON resultType block ENDFUNCTION
+   ;
+
+assignationFunctionDeclaration
+   : FUNCTION identifier ASSIGN identifier (formalParameterList)? block ENDFUNCTION
    ;
 
 resultType
@@ -421,7 +426,7 @@ unsignedConstant
    ;
 
 functionDesignator
-   : identifier LPAREN parameterList RPAREN
+   : identifier LPAREN parameterList? RPAREN
    ;
 
 parameterList
@@ -659,8 +664,12 @@ BYREFERENCE
     : 'POR REFERENCIA' | 'BY REFERENCE'
     ;
 
+ENDFUNCTION
+    : 'ENDFUNCTION' | 'FINFUNCION'
+    ;
+
 FUNCTION
-   : 'FUNCTION'
+   : 'FUNCTION' | 'FUNCION'
    ;
 
 
@@ -681,6 +690,9 @@ IN
    : 'IN'
    ;
 
+VOID
+   : 'VOID' | 'VACIO'
+   ;
 
 INTEGER
    : 'ENTERO' | 'INTEGER'
@@ -925,7 +937,7 @@ RBRACK2
 
 
 POINTER
-   : '^'
+   : '^^'
    ;
 
 

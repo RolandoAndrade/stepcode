@@ -114,4 +114,65 @@ describe('test interpreter subprograms', () => {
       expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'adios')
     })
   })
+
+  describe('functions', () => {
+    test('test basic function', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Funcion prueba(): Entero
+        Escribir 'hola';
+        Retornar 0;
+      FinFuncion
+      Proceso pruebaProceso
+        prueba();
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'hola')
+    })
+    test('test return value', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Funcion max(a, b): Entero
+        Si a > b Entonces
+          Retornar a;
+        Sino
+          Retornar b;
+        FinSi
+      FinFuncion
+      Proceso prueba
+        Escribir max(10, 20);
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '20')
+    })
+  })
+
+  describe('assignation functions', () => {
+    test('test basic assignation function', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Funcion valor <- prueba()
+        Definir valor Como Entero;
+        Escribir 'hola';
+        valor <- 0;
+      FinFuncion
+      Proceso pruebaProceso
+        Definir a Como Entero;
+        a <- prueba();
+        Escribir a;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'hola')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '0')
+    })
+    test('test assignation function with parameters', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`Funcion valor <- prueba(a, b)
+        Definir valor Como Entero;
+        Escribir 'hola';
+        valor <- a + b;
+      FinFuncion
+      Proceso pruebaProceso
+        Definir a Como Entero;
+        a <- prueba(10, 20);
+        Escribir a;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'hola')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '30')
+    })
+  })
 })

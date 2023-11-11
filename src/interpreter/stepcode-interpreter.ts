@@ -1,7 +1,7 @@
 import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AccessorContext, ActualParameterContext,
-  AdditiveoperatorContext,
+  AdditiveoperatorContext, AssignationFunctionDeclarationContext,
   AssignmentStatementContext, BaseTermContext,
   Bool_Context, BooleanMultiplicativeExpressionContext, BooleanRelationalExpressionContext,
   CaseStatementContext, DimensionStatementContext, DimensionTypeContext,
@@ -78,8 +78,10 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       let identifier: string
       if (c.procedureOrFunctionDeclaration().procedureDeclaration()) {
         identifier = c.procedureOrFunctionDeclaration().procedureDeclaration().identifier().getText()
-      } else {
+      } else if (c.procedureOrFunctionDeclaration().functionDeclaration()){
         identifier = c.procedureOrFunctionDeclaration().functionDeclaration().identifier().getText()
+      } else {
+        identifier = c.procedureOrFunctionDeclaration().assignationFunctionDeclaration().identifier(1).getText()
       }
       this.availableSubprograms.set(identifier, c)
     })
@@ -595,8 +597,10 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     let parameterList
     if (ctx.procedureOrFunctionDeclaration().procedureDeclaration()) {
       parameterList = ctx.procedureOrFunctionDeclaration().procedureDeclaration().formalParameterList()?.formalParameterSection()?.paramIdentifier_list() || []
-    } else {
+    } else if(ctx.procedureOrFunctionDeclaration().functionDeclaration()) {
       parameterList = ctx.procedureOrFunctionDeclaration().functionDeclaration().formalParameterList()?.formalParameterSection()?.paramIdentifier_list() || []
+    } else {
+      parameterList = ctx.procedureOrFunctionDeclaration().assignationFunctionDeclaration().formalParameterList()?.formalParameterSection()?.paramIdentifier_list() || []
     }
     return parameterList.map(c => ({
       identifier: c.identifier().getText(),
@@ -708,12 +712,12 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
     const result = await this.visit(subprogram)
     this.callStack.pop()
-    if (subprogram.procedureOrFunctionDeclaration().functionDeclaration()) {
-      return result
+    if (subprogram.procedureOrFunctionDeclaration().procedureDeclaration()) {
+      return {
+        identifier: `call ${identifier}`,
+      }
     }
-    return {
-      identifier: `call ${identifier}`,
-    }
+    return result
   }
 
   visitFunctionDesignator = async (ctx: ProcedureStatementContext) => {
@@ -753,10 +757,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitSubprogram = async (ctx: SubprogramContext) => {
-    await this.visitChildren(ctx)
-    return {
-      identifier: `${ctx.getText()}`,
-    }
+    return this.visitChildren(ctx)
   }
 
   visitReturnStatement = async (ctx: ReturnStatementContext) => {
@@ -770,6 +771,26 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
     return {
       identifier: `return`,
+    }
+  }
+
+  visitAssignationFunctionDeclaration = async (ctx: AssignationFunctionDeclarationContext) => {
+    const returnVariable = ctx.identifier(0).getText()
+    await this.visitChildren(ctx)
+    const returnVariableDefinition = this.variables.get(returnVariable)
+    if (!returnVariableDefinition) {
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Variable ${returnVariable} not defined`
+      })
+    }
+    return {
+      identifier: returnVariable,
+      value: returnVariableDefinition.value,
+      type: returnVariableDefinition.type
     }
   }
 }

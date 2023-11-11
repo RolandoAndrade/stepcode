@@ -62,6 +62,7 @@ import { IdentifierListContext } from "./StepCodeParser";
 import { ParamIdentifierContext } from "./StepCodeParser";
 import { ConstListContext } from "./StepCodeParser";
 import { FunctionDeclarationContext } from "./StepCodeParser";
+import { AssignationFunctionDeclarationContext } from "./StepCodeParser";
 import { ResultTypeContext } from "./StepCodeParser";
 import { StatementContext } from "./StepCodeParser";
 import { BreakStatementContext } from "./StepCodeParser";
@@ -483,6 +484,12 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitFunctionDeclaration?: (ctx: FunctionDeclarationContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.assignationFunctionDeclaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitAssignationFunctionDeclaration?: (ctx: AssignationFunctionDeclarationContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.resultType`.
 	 * @param ctx the parse tree
