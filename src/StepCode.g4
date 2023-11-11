@@ -288,7 +288,7 @@ identifierList
    ;
 
 paramIdentifier
-    : identifier (COLON typeIdentifier)? (BYVALUE | BYREFERENCE)?
+    : identifier ((COLON | AS) typeIdentifier)? (BYVALUE | BYREFERENCE)?
     ;
 
 constList
