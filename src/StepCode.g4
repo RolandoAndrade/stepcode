@@ -38,7 +38,15 @@ grammar StepCode;
 options { caseInsensitive = true; }
 
 program
+   : (main | subprogram)*
+   ;
+
+main
    : programHeading (INTERFACE)? block ENDPROGRAM EOF
+   ;
+
+subprogram
+   : procedureOrFunctionDeclaration block
    ;
 
 programHeading
@@ -263,27 +271,24 @@ procedureOrFunctionDeclaration
    ;
 
 procedureDeclaration
-   : PROCEDURE identifier (formalParameterList)? SEMI block
+   : PROCEDURE identifier (formalParameterList)? block ENDPROCEDURE
    ;
 
 formalParameterList
-   : LPAREN formalParameterSection (SEMI formalParameterSection)* RPAREN
+   : LPAREN formalParameterSection RPAREN
    ;
 
 formalParameterSection
-   : parameterGroup
-   | DEFINE parameterGroup
-   | FUNCTION parameterGroup
-   | PROCEDURE parameterGroup
-   ;
-
-parameterGroup
-   : identifierList COLON typeIdentifier
+   : identifierList
    ;
 
 identifierList
-   : identifier (COMMA identifier)*
+   : paramIdentifier (COMMA paramIdentifier)*
    ;
+
+paramIdentifier
+    : identifier (COLON typeIdentifier)? (BYVALUE | BYREFERENCE)?
+    ;
 
 constList
    : constant (COMMA constant)*
@@ -642,6 +647,13 @@ FOR
    : 'FOR' | 'PARA'
    ;
 
+BYVALUE
+    : 'POR VALOR' | 'BY VALUE' | 'POR COPIA'
+    ;
+
+BYREFERENCE
+    : 'POR REFERENCIA' | 'BY REFERENCE'
+    ;
 
 FUNCTION
    : 'FUNCTION'
@@ -713,9 +725,12 @@ PACKED
    : 'PACKED'
    ;
 
+ENDPROCEDURE
+    : 'ENDPROCEDURE' | 'FINSUBPROCESO' | 'FINSUBALGORITMO'
+    ;
 
 PROCEDURE
-   : 'PROCEDURE'
+   : 'PROCEDURE' | 'SUBPROCESO' | 'SUBALGORITMO'
    ;
 
 
