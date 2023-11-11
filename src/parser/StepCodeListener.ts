@@ -4,6 +4,8 @@ import {ParseTreeListener} from "antlr4";
 
 
 import { ProgramContext } from "./StepCodeParser";
+import { MainContext } from "./StepCodeParser";
+import { SubprogramContext } from "./StepCodeParser";
 import { ProgramHeadingContext } from "./StepCodeParser";
 import { IdentifierContext } from "./StepCodeParser";
 import { BlockContext } from "./StepCodeParser";
@@ -56,8 +58,8 @@ import { ProcedureOrFunctionDeclarationContext } from "./StepCodeParser";
 import { ProcedureDeclarationContext } from "./StepCodeParser";
 import { FormalParameterListContext } from "./StepCodeParser";
 import { FormalParameterSectionContext } from "./StepCodeParser";
-import { ParameterGroupContext } from "./StepCodeParser";
 import { IdentifierListContext } from "./StepCodeParser";
+import { ParamIdentifierContext } from "./StepCodeParser";
 import { ConstListContext } from "./StepCodeParser";
 import { FunctionDeclarationContext } from "./StepCodeParser";
 import { ResultTypeContext } from "./StepCodeParser";
@@ -133,6 +135,26 @@ export default class StepCodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitProgram?: (ctx: ProgramContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.main`.
+	 * @param ctx the parse tree
+	 */
+	enterMain?: (ctx: MainContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.main`.
+	 * @param ctx the parse tree
+	 */
+	exitMain?: (ctx: MainContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.subprogram`.
+	 * @param ctx the parse tree
+	 */
+	enterSubprogram?: (ctx: SubprogramContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.subprogram`.
+	 * @param ctx the parse tree
+	 */
+	exitSubprogram?: (ctx: SubprogramContext) => void;
 	/**
 	 * Enter a parse tree produced by `StepCodeParser.programHeading`.
 	 * @param ctx the parse tree
@@ -654,16 +676,6 @@ export default class StepCodeListener extends ParseTreeListener {
 	 */
 	exitFormalParameterSection?: (ctx: FormalParameterSectionContext) => void;
 	/**
-	 * Enter a parse tree produced by `StepCodeParser.parameterGroup`.
-	 * @param ctx the parse tree
-	 */
-	enterParameterGroup?: (ctx: ParameterGroupContext) => void;
-	/**
-	 * Exit a parse tree produced by `StepCodeParser.parameterGroup`.
-	 * @param ctx the parse tree
-	 */
-	exitParameterGroup?: (ctx: ParameterGroupContext) => void;
-	/**
 	 * Enter a parse tree produced by `StepCodeParser.identifierList`.
 	 * @param ctx the parse tree
 	 */
@@ -673,6 +685,16 @@ export default class StepCodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitIdentifierList?: (ctx: IdentifierListContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.paramIdentifier`.
+	 * @param ctx the parse tree
+	 */
+	enterParamIdentifier?: (ctx: ParamIdentifierContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.paramIdentifier`.
+	 * @param ctx the parse tree
+	 */
+	exitParamIdentifier?: (ctx: ParamIdentifierContext) => void;
 	/**
 	 * Enter a parse tree produced by `StepCodeParser.constList`.
 	 * @param ctx the parse tree

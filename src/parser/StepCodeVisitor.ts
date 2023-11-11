@@ -4,6 +4,8 @@ import {ParseTreeVisitor} from 'antlr4';
 
 
 import { ProgramContext } from "./StepCodeParser";
+import { MainContext } from "./StepCodeParser";
+import { SubprogramContext } from "./StepCodeParser";
 import { ProgramHeadingContext } from "./StepCodeParser";
 import { IdentifierContext } from "./StepCodeParser";
 import { BlockContext } from "./StepCodeParser";
@@ -56,8 +58,8 @@ import { ProcedureOrFunctionDeclarationContext } from "./StepCodeParser";
 import { ProcedureDeclarationContext } from "./StepCodeParser";
 import { FormalParameterListContext } from "./StepCodeParser";
 import { FormalParameterSectionContext } from "./StepCodeParser";
-import { ParameterGroupContext } from "./StepCodeParser";
 import { IdentifierListContext } from "./StepCodeParser";
+import { ParamIdentifierContext } from "./StepCodeParser";
 import { ConstListContext } from "./StepCodeParser";
 import { FunctionDeclarationContext } from "./StepCodeParser";
 import { ResultTypeContext } from "./StepCodeParser";
@@ -132,6 +134,18 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitProgram?: (ctx: ProgramContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.main`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitMain?: (ctx: MainContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.subprogram`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitSubprogram?: (ctx: SubprogramContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.programHeading`.
 	 * @param ctx the parse tree
@@ -445,17 +459,17 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitFormalParameterSection?: (ctx: FormalParameterSectionContext) => Result;
 	/**
-	 * Visit a parse tree produced by `StepCodeParser.parameterGroup`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitParameterGroup?: (ctx: ParameterGroupContext) => Result;
-	/**
 	 * Visit a parse tree produced by `StepCodeParser.identifierList`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitIdentifierList?: (ctx: IdentifierListContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.paramIdentifier`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitParamIdentifier?: (ctx: ParamIdentifierContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.constList`.
 	 * @param ctx the parse tree

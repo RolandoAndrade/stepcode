@@ -38,15 +38,15 @@ grammar StepCode;
 options { caseInsensitive = true; }
 
 program
-   : (main | subprogram)*
+   : subprogram* main subprogram* EOF
    ;
 
 main
-   : programHeading (INTERFACE)? block ENDPROGRAM EOF
+   : programHeading (INTERFACE)? block ENDPROGRAM
    ;
 
 subprogram
-   : procedureOrFunctionDeclaration block
+   : procedureOrFunctionDeclaration
    ;
 
 programHeading
@@ -279,11 +279,11 @@ formalParameterList
    ;
 
 formalParameterSection
-   : identifierList
+   : paramIdentifier (COMMA paramIdentifier)*
    ;
 
 identifierList
-   : paramIdentifier (COMMA paramIdentifier)*
+   : identifier (COMMA identifier)*
    ;
 
 paramIdentifier

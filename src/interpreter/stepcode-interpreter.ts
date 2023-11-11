@@ -56,7 +56,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   async start(ctx: ProgramContext) {
-    await this.visitChildren(ctx)
+    await this.visitChildren(ctx.main())
   }
 
   async *getIndexes(ctx: AccessorContext) {
