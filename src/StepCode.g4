@@ -306,11 +306,15 @@ statement
    : label COLON unlabelledStatement
    | unlabelledStatement
    | writeStatement | readStatement
-   | breakStatement | continueStatement
+   | breakStatement | continueStatement | returnStatement
    ;
 
 breakStatement
     : BREAK SEMI
+    ;
+
+returnStatement
+    : RETURN expression? SEMI
     ;
 
 continueStatement
@@ -726,11 +730,11 @@ PACKED
    ;
 
 ENDPROCEDURE
-    : 'ENDPROCEDURE' | 'FINSUBPROCESO' | 'FINSUBALGORITMO'
+    : 'ENDPROCEDURE' | 'FINSUBPROCESO' | 'FINSUBALGORITMO' | 'FINPROCEDIMIENTO'
     ;
 
 PROCEDURE
-   : 'PROCEDURE' | 'SUBPROCESO' | 'SUBALGORITMO'
+   : 'PROCEDURE' | 'SUBPROCESO' | 'SUBALGORITMO' | 'PROCEDIMIENTO'
    ;
 
 
@@ -751,7 +755,7 @@ CONTINUE
    ;
 
 RETURN
-   : 'RETURN' | 'REGRESAR'
+   : 'RETURN' | 'REGRESAR' | 'RETORNAR'
    ;
 
 

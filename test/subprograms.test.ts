@@ -100,5 +100,18 @@ describe('test interpreter subprograms', () => {
       FinProceso`, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '10,30,40')
     })
+    test('procedure test early return', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`SubProceso prueba
+        Escribir 'hola';
+        Retornar;
+        Escribir 'adios';
+      FinSubProceso
+      Proceso pruebaProceso
+        prueba();
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'hola')
+      expect(eventBus.emit).not.toHaveBeenCalledWith('output-request', 'adios')
+    })
   })
 })

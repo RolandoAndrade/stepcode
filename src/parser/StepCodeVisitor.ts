@@ -65,6 +65,7 @@ import { FunctionDeclarationContext } from "./StepCodeParser";
 import { ResultTypeContext } from "./StepCodeParser";
 import { StatementContext } from "./StepCodeParser";
 import { BreakStatementContext } from "./StepCodeParser";
+import { ReturnStatementContext } from "./StepCodeParser";
 import { ContinueStatementContext } from "./StepCodeParser";
 import { UnlabelledStatementContext } from "./StepCodeParser";
 import { SimpleStatementContext } from "./StepCodeParser";
@@ -500,6 +501,12 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitBreakStatement?: (ctx: BreakStatementContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.returnStatement`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitReturnStatement?: (ctx: ReturnStatementContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.continueStatement`.
 	 * @param ctx the parse tree

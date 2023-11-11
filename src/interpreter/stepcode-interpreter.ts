@@ -11,7 +11,7 @@ import {
   IdentifierContext,
   IfStatementContext, IndexContext, ProcedureStatementContext,
   ProgramContext,
-  ReadStatementContext, RepeatStatementContext, RepetetiveStatementContext,
+  ReadStatementContext, RepeatStatementContext, RepetetiveStatementContext, ReturnStatementContext,
   SignedFactorContext,
   SimpleExpressionContext,
   StringContext, SubprogramContext,
@@ -708,7 +708,12 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
     const result = await this.visit(subprogram)
     this.callStack.pop()
-    return result
+    if (subprogram.procedureOrFunctionDeclaration().functionDeclaration()) {
+      return result
+    }
+    return {
+      identifier: `call ${identifier}`,
+    }
   }
 
   visitFunctionDesignator = async (ctx: ProcedureStatementContext) => {
@@ -751,6 +756,20 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     await this.visitChildren(ctx)
     return {
       identifier: `${ctx.getText()}`,
+    }
+  }
+
+  visitReturnStatement = async (ctx: ReturnStatementContext) => {
+    if(ctx.expression()){
+      const expression = await this.visit(ctx.expression()) as ExpressionReturnType
+      return {
+        identifier: `return`,
+        value: expression.value,
+        type: expression.type
+      }
+    }
+    return {
+      identifier: `return`,
     }
   }
 }
