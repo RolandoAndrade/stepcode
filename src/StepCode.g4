@@ -439,7 +439,7 @@ element
    ;
 
 procedureStatement
-   : identifier (LPAREN parameterList RPAREN)?
+   : identifier (LPAREN parameterList? RPAREN)
    ;
 
 actualParameter

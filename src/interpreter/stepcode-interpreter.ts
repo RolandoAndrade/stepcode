@@ -14,7 +14,7 @@ import {
   ReadStatementContext, RepeatStatementContext, RepetetiveStatementContext,
   SignedFactorContext,
   SimpleExpressionContext,
-  StringContext,
+  StringContext, SubprogramContext,
   TermContext,
   Type_Context,
   UnsignedIntegerContext,
@@ -38,6 +38,8 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     value: any
   }> = new Map();
 
+  protected availableSubprograms: Map<string, SubprogramContext> = new Map();
+
 
   constructor(protected eventBus: EventBus) {
     super();
@@ -56,6 +58,15 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   async start(ctx: ProgramContext) {
+    ctx.subprogram_list().forEach(c => {
+      let identifier: string
+      if (c.procedureOrFunctionDeclaration().procedureDeclaration()) {
+        identifier = c.procedureOrFunctionDeclaration().procedureDeclaration().identifier().getText()
+      } else {
+        identifier = c.procedureOrFunctionDeclaration().functionDeclaration().identifier().getText()
+      }
+      this.availableSubprograms.set(identifier, c)
+    })
     await this.visitChildren(ctx.main())
   }
 
@@ -582,9 +593,17 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
         type: result.type
       } as ReturnTypes
     }
-    return {
-      identifier: `${identifier}`,
+    const subprogram = this.availableSubprograms.get(identifier)
+    if (!subprogram) {
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Subprogram ${identifier} not defined`
+      })
     }
+    return await this.visit(subprogram)
   }
 
   visitFunctionDesignator = async (ctx: ProcedureStatementContext) => {
