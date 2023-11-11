@@ -40,6 +40,22 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   protected availableSubprograms: Map<string, SubprogramContext> = new Map();
 
+  protected callStack: {
+    identifier: string,
+    variables: Map<string, {
+      type: ValidDataType,
+      value: any
+    }>,
+  }[] = []
+
+
+  protected get variables() {
+    if (!this.callStack.length) {
+      return this.programState
+    }
+    return this.callStack[this.callStack.length - 1].variables
+  }
+
 
   constructor(protected eventBus: EventBus) {
     super();
@@ -78,7 +94,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitVariable = async (ctx: VariableContext) => {
     const identifier = ctx.identifier().getText()
-    const definition = this.programState.get(identifier)
+    const definition = this.variables.get(identifier)
     if (!definition) {
       throw new StepCodeError({
         startLine: ctx.start.line,
@@ -134,7 +150,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     const type = ctx.type_().getText()
     const correctType = getInterpreterType(type)
     for (const identifier of identifiers) {
-      this.programState.set(identifier, {
+      this.variables.set(identifier, {
         type: correctType,
         value: correctType === 'string' ? '' : 0
       })
@@ -147,7 +163,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   visitReadStatement = async (ctx: ReadStatementContext) => {
     for (const variable of ctx.variable_list()) {
       const identifier = variable.identifier().getText()
-      const definition = this.programState.get(identifier)
+      const definition = this.variables.get(identifier)
       if (!definition) {
         throw new StepCodeError({
           startLine: ctx.start.line,
@@ -193,7 +209,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       if (entered) {
         lastValue[index] = valueToAssign
       } else {
-        this.programState.set(identifier, {
+        this.variables.set(identifier, {
           type: type,
           value: valueToAssign
         })
@@ -315,7 +331,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitAssignmentStatement = async (ctx: AssignmentStatementContext) => {
     const variable = ctx.variable().identifier().getText()
-    const definition = this.programState.get(variable)
+    const definition = this.variables.get(variable)
     if (!definition) {
       throw new StepCodeError({
         startLine: ctx.start.line,
@@ -355,7 +371,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     if (entered) {
       lastValue[index] = expression.value
     } else {
-      this.programState.set(variable, {
+      this.variables.set(variable, {
         type: expression.type,
         value: expression.value
       })
@@ -515,7 +531,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       step = s.value
     }
     const insideLoop = async (i: number) => {
-      this.programState.set(identifier.identifier, {
+      this.variables.set(identifier.identifier, {
         type: identifier.type,
         value: i
       })
@@ -603,7 +619,13 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
         message: `Subprogram ${identifier} not defined`
       })
     }
-    return await this.visit(subprogram)
+    this.callStack.push({
+      identifier: identifier,
+      variables: new Map()
+    })
+    const result = await this.visit(subprogram)
+    this.callStack.pop()
+    return result
   }
 
   visitFunctionDesignator = async (ctx: ProcedureStatementContext) => {
@@ -621,7 +643,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitDimensionStatement = async (ctx: DimensionStatementContext) => {
     const identifier = ctx.identifier().getText()
-    const definition = this.programState.get(identifier)
+    const definition = this.variables.get(identifier)
     if (!definition) {
       throw new StepCodeError({
         startLine: ctx.start.line,
@@ -633,7 +655,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
     const dimension = await this.visit(ctx.dimensionType()) as DimensionReturnType
     const array = createNDArray(dimension.value, definition.type)
-    this.programState.set(identifier, {
+    this.variables.set(identifier, {
       type: array.type,
       value: array.array
     })

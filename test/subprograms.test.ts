@@ -22,5 +22,19 @@ describe('test interpreter subprograms', () => {
       FinProceso`, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'hola')
     })
+    test('procedure cannot override variable of the process', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`SubProceso prueba
+        Definir a Como Entero;
+        a <- 10;
+      FinSubProceso
+      Proceso pruebaProceso
+        Definir a Como Entero;
+        a <- 20;
+        prueba();
+        Escribir a;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '20')
+    })
   })
 })
