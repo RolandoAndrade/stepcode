@@ -1,2 +1,4 @@
+import StepCodeLexer from './parser/StepCodeLexer.ts'
+
 export * from './interpreter'
-export * from './parser/StepCodeLexer.ts'
+export { StepCodeLexer }
