@@ -1,5 +1,6 @@
-import StepCodeLexer from '../parser/StepCodeLexer.ts';
-import { CharStream, Token } from 'antlr4';
+import { StepCodeLexer } from '../parser/StepCodeLexer.ts';
+import { CharStream, Token } from 'antlr4ng';
+
 
 export function createLexer(code: string): StepCodeLexer {
   const chars = new CharStream(code, true)

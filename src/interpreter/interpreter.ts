@@ -1,6 +1,6 @@
 import { StepCodeInterpreter } from './stepcode-interpreter.ts';
-import StepCodeLexer from '../parser/StepCodeLexer.ts';
-import StepCodeParser from '../parser/StepCodeParser.ts';
+import { StepCodeLexer } from '../parser/StepCodeLexer.ts';
+import { StepCodeParser } from '../parser/StepCodeParser.ts';
 import { createLexer } from './lexer.ts';
 import { createParserFromLexer } from './parser.ts';
 import { EventBus } from './event-bus.ts';

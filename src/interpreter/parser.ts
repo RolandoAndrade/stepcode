@@ -1,7 +1,7 @@
-import StepCodeParser, { ProgramContext } from '../parser/StepCodeParser.ts';
+import { ProgramContext, StepCodeParser } from '../parser/StepCodeParser.ts';
 import { createLexer } from './lexer.ts';
-import { CommonTokenStream } from 'antlr4';
-import StepCodeLexer from '../parser/StepCodeLexer.ts';
+import { StepCodeLexer } from '../parser/StepCodeLexer.ts';
+import { CommonTokenStream } from 'antlr4ng';
 
 export function createParser(code: string): StepCodeParser {
   const lexer = createLexer(code)

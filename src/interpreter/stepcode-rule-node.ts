@@ -1,5 +1,6 @@
-import { ParseTree, RuleNode } from 'antlr4';
+import { ParseTree, ParserRuleContext } from 'antlr4ng';
 
-export class StepCodeRuleNode extends RuleNode {
+
+export class StepCodeRuleNode extends ParserRuleContext {
   children: ParseTree[] | null = []
 }

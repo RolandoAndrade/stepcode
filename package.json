@@ -3,7 +3,12 @@
   "description": "A parser for StepCode",
   "author": "Rolando Andrade",
   "keywords": [
-    "stepcode", "parser", "pseudocode", "spanish", "antlr4", "typescript"
+    "stepcode",
+    "parser",
+    "pseudocode",
+    "spanish",
+    "antlr4",
+    "typescript"
   ],
   "version": "0.7.3",
   "type": "module",
@@ -17,17 +22,19 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "generate": "antlr4 -Dlanguage=TypeScript src/StepCode.g4 -o src/parser -visitor",
+    "generate": "antlr4ng -Dlanguage=TypeScript -visitor -o src/parser src/StepCode.g4",
     "test": "vitest"
   },
   "devDependencies": {
     "@types/node": "^20.8.10",
+    "antlr4ng-cli": "^1.0.4",
     "typescript": "^5.0.2",
     "vite": "^4.4.5",
     "vite-plugin-dts": "^3.6.3",
     "vitest": "^0.34.6"
   },
   "dependencies": {
-    "antlr4": "4.13.0"
+    "antlr4-c3": "^3.3.4",
+    "antlr4ng": "^2.0.2"
   }
 }
