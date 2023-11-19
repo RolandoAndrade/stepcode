@@ -5,14 +5,9 @@
   "keywords": [
     "stepcode", "parser", "pseudocode", "spanish", "antlr4", "typescript"
   ],
-  "version": "0.7.3",
+  "version": "0.8.0",
   "type": "module",
-  "main": "./dist/stepcode.umd.cjs",
   "module": "./dist/stepcode.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",

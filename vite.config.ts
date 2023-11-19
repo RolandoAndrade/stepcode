@@ -9,6 +9,7 @@ export default defineConfig({
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'stepcode',
       fileName: 'stepcode',
+      formats: ['es']
     },
   },
   plugins: [dts()],
