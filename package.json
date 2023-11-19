@@ -5,10 +5,14 @@
   "keywords": [
     "stepcode", "parser", "pseudocode", "spanish", "antlr4", "typescript"
   ],
-  "version": "0.8.1",
+  "version": "0.8.2",
   "type": "module",
   "types": "./dist/index.d.ts",
-  "main": "./dist/stepcode.js",
+  "main": "./dist/index.js",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
