@@ -1,20 +1,19 @@
+import { ErrorListener, Recognizer, Token } from 'antlr4';
 import { StepCodeError } from './stepcode.error.ts';
-import { Recognizer, Token, BaseErrorListener } from 'antlr4ng';
-import { ATNSimulator } from 'antlr4ng/dist/atn/ATNSimulator';
 
 type Symbol = {
   _text?: string | null
 }
-export class CollectorErrorListener extends BaseErrorListener {
+export class CollectorErrorListener extends ErrorListener<Token> {
   private errors: StepCodeError[] = []
 
   constructor() {
     super()
   }
 
-  syntaxError(_recognizer: Recognizer<ATNSimulator>, offendingSymbol: Token | null, line: number, column: number, msg: string, _e: any) {
+  syntaxError(_recognizer: Recognizer<Token>, offendingSymbol: Token, line: number, column: number, msg: string, _e: any) {
     let endColumn = column + 1
-    if (offendingSymbol && offendingSymbol.text !== null) {
+    if (offendingSymbol.text !== null) {
       endColumn = column + offendingSymbol.text.length
     }
     this.errors.push(new StepCodeError({

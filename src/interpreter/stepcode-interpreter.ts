@@ -1,4 +1,4 @@
-import { StepCodeVisitor } from '../parser/StepCodeVisitor.ts';
+import StepCodeVisitor from '../parser/StepCodeVisitor.ts';
 import {
   AccessorContext, ActualParameterContext,
   AdditiveoperatorContext, AssignationFunctionDeclarationContext,
@@ -7,9 +7,9 @@ import {
   CaseStatementContext, DimensionStatementContext, DimensionTypeContext,
   ElifStatementContext,
   ExpressionContext,
-  FactorContext, ForStatementContext, FunctionDesignatorContext,
+  FactorContext, ForStatementContext,
   IdentifierContext,
-  IfStatementContext, ProcedureStatementContext,
+  IfStatementContext, IndexContext, ProcedureStatementContext,
   ProgramContext,
   ReadStatementContext, RepeatStatementContext, RepetetiveStatementContext, ReturnStatementContext,
   SignedFactorContext,
@@ -30,7 +30,6 @@ import { createNDArray, getInterpreterType, isCompatibleType, isStructuredType, 
 import { ValidDataType } from './interpreter-types';
 import { and, div, eq, gt, gte, integerDivision, lt, lte, mod, mul, neq, or, power, sub, sum } from './operations.ts';
 import { getFunctionFromIdentifier } from './internal-functions.ts';
-import { createStepCodeError } from './errors/error-creator.ts';
 import { StepCodeError } from './errors';
 
 export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
@@ -75,14 +74,14 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   async start(ctx: ProgramContext) {
-    ctx.subprogram().forEach(c => {
+    ctx.subprogram_list().forEach(c => {
       let identifier: string
       if (c.procedureOrFunctionDeclaration().procedureDeclaration()) {
-        identifier = c.procedureOrFunctionDeclaration().procedureDeclaration()!.identifier().getText()
+        identifier = c.procedureOrFunctionDeclaration().procedureDeclaration().identifier().getText()
       } else if (c.procedureOrFunctionDeclaration().functionDeclaration()){
-        identifier = c.procedureOrFunctionDeclaration().functionDeclaration()!.identifier().getText()
+        identifier = c.procedureOrFunctionDeclaration().functionDeclaration().identifier().getText()
       } else {
-        identifier = c.procedureOrFunctionDeclaration().assignationFunctionDeclaration()!.identifier(1)!.getText()
+        identifier = c.procedureOrFunctionDeclaration().assignationFunctionDeclaration().identifier(1).getText()
       }
       this.availableSubprograms.set(identifier, c)
     })
@@ -90,8 +89,8 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   async *getIndexes(ctx: AccessorContext) {
-    for (const expression of ctx.index().expression()) {
-      yield this.visit(expression)!
+    for (const expression of ctx.index().expression_list()) {
+      yield this.visit(expression)
     }
   }
 
@@ -99,11 +98,17 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     const identifier = ctx.identifier().getText()
     const definition = this.variables.get(identifier)
     if (!definition) {
-      throw createStepCodeError(ctx, `Variable ${identifier} not defined`)
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Variable ${identifier} not defined`
+      })
     }
     let value = definition.value
     let type = definition.type
-    for (const accessor of ctx.accessor()) {
+    for (const accessor of ctx.accessor_list()) {
       if (isStructuredType(type)) {
         for await (const a of this.getIndexes(accessor)) {
           let index = a.value
@@ -143,7 +148,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitVariableDeclaration = async (ctx: VariableDeclarationContext) => {
-    const identifiers = await Promise.all(ctx.identifierList().identifier().map(async c => c.getText()))
+    const identifiers = await Promise.all(ctx.identifierList().identifier_list().map(async c => c.getText()))
     const type = ctx.type_().getText()
     const correctType = getInterpreterType(type)
     for (const identifier of identifiers) {
@@ -158,11 +163,17 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitReadStatement = async (ctx: ReadStatementContext) => {
-    for (const variable of ctx.variable()) {
+    for (const variable of ctx.variable_list()) {
       const identifier = variable.identifier().getText()
       const definition = this.variables.get(identifier)
       if (!definition) {
-        throw createStepCodeError(ctx, `Variable ${identifier} not defined`)
+        throw new StepCodeError({
+          startLine: ctx.start.line,
+          startColumn: ctx.start.column,
+          endLine: ctx.stop?.line || ctx.start.line,
+          endColumn: ctx.stop?.column || ctx.start.column,
+          message: `Variable ${identifier} not defined`
+        })
       }
       const stringValue = await new Promise<string>(resolve => {
         this.eventBus.emit('input-request', (value: string) => {
@@ -175,10 +186,16 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       let entered = false
       let type = definition.type
       let index = 0
-      for (let i = 0; i < variable.accessor().length; i++) {
-        for await (const newIndex of this.getIndexes(variable.accessor(i)!)){
+      for (let i = 0; i < variable.accessor_list().length; i++) {
+        for await (const newIndex of this.getIndexes(variable.accessor(i))){
           if (!isStructuredType(type)) {
-            throw createStepCodeError(ctx, `Variable ${identifier} is not an array`)
+            throw new StepCodeError({
+              startLine: ctx.start.line,
+              startColumn: ctx.start.column,
+              endLine: ctx.stop?.line || ctx.start.line,
+              endColumn: ctx.stop?.column || ctx.start.column,
+              message: `Variable ${variable} is not an array`
+            })
           }
           index = newIndex.value
           if (index > 0) {
@@ -205,7 +222,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitWriteStatement = async (ctx: WriteStatementContext) => {
     // console.log('ctx', ctx)
-    const expressions = await Promise.all(ctx.expression().map(c => this.visit(c))) as ExpressionReturnType[]
+    const expressions = await Promise.all(ctx.expression_list().map(c => this.visit(c))) as ExpressionReturnType[]
     const value = expressions.map(e => e.value).join('')
     this.eventBus.emit('output-request', value)
     return {
@@ -230,7 +247,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitSignedFactor = async (ctx: SignedFactorContext) => {
-    const factor = await this.visit(ctx.factor())!
+    const factor = await this.visit(ctx.factor())
     if (ctx.MINUS()) {
       return {
         identifier: `-${factor.identifier}`,
@@ -243,7 +260,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitFactor = async (ctx: FactorContext) => {
     if (ctx.NOT()) {
-      const right = await this.visit(ctx.factor()!)!
+      const right = await this.visit(ctx.factor())
       right.value = !right.value
       return right
     }
@@ -251,9 +268,9 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitBaseTerm = async (ctx: BaseTermContext) => {
-    if (ctx.signedFactor()) return this.visit(ctx.signedFactor()!)!
-    const left = await this.visit(ctx.baseTerm(0)!)!
-    const right = await this.visit(ctx.baseTerm(1)!)!
+    if (ctx.signedFactor()) return this.visit(ctx.signedFactor())
+    const left = await this.visit(ctx.baseTerm(0))
+    const right = await this.visit(ctx.baseTerm(1))
     const value = power(left.value, right.value)
     return {
       identifier: `${left.identifier} ^ ${right.identifier}`,
@@ -263,18 +280,18 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitTerm = async (ctx: TermContext) => {
-    if (ctx.baseTerm()) return this.visit(ctx.baseTerm()!)!
-    const left = await this.visit(ctx.term(0)!)!
-    const operator = ctx.multiplicativeoperator()!.getText()
-    const right = await this.visit(ctx.term(1)!)!
+    if (ctx.baseTerm()) return this.visit(ctx.baseTerm())
+    const left = await this.visit(ctx.term(0))
+    const operator = ctx.multiplicativeoperator().getText()
+    const right = await this.visit(ctx.term(1))
     let value
-    if (ctx.multiplicativeoperator()!.STAR()) {
+    if (ctx.multiplicativeoperator().STAR()) {
       value = mul(left.value, right.value)
-    } else if (ctx.multiplicativeoperator()!.SLASH()) {
+    } else if (ctx.multiplicativeoperator().SLASH()) {
       value = div(left.value, right.value)
-    } else if (ctx.multiplicativeoperator()!.MOD()) {
+    } else if (ctx.multiplicativeoperator().MOD()) {
       value = mod(left.value, right.value)
-    } else if (ctx.multiplicativeoperator()!.DIV()) {
+    } else if (ctx.multiplicativeoperator().DIV()) {
       value = integerDivision(left.value, right.value)
     }
     return {
@@ -294,18 +311,18 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitSimpleExpression = async (ctx: SimpleExpressionContext) => {
     if (ctx.term()) {
-      return this.visit(ctx.term()!)!
+      return this.visit(ctx.term())
     }
-    const left = await this.visit(ctx.simpleExpression(0)!)!
-    const right = await this.visit(ctx.simpleExpression(1)!)!
+    const left = await this.visit(ctx.simpleExpression(0))
+    const right = await this.visit(ctx.simpleExpression(1))
     let result
-    if (ctx.additiveoperator()!.PLUS()) {
+    if (ctx.additiveoperator().PLUS()) {
       result = sum(left.value, right.value)
-    } else if (ctx.additiveoperator()!.MINUS()) {
+    } else if (ctx.additiveoperator().MINUS()) {
       result = sub(left.value, right.value)
     }
     return {
-      identifier: `${left.identifier} ${ctx.additiveoperator()!.getText()} ${right.identifier}`,
+      identifier: `${left.identifier} ${ctx.additiveoperator().getText()} ${right.identifier}`,
       type: left.type,
       value: result
     } as ReturnTypes
@@ -315,17 +332,29 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     const variable = ctx.variable().identifier().getText()
     const definition = this.variables.get(variable)
     if (!definition) {
-      throw createStepCodeError(ctx, `Variable ${variable} not defined`)
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Variable ${variable} not defined`
+      })
     }
     let value = definition.value
     let lastValue = value
     let entered = false
     let type = definition.type
     let index = 0
-    for (let i = 0; i < ctx.variable().accessor().length; i++) {
-      for await (const newIndex of this.getIndexes(ctx.variable().accessor(i)!)){
+    for (let i = 0; i < ctx.variable().accessor_list().length; i++) {
+      for await (const newIndex of this.getIndexes(ctx.variable().accessor(i))){
         if (!isStructuredType(type)) {
-          throw createStepCodeError(ctx, `Variable ${variable} is not an array`)
+          throw new StepCodeError({
+            startLine: ctx.start.line,
+            startColumn: ctx.start.column,
+            endLine: ctx.stop?.line || ctx.start.line,
+            endColumn: ctx.stop?.column || ctx.start.column,
+            message: `Variable ${variable} is not an array`
+          })
         }
         index = newIndex.value
         if (index > 0) {
@@ -355,34 +384,34 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitBooleanRelationalExpression = async (ctx: BooleanRelationalExpressionContext) => {
-    if (ctx.simpleExpression()) return this.visit(ctx.simpleExpression()!)!
-    const left = await this.visit(ctx.booleanRelationalExpression(0)!)!
-    const right = await this.visit(ctx.booleanRelationalExpression(1)!)!
+    if (ctx.simpleExpression()) return this.visit(ctx.simpleExpression())
+    const left = await this.visit(ctx.booleanRelationalExpression(0))
+    const right = await this.visit(ctx.booleanRelationalExpression(1))
     let result
-    if (ctx.relationaloperator()!.EQUAL()) {
+    if (ctx.relationaloperator().EQUAL()) {
       result = eq(left.value, right.value)
-    } else if (ctx.relationaloperator()!.NOT_EQUAL()) {
+    } else if (ctx.relationaloperator().NOT_EQUAL()) {
       result = neq(left.value, right.value)
-    } else if (ctx.relationaloperator()!.LT()) {
+    } else if (ctx.relationaloperator().LT()) {
       result = lt(left.value, right.value)
-    } else if (ctx.relationaloperator()!.LE()) {
+    } else if (ctx.relationaloperator().LE()) {
       result = lte(left.value, right.value)
-    } else if (ctx.relationaloperator()!.GT()) {
+    } else if (ctx.relationaloperator().GT()) {
       result = gt(left.value, right.value)
-    } else if (ctx.relationaloperator()!.GE()) {
+    } else if (ctx.relationaloperator().GE()) {
       result = gte(left.value, right.value)
     }
     return {
-      identifier: `${left.identifier} ${ctx.relationaloperator()!.getText()} ${right.identifier}`,
+      identifier: `${left.identifier} ${ctx.relationaloperator().getText()} ${right.identifier}`,
       type: 'boolean',
       value: result
     } as const;
   }
 
   visitBooleanMultiplicativeExpression = async (ctx: BooleanMultiplicativeExpressionContext) => {
-    if (ctx.booleanRelationalExpression()) return this.visit(ctx.booleanRelationalExpression()!)!
-    const left = await this.visit(ctx.booleanMultiplicativeExpression(0)!)!
-    const right = await this.visit(ctx.booleanMultiplicativeExpression(1)!)!
+    if (ctx.booleanRelationalExpression()) return this.visit(ctx.booleanRelationalExpression())
+    const left = await this.visit(ctx.booleanMultiplicativeExpression(0))
+    const right = await this.visit(ctx.booleanMultiplicativeExpression(1))
     const result = and(left.value, right.value)
     return {
       identifier: `${left.identifier} AND ${right.identifier}`,
@@ -392,9 +421,9 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitExpression = async (ctx: ExpressionContext) => {
-    if (ctx.booleanMultiplicativeExpression()) return this.visit(ctx.booleanMultiplicativeExpression()!)!
-    const left = await this.visit(ctx.expression(0)!)!
-    const right = await this.visit(ctx.expression(1)!)!
+    if (ctx.booleanMultiplicativeExpression()) return this.visit(ctx.booleanMultiplicativeExpression())
+    const left = await this.visit(ctx.expression(0))
+    const right = await this.visit(ctx.expression(1))
     const result = or(left.value, right.value)
     return {
       identifier: `${left.identifier} OR ${right.identifier}`,
@@ -406,13 +435,13 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   visitElifStatement = async (ctx: ElifStatementContext) => {
     const expression = await this.visit(ctx.expression()) as ExpressionReturnType
     if (expression.value) {
-      return await this.visit(ctx.compoundStatement())!
+      return await this.visit(ctx.compoundStatement())
     } else {
       if (ctx.elifStatement()) {
-        return await this.visit(ctx.elifStatement()!)!
+        return await this.visit(ctx.elifStatement())
       }
       if (ctx.elseStatement()) {
-        return await this.visit(ctx.elseStatement()!)!
+        return await this.visit(ctx.elseStatement())
       }
     }
     return {
@@ -423,13 +452,13 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   visitIfStatement = async (ctx: IfStatementContext) => {
     const expression = await this.visit(ctx.expression()) as ExpressionReturnType
     if (expression.value) {
-      return await this.visit(ctx.compoundStatement())!
+      return await this.visit(ctx.compoundStatement())
     } else {
       if (ctx.elifStatement()) {
-        return await this.visit(ctx.elifStatement()!)!
+        return await this.visit(ctx.elifStatement())
       }
       if (ctx.elseStatement()) {
-        return await this.visit(ctx.elseStatement()!)!
+        return await this.visit(ctx.elseStatement())
       }
     }
     return {
@@ -439,16 +468,16 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitCaseStatement = async (ctx: CaseStatementContext) => {
     const expression = await this.visit(ctx.expression()) as ExpressionReturnType;
-    for (const caseListElement of ctx.caseListElement()) {
-      for (const caseConstant of caseListElement.constList().constant()) {
+    for (const caseListElement of ctx.caseListElement_list()) {
+      for (const caseConstant of caseListElement.constList().constant_list()) {
         const values = await this.visit(caseConstant) as VariableReturnType;
         if (values.value === expression.value) {
-          return await this.visit(caseListElement.compoundStatement())!
+          return await this.visit(caseListElement.compoundStatement())
         }
       }
     }
     if (ctx.caseOtherWise()) {
-      return await this.visit(ctx.caseOtherWise()!)!
+      return await this.visit(ctx.caseOtherWise())
     }
     return {
       identifier: `${expression.identifier}`,
@@ -472,8 +501,8 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   visitWhileStatement = async (ctx: WhileStatementContext) => {
     let expression = await this.visit(ctx.expression()) as ExpressionReturnType;
     while (expression.value) {
-      this.loopStack.push(ctx.parent as any as RepetetiveStatementContext)
-      const result = await this.visit(ctx.compoundStatement())!
+      this.loopStack.push(ctx.parentCtx as RepetetiveStatementContext)
+      const result = await this.visit(ctx.compoundStatement())
       this.loopStack.pop()
       if (result.identifier === 'break') {
         break;
@@ -490,11 +519,11 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitForStatement = async (ctx: ForStatementContext) => {
     const identifier = await this.visit(ctx.identifier()) as VariableReturnType;
-    const initial = await this.visit(ctx.forList().initialValue())!;
-    const final = await this.visit(ctx.forList().finalValue())!;
+    const initial = await this.visit(ctx.forList().initialValue());
+    const final = await this.visit(ctx.forList().finalValue());
     let step = 1
     if (ctx.stepValue()) {
-      const s = await this.visit(ctx.stepValue()!) as VariableReturnType;
+      const s = await this.visit(ctx.stepValue()) as VariableReturnType;
       step = s.value
     }
     const insideLoop = async (i: number) => {
@@ -502,8 +531,8 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
         type: identifier.type,
         value: i
       })
-      this.loopStack.push(ctx.parent as any as RepetetiveStatementContext)
-      const result = await this.visit(ctx.compoundStatement())!
+      this.loopStack.push(ctx.parentCtx as RepetetiveStatementContext)
+      const result = await this.visit(ctx.compoundStatement())
       this.loopStack.pop()
       if (['break', 'return'].includes(result.identifier)) {
         return result
@@ -543,8 +572,8 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   visitRepeatStatement = async (ctx: RepeatStatementContext) => {
     let repeat = false
     do {
-      this.loopStack.push(ctx.parent as any as RepetetiveStatementContext)
-      const result = await this.visit(ctx.compoundStatement())!
+      this.loopStack.push(ctx.parentCtx as RepetetiveStatementContext)
+      const result = await this.visit(ctx.compoundStatement())
       this.loopStack.pop()
       if (result.identifier === 'return') {
         return result
@@ -567,11 +596,11 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   getArgs(ctx: SubprogramContext) {
     let parameterList
     if (ctx.procedureOrFunctionDeclaration().procedureDeclaration()) {
-      parameterList = ctx.procedureOrFunctionDeclaration().procedureDeclaration()!.formalParameterList()?.formalParameterSection()?.paramIdentifier() || []
+      parameterList = ctx.procedureOrFunctionDeclaration().procedureDeclaration().formalParameterList()?.formalParameterSection()?.paramIdentifier_list() || []
     } else if(ctx.procedureOrFunctionDeclaration().functionDeclaration()) {
-      parameterList = ctx.procedureOrFunctionDeclaration().functionDeclaration()!.formalParameterList()?.formalParameterSection()?.paramIdentifier() || []
+      parameterList = ctx.procedureOrFunctionDeclaration().functionDeclaration().formalParameterList()?.formalParameterSection()?.paramIdentifier_list() || []
     } else {
-      parameterList = ctx.procedureOrFunctionDeclaration().assignationFunctionDeclaration()!.formalParameterList()?.formalParameterSection()?.paramIdentifier() || []
+      parameterList = ctx.procedureOrFunctionDeclaration().assignationFunctionDeclaration().formalParameterList()?.formalParameterSection()?.paramIdentifier_list() || []
     }
     return parameterList.map(c => ({
       identifier: c.identifier().getText(),
@@ -583,16 +612,28 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   async getValueOfParameter(ctx: ActualParameterContext, byReference: boolean) {
     if (byReference) {
       try {
-        const variable = ctx.expression().booleanMultiplicativeExpression()!.booleanRelationalExpression()!.simpleExpression()!.term()!.baseTerm()!.signedFactor()!.factor().variable()
-        const identifier = variable!.identifier().getText()
+        const variable = ctx.expression().booleanMultiplicativeExpression().booleanRelationalExpression().simpleExpression().term().baseTerm().signedFactor().factor().variable()
+        const identifier = variable.identifier().getText()
         const definition = this.variables.get(identifier)
         if (!definition) {
-          throw createStepCodeError(ctx, `Variable ${identifier} not defined`)
+          throw new StepCodeError({
+            startLine: ctx.start.line,
+            startColumn: ctx.start.column,
+            endLine: ctx.stop?.line || ctx.start.line,
+            endColumn: ctx.stop?.column || ctx.start.column,
+            message: `Variable ${identifier} not defined`
+          })
         }
         return definition
       } catch (e) {
         if (e instanceof StepCodeError) throw e
-        throw createStepCodeError(ctx, `Invalid parameter. Only variables can be passed by reference`)
+        throw new StepCodeError({
+          startLine: ctx.start.line,
+          startColumn: ctx.start.column,
+          endLine: ctx.stop?.line || ctx.start.line,
+          endColumn: ctx.stop?.column || ctx.start.column,
+          message: `Invalid parameter. Only variables can be passed by reference`
+        })
       }
     }
     const expression = await this.visit(ctx.expression()) as ExpressionReturnType
@@ -603,7 +644,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     const identifier = ctx.identifier().getText()
     const internalFunction = getFunctionFromIdentifier(identifier)
     if (internalFunction) {
-      const args = await Promise.all(ctx.parameterList()?.actualParameter().map(async c => this.visit(c))!) as ExpressionReturnType[]
+      const args = await Promise.all(ctx.parameterList().actualParameter_list().map(async c => this.visit(c))) as ExpressionReturnType[]
       const result = internalFunction(...args.map(e => e.value))
       return {
         identifier: `${identifier}(${args.map(e => e.identifier).join(',')})`,
@@ -613,21 +654,39 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     }
     const subprogram = this.availableSubprograms.get(identifier)
     if (!subprogram) {
-      throw createStepCodeError(ctx, `Subprogram ${identifier} not defined`)
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Subprogram ${identifier} not defined`
+      })
     }
     const variables: typeof this.variables= new Map()
     const parameterList = this.getArgs(subprogram)
 
-    const params = ctx.parameterList()?.actualParameter() || [];
+    const params = ctx.parameterList()?.actualParameter_list() || [];
     if (parameterList.length !== params.length) {
-      throw createStepCodeError(ctx, `Invalid number of parameters. Expected ${parameterList.length}, got ${params.length}`)
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Invalid number of parameters for ${identifier}. Expected ${parameterList.length}, got ${params.length}`
+      })
     }
     for (const [i, c] of params.entries()) {
       const byReference = parameterList[i].reference
       const param = await this.getValueOfParameter(c, byReference)
       const type = parameterList[i].type === 'inherit' ? param.type : parameterList[i].type
       if (!isCompatibleType(type, param.type)) {
-        throw createStepCodeError(ctx, `Invalid type for parameter ${parameterList[i].identifier}. Expected ${type}, got ${param.type}`)
+        throw new StepCodeError({
+          startLine: ctx.start.line,
+          startColumn: ctx.start.column,
+          endLine: ctx.stop?.line || ctx.start.line,
+          endColumn: ctx.stop?.column || ctx.start.column,
+          message: `Invalid type for parameter ${parameterList[i].identifier}. Expected ${parameterList[i].type}, got ${param.type}`
+        })
       }
       if (byReference) {
         variables.set(parameterList[i].identifier, param)
@@ -643,9 +702,15 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       variables: variables
     })
     if (this.callStack.length > 100) {
-      throw createStepCodeError(ctx, `Stack overflow`)
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Stack overflow`
+      })
     }
-    const result = await this.visit(subprogram)!
+    const result = await this.visit(subprogram)
     this.callStack.pop()
     if (subprogram.procedureOrFunctionDeclaration().procedureDeclaration()) {
       return {
@@ -655,12 +720,12 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     return result
   }
 
-  visitFunctionDesignator = async (ctx: FunctionDesignatorContext) => {
+  visitFunctionDesignator = async (ctx: ProcedureStatementContext) => {
     return this.visitProcedureStatement(ctx)
   }
 
   visitDimensionType = async (ctx: DimensionTypeContext) => {
-    const list =await Promise.all(ctx.unsignedNumber().map(async c => this.visit(c))) as VariableReturnType[]
+    const list =await Promise.all(ctx.unsignedNumber_list().map(async c => this.visit(c))) as VariableReturnType[]
     return {
       identifier: 'dimension',
       type: 'dimension',
@@ -672,7 +737,13 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     const identifier = ctx.identifier().getText()
     const definition = this.variables.get(identifier)
     if (!definition) {
-      throw createStepCodeError(ctx, `Variable ${identifier} not defined`)
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Variable ${identifier} not defined`
+      })
     }
     const dimension = await this.visit(ctx.dimensionType()) as DimensionReturnType
     const array = createNDArray(dimension.value, definition.type)
@@ -691,7 +762,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
 
   visitReturnStatement = async (ctx: ReturnStatementContext) => {
     if(ctx.expression()){
-      const expression = await this.visit(ctx.expression()!) as ExpressionReturnType
+      const expression = await this.visit(ctx.expression()) as ExpressionReturnType
       return {
         identifier: `return`,
         value: expression.value,
@@ -704,11 +775,17 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }
 
   visitAssignationFunctionDeclaration = async (ctx: AssignationFunctionDeclarationContext) => {
-    const returnVariable = ctx.identifier(0)!.getText()
+    const returnVariable = ctx.identifier(0).getText()
     await this.visitChildren(ctx)
     const returnVariableDefinition = this.variables.get(returnVariable)
     if (!returnVariableDefinition) {
-      throw createStepCodeError(ctx, `Variable ${returnVariable} not defined`)
+      throw new StepCodeError({
+        startLine: ctx.start.line,
+        startColumn: ctx.start.column,
+        endLine: ctx.stop?.line || ctx.start.line,
+        endColumn: ctx.stop?.column || ctx.start.column,
+        message: `Variable ${returnVariable} not defined`
+      })
     }
     return {
       identifier: returnVariable,
