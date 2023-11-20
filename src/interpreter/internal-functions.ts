@@ -32,6 +32,34 @@ type Return = (...args: any[]) => {
   type: string
 }
 
+function truncate(n: number) {
+  return {
+    value: Math.trunc(n),
+    type: 'integer'
+  }
+}
+
+function round(n: number) {
+  return {
+    value: Math.round(n),
+    type: 'integer'
+  }
+}
+
+function abs(n: number) {
+  return {
+    value: Math.abs(n),
+    type: 'real'
+  }
+}
+
+function random() {
+  return {
+    value: Math.random(),
+    type: 'real'
+  }
+}
+
 export function getFunctionFromIdentifier(identifier: string): Return | undefined {
   switch (identifier.toLowerCase()) {
     case 'substring':
@@ -46,6 +74,18 @@ export function getFunctionFromIdentifier(identifier: string): Return | undefine
     case 'lower':
     case 'minusculas':
       return lowercase
+    case 'trunc':
+    case 'truncar':
+      return truncate
+    case 'round':
+    case 'redondear':
+    case 'redon':
+      return round
+    case 'abs':
+      return abs
+    case 'random':
+    case 'aleatorio':
+      return random
     default:
       return undefined
   }
