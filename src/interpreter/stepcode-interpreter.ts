@@ -644,7 +644,10 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     const identifier = ctx.identifier().getText()
     const internalFunction = getFunctionFromIdentifier(identifier)
     if (internalFunction) {
-      const args = await Promise.all(ctx.parameterList().actualParameter_list().map(async c => this.visit(c))) as ExpressionReturnType[]
+      let args: ExpressionReturnType[] = [];
+      if (ctx.parameterList()) {
+        args = await Promise.all(ctx.parameterList().actualParameter_list().map(async c => this.visit(c))) as ExpressionReturnType[]
+      }
       const result = internalFunction(...args.map(e => e.value))
       return {
         identifier: `${identifier}(${args.map(e => e.identifier).join(',')})`,
