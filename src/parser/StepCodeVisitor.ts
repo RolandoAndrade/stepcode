@@ -5,6 +5,7 @@ import {ParseTreeVisitor} from 'antlr4';
 
 import { ProgramContext } from "./StepCodeParser";
 import { MainContext } from "./StepCodeParser";
+import { DirectivesContext } from "./StepCodeParser";
 import { SubprogramContext } from "./StepCodeParser";
 import { ProgramHeadingContext } from "./StepCodeParser";
 import { IdentifierContext } from "./StepCodeParser";
@@ -142,6 +143,12 @@ export default class StepCodeVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitMain?: (ctx: MainContext) => Result;
+	/**
+	 * Visit a parse tree produced by `StepCodeParser.directives`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDirectives?: (ctx: DirectivesContext) => Result;
 	/**
 	 * Visit a parse tree produced by `StepCodeParser.subprogram`.
 	 * @param ctx the parse tree

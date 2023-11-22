@@ -99,4 +99,18 @@ describe('test interpreter strings operations', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'hola')
     })
   })
+
+  describe('test arrays@stepcode directive', () => {
+    test('test basic indexing', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(`$ arrays@stepcode
+      Proceso prueba
+      Definir a, b Como Cadena;
+      a <- "Hola";
+      b <- a[1];
+      Escribir b;
+      FinProceso`, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'o')
+    })
+  })
 })

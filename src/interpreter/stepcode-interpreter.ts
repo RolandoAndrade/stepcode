@@ -4,7 +4,7 @@ import {
   AdditiveoperatorContext, AssignationFunctionDeclarationContext,
   AssignmentStatementContext, BaseTermContext,
   Bool_Context, BooleanMultiplicativeExpressionContext, BooleanRelationalExpressionContext,
-  CaseStatementContext, DimensionStatementContext, DimensionTypeContext,
+  CaseStatementContext, DimensionStatementContext, DimensionTypeContext, DirectivesContext,
   ElifStatementContext,
   ExpressionContext,
   FactorContext, ForStatementContext,
@@ -39,6 +39,8 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
   }> = new Map();
 
   protected availableSubprograms: Map<string, SubprogramContext> = new Map();
+
+  public static ARRAY_START = 1
 
   protected callStack: {
     identifier: string,
@@ -85,7 +87,21 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
       }
       this.availableSubprograms.set(identifier, c)
     })
+    StepCodeInterpreter.ARRAY_START = 1
+    for (const directive of ctx.directives_list()) {
+      await this.visit(directive)
+    }
     await this.visitChildren(ctx.main())
+  }
+
+  visitDirectives =  async (ctx: DirectivesContext) => {
+    const identifier = ctx.IDENT().getText()
+    if (identifier === 'arrays@stepcode') {
+      StepCodeInterpreter.ARRAY_START = 0
+    }
+    return {
+      identifier: `${identifier}`,
+    }
   }
 
   async *getIndexes(ctx: AccessorContext) {
@@ -113,7 +129,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
         for await (const a of this.getIndexes(accessor)) {
           let index = a.value
           if (index > 0) {
-            index = index - 1
+            index = index - StepCodeInterpreter.ARRAY_START
           }
           value = value.at(index)
           if (type !== 'string') type = type.slice(0, -2)
@@ -199,7 +215,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
           }
           index = newIndex.value
           if (index > 0) {
-            index = index - 1
+            index = index - StepCodeInterpreter.ARRAY_START
           }
           lastValue = value
           value = value.at(index)
@@ -358,7 +374,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
         }
         index = newIndex.value
         if (index > 0) {
-          index = index - 1
+          index = index - StepCodeInterpreter.ARRAY_START
         }
         lastValue = value
         value = value.at(index)

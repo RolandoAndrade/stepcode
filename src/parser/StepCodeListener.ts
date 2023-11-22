@@ -5,6 +5,7 @@ import {ParseTreeListener} from "antlr4";
 
 import { ProgramContext } from "./StepCodeParser";
 import { MainContext } from "./StepCodeParser";
+import { DirectivesContext } from "./StepCodeParser";
 import { SubprogramContext } from "./StepCodeParser";
 import { ProgramHeadingContext } from "./StepCodeParser";
 import { IdentifierContext } from "./StepCodeParser";
@@ -147,6 +148,16 @@ export default class StepCodeListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitMain?: (ctx: MainContext) => void;
+	/**
+	 * Enter a parse tree produced by `StepCodeParser.directives`.
+	 * @param ctx the parse tree
+	 */
+	enterDirectives?: (ctx: DirectivesContext) => void;
+	/**
+	 * Exit a parse tree produced by `StepCodeParser.directives`.
+	 * @param ctx the parse tree
+	 */
+	exitDirectives?: (ctx: DirectivesContext) => void;
 	/**
 	 * Enter a parse tree produced by `StepCodeParser.subprogram`.
 	 * @param ctx the parse tree

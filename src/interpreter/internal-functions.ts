@@ -1,6 +1,8 @@
+import { StepCodeInterpreter } from './stepcode-interpreter.ts';
+
 export function substring(s: string, start: number, end: number) {
   return {
-    value: s.substring(start - 1, end),
+    value: s.substring(start - StepCodeInterpreter.ARRAY_START, end),
     type: 'string'
   }
 }

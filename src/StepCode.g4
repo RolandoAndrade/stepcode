@@ -38,12 +38,16 @@ grammar StepCode;
 options { caseInsensitive = true; }
 
 program
-   : subprogram* main subprogram* EOF
+   : directives* subprogram*  main subprogram* EOF
    ;
 
 main
    : programHeading (INTERFACE)? block ENDPROGRAM
    ;
+
+directives
+    : DIRECTIVE IDENT
+    ;
 
 subprogram
    : procedureOrFunctionDeclaration
@@ -1017,6 +1021,9 @@ WS
    : [ \t\r\n] -> skip
    ;
 
+DIRECTIVE
+   : '$'
+   ;
 
 COMMENT_1
    : '//' ~[\r\n]* -> skip
@@ -1029,7 +1036,7 @@ COMMENT_2
 
 
 IDENT
-   : ('A' .. 'Z') ('A' .. 'Z' | '0' .. '9' | '_')*
+   : ('A' .. 'Z') ('A' .. 'Z' | '0' .. '9' | '_' | '@')*
    ;
 
 

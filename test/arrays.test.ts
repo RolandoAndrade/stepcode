@@ -140,4 +140,27 @@ describe('test interpreter array operations', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '123')
     })
   })
+
+  describe('test arrays@stepcode directive', () => {
+    const code = `$ arrays@stepcode
+    Proceso prueba
+    Definir a Como Entero;
+    Dimension a[3];
+    Leer a[0];
+    Leer a[1];
+    Leer a[2];
+    Escribir a[0], a[1], a[2];
+    FinProceso`
+
+    test('test arrays@stepcode directive', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const input = [1, 2, 3]
+      let i = 0
+      eventBus.on('input-request', (resolve) => {
+        resolve(input[i++].toString())
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '123')
+    })
+  })
 })
