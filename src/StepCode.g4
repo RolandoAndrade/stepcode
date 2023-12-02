@@ -312,8 +312,7 @@ resultType
    ;
 
 statement
-   : label COLON unlabelledStatement
-   | unlabelledStatement
+   : unlabelledStatement
    | writeStatement | readStatement
    | breakStatement | continueStatement | returnStatement
    ;

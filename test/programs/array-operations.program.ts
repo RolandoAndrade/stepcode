@@ -100,7 +100,7 @@ FinProcedimiento
 // Proceso de pruebas
 Proceso Pruebas
     Definir arreglo, longitud Como Entero;
-    Definir opcion Como Cadena;
+    Definir opcion Como Entero;
     Dimension arreglo[10];
     longitud ← LeerArreglo(arreglo);
     Repetir
@@ -112,18 +112,15 @@ Proceso Pruebas
         Escribir '    [3]: Buscar elemento';
         Escribir '    [0]: Salir';
         Leer opcion;
-        Si opcion = '1' Entonces
-          ProgramaInsertar(arreglo, longitud);
-        FinSi
-        // Segun opcion Hacer
-        //     1:
-        //         ProgramaInsertar(arreglo, longitud);
-        //     2:
-        //         ProgramaEliminar(arreglo, longitud);
-        //     3:
-        //         ProgramaBuscar(arreglo, longitud)
-        // FinSegun
-    Hasta Que opcion = '0';
+        Segun opcion Hacer
+            1:
+                ProgramaInsertar(arreglo, longitud);
+            2:
+                ProgramaEliminar(arreglo, longitud);
+            3:
+                ProgramaBuscar(arreglo, longitud)
+        FinSegun
+    Hasta Que opcion = 0;
 FinProceso
 
 Procedimiento ProgramaInsertar(arreglo, longitud como Entero por Referencia)
@@ -157,5 +154,27 @@ export const insertInputs = [
   1, // option 1
   4, // element to insert
   1, // position to insert
+  0, // option 0
+]
+
+export const deleteInputs = [
+  4, // array length,
+  1, // array[1]
+  2, // array[2]
+  3, // array[3]
+  4, // array[4]
+  2, // option 2
+  2, // element to delete
+  0, // option 0
+]
+
+export const searchInputs = [
+  4, // array length,
+  1, // array[1]
+  2, // array[2]
+  3, // array[3]
+  4, // array[4]
+  3, // option 3
+  2, // element to search
   0, // option 0
 ]

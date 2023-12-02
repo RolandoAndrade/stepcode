@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { EventBus, StepCodeInterpreter } from '../src';
 import { internalInterpret } from '../src/interpreter/internal-interpret';
-import { arrayOperationsProgram, insertInputs } from './programs/array-operations.program';
+import { arrayOperationsProgram, deleteInputs, insertInputs, searchInputs } from './programs/array-operations.program';
 
 
 describe('test interpreter boolean operations', () => {
@@ -366,6 +366,24 @@ describe('test interpreter boolean operations', () => {
       })
       await internalInterpret(code, interpreter)
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'arr[1]: 4')
+    })
+    test('delete from array', async () => {
+      vi.spyOn(eventBus, 'emit')
+      let i = 0;
+      eventBus.on('input-request', (resolve) => {
+        resolve(deleteInputs[i++].toString())
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'arr[2]: 3')
+    })
+    test('search in array', async () => {
+      vi.spyOn(eventBus, 'emit')
+      let i = 0;
+      eventBus.on('input-request', (resolve) => {
+        resolve(searchInputs[i++].toString())
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'El elemento esta en la posicion: 2')
     })
   })
 })
