@@ -640,7 +640,29 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
             message: `Variable ${identifier} not defined`
           })
         }
-        return definition
+        if (!isStructuredType(definition.type)) {
+          return definition
+        }
+        let indexes: number[] = [];
+        const expression = await this.visit(ctx.expression()) as ExpressionReturnType;
+        for (let i = 0; i < variable.accessor_list().length; i++) {
+          for await (const newIndex of this.getIndexes(variable.accessor(i))) {
+            indexes.push(newIndex.value - StepCodeInterpreter.ARRAY_START)
+          }
+        }
+        return {
+          type: expression.type,
+          get value() {
+            return expression.value
+          },
+          set value(v: any) {
+            let val = definition.value;
+            for (let i = 0; i < indexes.length - 1; i++) {
+              val = val.at(indexes[i])
+            }
+            val[indexes[indexes.length - 1]] = v
+          }
+        }
       } catch (e) {
         if (e instanceof StepCodeError) throw e
         throw new StepCodeError({

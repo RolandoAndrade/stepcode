@@ -175,4 +175,47 @@ describe('test interpreter subprograms', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '30')
     })
   })
+
+  describe('insert into array procedure', () => {
+    const code = `Procedimiento CambioDeVariables(a como Entero por Referencia, b como Entero por Referencia)
+      Definir aux Como Entero;
+      aux ← a;
+      a ← b;
+      b ← aux;
+    FinProcedimiento
+    Procedimiento Insertar(arreglo, elemento como Entero, posicion como Entero, longitud como Entero por Referencia)
+      Para i ← posicion Hasta longitud Hacer
+        CambioDeVariables(elemento, arreglo[i]);
+      FinPara
+      Si longitud < 10 Entonces
+        longitud ← longitud + 1;
+        arreglo[longitud] ← elemento;
+      FinSi         
+    FinProcedimiento
+    Proceso ProgramaInsertar
+      Definir arreglo, longitud Como Entero;
+      Dimension arreglo[10];
+      Definir elemento, posicion Como Entero;
+      Escribir "Introduce elemento a insertar: ";
+      Leer elemento;
+      Escribir "Introduce posicion a insertar: ";
+      Leer posicion;
+      Insertar(arreglo, elemento, posicion, longitud);
+      Escribir arreglo;
+    FinProceso
+    `
+    test('test insert into array procedure', async () => {
+      vi.spyOn(eventBus, 'emit')
+      const values = [
+        1, // insert 1
+        1, // at position 1
+      ]
+      let i = 0
+      eventBus.on('input-request', (resolve) => {
+        resolve(values[i++])
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1,,,,,,,,,')
+    })
+  })
 })

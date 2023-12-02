@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { EventBus, StepCodeInterpreter } from '../src';
 import { internalInterpret } from '../src/interpreter/internal-interpret';
+import { arrayOperationsProgram, insertInputs } from './programs/array-operations.program';
 
 
 describe('test interpreter boolean operations', () => {
@@ -319,4 +320,52 @@ describe('test interpreter boolean operations', () => {
     })
   })
 
+  describe('fibonacci', () => {
+    const code = `Proceso Fibonacci
+    Definir n, a, b, c Como Entero;
+    Escribir "Ingrese el numero de elementos de la serie";
+    Leer n;
+    a ← 0;
+    b ← 1;
+    Escribir a;
+    Escribir b;
+    Para i ← 3 Hasta n Con Paso 1 Hacer
+        c ← a + b;
+        Escribir c;
+        a ← b;
+        b ← c;
+    FinPara
+    FinProceso`
+
+    test('test 10 fibonacci numbers', async () => {
+      vi.spyOn(eventBus, 'emit')
+      eventBus.on('input-request', (resolve) => {
+        resolve('10')
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '0')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '2')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '3')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '5')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '8')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '13')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '21')
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', '34')
+    })
+  })
+
+  describe('array operations', () => {
+    const code = arrayOperationsProgram;
+    test('insert into array', async () => {
+      vi.spyOn(eventBus, 'emit')
+      let i = 0;
+      eventBus.on('input-request', (resolve) => {
+        resolve(insertInputs[i++].toString())
+      })
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'arr[1]: 4')
+    })
+  })
 })
