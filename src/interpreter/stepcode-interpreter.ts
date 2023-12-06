@@ -640,7 +640,7 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
             message: `Variable ${identifier} not defined`
           })
         }
-        if (!isStructuredType(definition.type)) {
+        if (!isStructuredType(definition.type) || variable.accessor_list().length === 0) {
           return definition
         }
         let indexes: number[] = [];

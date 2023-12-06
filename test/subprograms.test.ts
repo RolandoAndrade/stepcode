@@ -218,4 +218,22 @@ describe('test interpreter subprograms', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('output-request', '1,,,,,,,,,')
     })
   })
+
+  describe('pass string by reference', () => {
+    const code = `Procedimiento Despedida(saludo como Cadena por Referencia)
+      saludo ← "adios";
+    FinProcedimiento
+    Proceso ProgramaDespedida
+      Definir saludo Como Cadena;
+      saludo ← "hola";
+      Despedida(saludo);
+      Escribir saludo;
+    FinProceso
+    `
+    test('test pass string by reference', async () => {
+      vi.spyOn(eventBus, 'emit')
+      await internalInterpret(code, interpreter)
+      expect(eventBus.emit).toHaveBeenCalledWith('output-request', 'adios')
+    })
+  })
 })
