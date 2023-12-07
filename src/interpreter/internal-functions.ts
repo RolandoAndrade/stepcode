@@ -62,6 +62,41 @@ function random() {
   }
 }
 
+function parseNumber(n: any) {
+  if (typeof n === 'number') {
+    if (Number.isInteger(n)) {
+      return {
+        value: n,
+        type: 'integer'
+      }
+    }
+    return {
+      value: n,
+      type: 'real'
+    }
+  }
+  if (typeof n === 'string') {
+    if (n.includes('.')) {
+      return {
+        value: parseFloat(n),
+        type: 'real'
+      }
+    }
+    return {
+      value: parseInt(n),
+      type: 'integer'
+    }
+  }
+  throw new Error(`Invalid number ${n}`)
+}
+
+function parseString(s: any) {
+  return {
+    value: s.toString(),
+    type: 'string'
+  }
+}
+
 export function getFunctionFromIdentifier(identifier: string): Return | undefined {
   switch (identifier.toLowerCase()) {
     case 'substring':
@@ -88,6 +123,12 @@ export function getFunctionFromIdentifier(identifier: string): Return | undefine
     case 'random':
     case 'aleatorio':
       return random
+    case 'convertiranumero':
+    case 'tonum':
+      return parseNumber
+    case 'convertiracadena':
+    case 'tostr':
+      return parseString
     default:
       return undefined
   }

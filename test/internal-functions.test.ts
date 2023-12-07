@@ -68,4 +68,28 @@ describe('test interpreter internal functions', () => {
     await internalInterpret(code, interpreter)
     expect(eventBus.emit).toHaveBeenCalledWith('output-request', expect.stringMatching(/^0\.\d+$/))
   })
+
+  test('test parseNumber', async () => {
+    vi.spyOn(eventBus, 'emit')
+    const code = `Proceso prueba
+    Definir a, b Como Cadena;
+    a <- "1.5";
+    b <- "1";
+    Escribir ConvertirANumero(a) + ConvertirANumero(b);
+    FinProceso`;
+    await internalInterpret(code, interpreter)
+    expect(eventBus.emit).toHaveBeenCalledWith('output-request', '2.5')
+  })
+
+  test('test parseString', async () => {
+    vi.spyOn(eventBus, 'emit')
+    const code = `Proceso prueba
+    Definir a, b Como Entero;
+    a <- 1;
+    b <- 2;
+    Escribir ConvertirACadena(a) + ConvertirACadena(b);
+    FinProceso`;
+    await internalInterpret(code, interpreter)
+    expect(eventBus.emit).toHaveBeenCalledWith('output-request', '12')
+  })
 })
