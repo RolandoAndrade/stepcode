@@ -127,6 +127,7 @@ export function getFunctionFromIdentifier(identifier: string): Return | undefine
     case 'tonum':
       return parseNumber
     case 'convertiracadena':
+    case 'convertiratexto':
     case 'tostr':
       return parseString
     default:
