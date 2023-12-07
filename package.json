@@ -8,7 +8,7 @@
   "repository": {
     "url": "https://github.com/RolandoAndrade/stepcode"
   },
-  "version": "0.11.3",
+  "version": "0.11.4",
   "type": "module",
   "types": "./dist/index.d.ts",
   "main": "./dist/index.js",
@@ -21,7 +21,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "generate": "antlr4 -Dlanguage=TypeScript src/StepCode.g4 -o src/parser -visitor",
-    "test": "vitest"
+    "test": "vitest",
+    "prepublish": "npm run test && npm run build"
   },
   "devDependencies": {
     "@types/node": "^20.8.10",
