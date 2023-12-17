@@ -240,7 +240,12 @@ export class StepCodeInterpreter extends StepCodeVisitor<Promise<ReturnTypes>> {
     // console.log('ctx', ctx)
     const expressions = await Promise.all(ctx.expression_list().map(c => this.visit(c))) as ExpressionReturnType[]
     const value = expressions.map(e => e.value).join('')
-    this.eventBus.emit('output-request', value)
+    if (ctx.WRITE()) {
+      this.eventBus.emit('output-request', value)
+    } else {
+      this.eventBus.emit('output-request', value + '\n')
+    }
+
     return {
       identifier: value,
     }

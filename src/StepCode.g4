@@ -561,7 +561,7 @@ recordVariableList
    ;
 
 writeStatement
-   : WRITE expression (COMMA expression)* SEMI
+   : (WRITE | WRITELN) expression (COMMA expression)* SEMI
    ;
 
 readStatement
@@ -1006,6 +1006,10 @@ TRUE
 FALSE
    : 'FALSE' | 'FALSO'
    ;
+
+WRITELN
+    : 'WRITELN' | 'ESCRIBIRLN' | 'MOSTRARLN'
+    ;
 
 WRITE
     : 'WRITE' | 'ESCRIBIR' | 'MOSTRAR'
