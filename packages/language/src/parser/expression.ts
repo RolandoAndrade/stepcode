@@ -2,6 +2,7 @@ import type { BuiltinKey, KeywordKey, OperatorKey } from '@stepcode/profiles'
 import type { BinaryOp, Expr, Identifier } from '../ast/index'
 import type { Span } from '../source/index'
 import { nodeRange, type ParserContext, placeholderRange, report, reportTooDeep } from './context'
+import { parseCommaSeparated } from './list'
 import { isKeyword, isPunct, keywordKeyOf, operatorKeyOf } from './tokens'
 
 const BINARY_FROM_OPERATOR: Partial<Record<OperatorKey, BinaryOp>> = {
@@ -111,6 +112,7 @@ function parseExpressionAt(ctx: ParserContext, minBinding: number): Expr {
   let left = parsePrefix(ctx)
   let afterComparison = false
   let firstComparison = ''
+  // Every round consumes its operator (or its `error` token) before recursing.
   for (;;) {
     const token = ctx.cursor.peek()
     if (token.kind === 'error') {
@@ -162,17 +164,14 @@ function parsePrefix(ctx: ParserContext): Expr {
 /** `a[i,j]` and `a[i][j]` both collapse into one `Index` with two indices. */
 function parsePostfix(ctx: ParserContext, target: Expr, start: number): Expr {
   let current = target
+  // Every round consumes the `[` it opened on, or returns.
   for (;;) {
     const open = ctx.cursor.peek()
     if (!isPunct(open, '[')) return current
     const base = current.kind === 'Index' ? current.target : current
     const indices: Expr[] = current.kind === 'Index' ? [...current.indices] : []
     ctx.cursor.next()
-    indices.push(parseExpression(ctx))
-    while (isPunct(ctx.cursor.peek(), ',')) {
-      ctx.cursor.next()
-      indices.push(parseExpression(ctx))
-    }
+    indices.push(...parseCommaSeparated(ctx, parseExpression))
     expectBracket(ctx, ']', open.span)
     current = { kind: 'Index', target: base, indices, ...nodeRange(ctx, start) }
   }
@@ -189,13 +188,7 @@ function expectBracket(ctx: ParserContext, bracket: ')' | ']', openerSpan: Span)
 function parseArguments(ctx: ParserContext): Expr[] {
   const open = ctx.cursor.next()
   const args: Expr[] = []
-  if (!isPunct(ctx.cursor.peek(), ')')) {
-    args.push(parseExpression(ctx))
-    while (isPunct(ctx.cursor.peek(), ',')) {
-      ctx.cursor.next()
-      args.push(parseExpression(ctx))
-    }
-  }
+  if (!isPunct(ctx.cursor.peek(), ')')) args.push(...parseCommaSeparated(ctx, parseExpression))
   expectBracket(ctx, ')', open.span)
   return args
 }

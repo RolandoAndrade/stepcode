@@ -22,6 +22,7 @@ import {
   parseTypeRef,
 } from './declarations'
 import { parseExpression, parseTarget } from './expression'
+import { parseCommaSeparated } from './list'
 import { BLOCK_BOUNDARY_KEYWORDS, consumeTerminator, skipToRecoveryPoint } from './terminator'
 import { isKeyword, isOperator, isPunct, keywordKeyOf } from './tokens'
 
@@ -38,15 +39,6 @@ function expectKeyword(ctx: ParserContext, key: KeywordKey): void {
     return
   }
   report(ctx, 'E2004', ctx.cursor.peek().span, { expected: key })
-}
-
-function parseExprList(ctx: ParserContext): Expr[] {
-  const items: Expr[] = [parseExpression(ctx)]
-  while (isPunct(ctx.cursor.peek(), ',')) {
-    ctx.cursor.next()
-    items.push(parseExpression(ctx))
-  }
-  return items
 }
 
 /** One statement, or `null` for an empty statement (`;`), which produces no node. */
@@ -171,7 +163,7 @@ function parseReturn(ctx: ParserContext): Stmt {
 function parseWrite(ctx: ParserContext, newline: boolean): Stmt {
   const start = ctx.cursor.at()
   ctx.cursor.next()
-  const args = parseExprList(ctx)
+  const args = parseCommaSeparated(ctx, parseExpression)
   if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
   return { kind: 'WriteStmt', args, newline, ...nodeRange(ctx, start) }
 }
@@ -180,15 +172,12 @@ function parseRead(ctx: ParserContext): Stmt {
   const start = ctx.cursor.at()
   ctx.cursor.next()
   const targets: (Identifier | Index)[] = []
-  for (;;) {
-    const target = parseTarget(ctx)
+  for (const target of parseCommaSeparated(ctx, parseTarget)) {
     if (target.kind === 'Identifier' || target.kind === 'Index') targets.push(target)
     else
       report(ctx, 'E2002', target.span, {
         found: ctx.source.slice(target.span.start, target.span.end),
       })
-    if (!isPunct(ctx.cursor.peek(), ',')) break
-    ctx.cursor.next()
   }
   if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
   return { kind: 'ReadStmt', targets, ...nodeRange(ctx, start) }
@@ -198,17 +187,15 @@ function parseDimension(ctx: ParserContext): Stmt {
   const start = ctx.cursor.at()
   ctx.cursor.next()
   const items: DimensionItem[] = []
+  // A round that does not break consumes the `,` between two items.
   for (;;) {
     const itemStart = ctx.cursor.at()
     const name = expectIdentifier(ctx)
     const sizes: Expr[] = []
+    // Each round consumes its `[`, so the loop always moves forward.
     while (isPunct(ctx.cursor.peek(), '[')) {
       const open = ctx.cursor.next()
-      sizes.push(parseExpression(ctx))
-      while (isPunct(ctx.cursor.peek(), ',')) {
-        ctx.cursor.next()
-        sizes.push(parseExpression(ctx))
-      }
+      sizes.push(...parseCommaSeparated(ctx, parseExpression))
       if (isPunct(ctx.cursor.peek(), ']')) ctx.cursor.next()
       else report(ctx, 'E2005', open.span, { bracket: ']' })
     }
@@ -365,13 +352,20 @@ function parseRepeat(ctx: ParserContext): Stmt {
 }
 
 /**
+ * How far ahead the `Repetir` closer is looked for: enough for any realistic condition. Past
+ * it the lookahead answers "closer", which ends the loop body rather than swallowing the rest
+ * of the file into it.
+ */
+const REPEAT_CLOSER_LOOKAHEAD = 64
+
+/**
  * True when the `while` keyword ahead closes a `Repetir` rather than opening a loop. Both
  * spell the same key (`Mientras`, `Mientras Que`), so they are told apart by what follows:
  * a loop header reaches `do`, a closer reaches the terminator or a block boundary first.
  */
 function repeatCloserAhead(ctx: ParserContext): boolean {
   if (keywordKeyOf(ctx.cursor.peek()) !== 'while') return false
-  for (let offset = 1; offset < 64; offset++) {
+  for (let offset = 1; offset < REPEAT_CLOSER_LOOKAHEAD; offset++) {
     const token = ctx.cursor.peekAhead(offset)
     if (token.kind === 'eof' || isPunct(token, ';')) return true
     const key = keywordKeyOf(token)
@@ -502,7 +496,7 @@ function parseSwitch(ctx: ParserContext): Stmt {
     if (key !== 'case' && !looksLikeCaseLabel(ctx)) break
     const caseStart = ctx.cursor.at()
     if (key === 'case') ctx.cursor.next()
-    const values = parseExprList(ctx)
+    const values = parseCommaSeparated(ctx, parseExpression)
     if (isPunct(ctx.cursor.peek(), ':')) ctx.cursor.next()
     else {
       const found = ctx.cursor.peek()

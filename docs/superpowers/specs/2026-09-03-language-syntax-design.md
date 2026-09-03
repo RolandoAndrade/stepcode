@@ -394,10 +394,17 @@ fallback `pt-BR → pt → en`.
   first line and records the affected programs in `test/corpus/programs/index-base-0.txt`
   so sub-spec C can run them with `indexBase: 0`; it also rewrites the v1-only builtin
   spellings `round` → `Redondear` and `random` → `Azar`, which no profile defines.
-  `parse.test.ts` asserts each program parses with zero diagnostics under `pseint` and
-  satisfies losslessness. These files seed the conformance
+  `parse.test.ts` asserts each program parses with zero diagnostics under `pseint`, satisfies
+  losslessness and holds the tree invariants; `shape.test.ts` pins the S-expression of eight
+  representative programs in a committed snapshot file, so a silent change of shape shows up. These files seed the conformance
   corpus that sub-specs B and C extend with inputs and expected outputs.
+- **Invariants** (`test/parser/invariants.test.ts`): `assertTreeInvariants` — child inside
+  parent, one innermost owner per significant token, `childrenOf` sorted, span matching the
+  token range — over a table of broken sources (every reproducer of the final review, with and
+  without CRLF).
 - **Property tests** (`fast-check`, added to the workspace catalog): `parse` never throws on
-  random token sequences and random strings, and is deterministic.
+  random token sequences and random strings, is deterministic, and keeps the tree invariants;
+  a mutation property generates a well-formed program, applies one to three single-token edits
+  (delete, duplicate, swap) and asserts the parse is fast, total and still invariant.
 
 Coverage is behavioral: every grammar branch and every diagnostic code has a named test.

@@ -13,6 +13,7 @@ import type { Span } from '../source/index'
 import { finishBlock, openBlock, parseSection } from './blocks'
 import { nodeRange, type ParserContext, placeholderRange, report } from './context'
 import { parseExpression } from './expression'
+import { parseCommaSeparated } from './list'
 import { consumeTerminator, skipToRecoveryPoint } from './terminator'
 import { isKeyword, isOperator, isPunct, keywordKeyOf } from './tokens'
 
@@ -54,15 +55,14 @@ export function parseTypeRef(ctx: ParserContext): TypeRef | null {
   const empty: Span[] = []
   if (isPunct(ctx.cursor.peek(), '[')) {
     const open = ctx.cursor.next()
-    for (;;) {
-      const head = ctx.cursor.peek()
-      if (isPunct(head, ']') || isPunct(head, ',')) {
-        dimensions.push(null)
+    dimensions.push(
+      ...parseCommaSeparated(ctx, (inner): Expr | null => {
+        const head = inner.cursor.peek()
+        if (!isPunct(head, ']') && !isPunct(head, ',')) return parseExpression(inner)
         empty.push(head.span)
-      } else dimensions.push(parseExpression(ctx))
-      if (!isPunct(ctx.cursor.peek(), ',')) break
-      ctx.cursor.next()
-    }
+        return null
+      }),
+    )
     if (isPunct(ctx.cursor.peek(), ']')) ctx.cursor.next()
     else report(ctx, 'E2005', open.span, { bracket: ']' })
     const sized = dimensions.filter((dimension) => dimension !== null)
@@ -80,6 +80,7 @@ function parseParam(ctx: ParserContext): Param {
   const name = expectIdentifier(ctx)
   let type: TypeRef | undefined
   let byRef: boolean | undefined
+  // Every round either consumes its modifier keyword or leaves the loop: no modifier, no spin.
   for (;;) {
     const token = ctx.cursor.peek()
     const key = keywordKeyOf(token)
@@ -115,11 +116,7 @@ export function parseParamList(ctx: ParserContext): Param[] {
     ctx.cursor.next()
     return params
   }
-  for (;;) {
-    params.push(parseParam(ctx))
-    if (!isPunct(ctx.cursor.peek(), ',')) break
-    ctx.cursor.next()
-  }
+  params.push(...parseCommaSeparated(ctx, parseParam))
   if (isPunct(ctx.cursor.peek(), ')')) ctx.cursor.next()
   else report(ctx, 'E2005', open.span, { bracket: ')' })
   return params
@@ -207,11 +204,7 @@ export function parseFunction(ctx: ParserContext): SubprogramDecl {
 export function parseDefine(ctx: ParserContext): Stmt {
   const start = ctx.cursor.at()
   ctx.cursor.next()
-  const names: Identifier[] = [expectIdentifier(ctx)]
-  while (isPunct(ctx.cursor.peek(), ',')) {
-    ctx.cursor.next()
-    names.push(expectIdentifier(ctx))
-  }
+  const names = parseCommaSeparated(ctx, expectIdentifier)
   if (isKeyword(ctx.cursor.peek(), 'as')) ctx.cursor.next()
   else report(ctx, 'E2004', ctx.cursor.peek().span, { expected: 'as' })
   const type = parseTypeRef(ctx)

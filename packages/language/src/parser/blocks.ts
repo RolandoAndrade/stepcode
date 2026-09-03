@@ -57,22 +57,18 @@ export function openBlock(ctx: ParserContext, frame: BlockFrame): void {
 }
 
 /**
+ * Block boundaries that are *not* closers, so they can never dangle:
+ * `case` is a label the `Segun` parser reads itself, and `program` opens the main block.
+ */
+const NEVER_DANGLING: ReadonlySet<KeywordKey> = new Set(['case', 'program'])
+
+/**
  * Keywords that end or continue some block. One of these is *dangling* when no open block
  * lists it in `follows`: it closes nothing, so it is reported and dropped (spec §7).
  */
-export const DANGLING_KEYWORDS: ReadonlySet<KeywordKey> = new Set([
-  'endProgram',
-  'endProcedure',
-  'endFunction',
-  'endIf',
-  'elseIf',
-  'else',
-  'endSwitch',
-  'otherwise',
-  'endWhile',
-  'endFor',
-  'until',
-])
+export const DANGLING_KEYWORDS: ReadonlySet<KeywordKey> = new Set(
+  [...BLOCK_BOUNDARY_KEYWORDS].filter((key) => !NEVER_DANGLING.has(key)),
+)
 
 /**
  * One block body, plus the dangling-closer recovery: a closer no open block is waiting for
@@ -81,6 +77,8 @@ export const DANGLING_KEYWORDS: ReadonlySet<KeywordKey> = new Set([
  */
 export function parseSection(ctx: ParserContext, options: BlockOptions = {}): Stmt[] {
   const body: Stmt[] = []
+  // `parseBlock` guarantees progress and a round that does not return consumes the dangling
+  // closer, so the loop always moves forward.
   for (;;) {
     body.push(...parseBlock(ctx, options))
     const token = ctx.cursor.peek()

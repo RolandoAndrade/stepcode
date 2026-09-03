@@ -227,10 +227,12 @@ export function tokenize(source: string, profile: ResolvedProfile): TokenizeResu
     if (symbol !== undefined) {
       const [spelling, entry] = symbol
       const end = at + spelling.length
-      at =
-        entry.kind === 'operator'
-          ? pushOperator(entry.key, at, end)
-          : (push(entry.kind, at, end, entry.key), end)
+      if (entry.kind === 'operator') {
+        at = pushOperator(entry.key, at, end)
+        continue
+      }
+      push(entry.kind, at, end, entry.key)
+      at = end
       continue
     }
 

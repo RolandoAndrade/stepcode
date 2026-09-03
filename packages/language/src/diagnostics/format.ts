@@ -5,6 +5,8 @@ import type {
   ResolvedProfile,
   TypeKey,
 } from '@stepcode/profiles'
+import { en } from './catalog/en'
+import { es } from './catalog/es'
 import type { DiagnosticCode } from './codes'
 import type { Diagnostic } from './diagnostic'
 
@@ -15,10 +17,28 @@ export interface Catalog {
   readonly variants?: Readonly<Record<string, string>>
 }
 
+/**
+ * Process-global on purpose: a catalog registered anywhere serves every caller, the way a
+ * locale is a property of the process and not of one parse.
+ */
 const catalogs = new Map<string, Catalog>()
+let shippedRegistered = false
+
+/**
+ * The two shipped catalogs, registered on first use rather than at module load, so importing
+ * the package has no side effect (`sideEffects: false` stays true). Registering runs before
+ * any caller's own `registerCatalog`, so an override is never clobbered afterwards.
+ */
+function registerShipped(): void {
+  if (shippedRegistered) return
+  shippedRegistered = true
+  catalogs.set('es', es)
+  catalogs.set('en', en)
+}
 
 /** Adds or replaces the catalog for `locale`. Locales are matched case-insensitively. */
 export function registerCatalog(locale: string, catalog: Catalog): void {
+  registerShipped()
   catalogs.set(locale.toLowerCase(), catalog)
 }
 
@@ -39,6 +59,7 @@ function templateFor(
   hint: string | undefined,
   locale: string,
 ): string | undefined {
+  registerShipped()
   for (const candidate of localeChain(locale)) {
     const catalog = catalogs.get(candidate)
     if (catalog === undefined) continue
@@ -52,8 +73,13 @@ function templateFor(
   return undefined
 }
 
+/** The four sections a `{kw:…}`-style slot can name. */
+type Section = 'kw' | 'type' | 'op' | 'fn'
+
+const SECTIONS: ReadonlySet<string> = new Set<Section>(['kw', 'type', 'op', 'fn'])
+
 /** The profile's first spelling of a construct, or the key itself when it has none. */
-function spellingOf(profile: ResolvedProfile, section: string, key: string): string {
+function spellingOf(profile: ResolvedProfile, section: Section, key: string): string {
   const spellings =
     section === 'kw'
       ? profile.keywords[key as KeywordKey]
@@ -83,10 +109,10 @@ export function formatDiagnostic(
   return template.replace(
     SLOT,
     (match, section: string | undefined, key: string | undefined, plain: string | undefined) => {
-      if (section !== undefined && key !== undefined) {
+      if (section !== undefined && key !== undefined && SECTIONS.has(section)) {
         const resolved = key.startsWith('$') ? diagnostic.data[key.slice(1)] : key
         if (resolved === undefined) return match
-        return spellingOf(profile, section, String(resolved))
+        return spellingOf(profile, section as Section, String(resolved))
       }
       if (plain === undefined) return match
       const value = diagnostic.data[plain]
