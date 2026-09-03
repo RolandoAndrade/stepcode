@@ -71,4 +71,16 @@ describe('LineMap', () => {
     expect(map.lineStart(2)).toBe(4)
     expect(map.lineEnd(2)).toBe(6)
   })
+
+  it('round-trips CRLF terminator characters through offsetAt', () => {
+    const map = new LineMap('a\r\nb')
+    // Offset 1: '\r' (CR) in CRLF pair
+    const pos1 = map.positionAt(1)
+    expect(pos1).toEqual({ line: 1, column: 2 })
+    expect(map.offsetAt(pos1)).toBe(1)
+    // Offset 2: '\n' (LF) in CRLF pair
+    const pos2 = map.positionAt(2)
+    expect(pos2).toEqual({ line: 1, column: 3 })
+    expect(map.offsetAt(pos2)).toBe(2)
+  })
 })

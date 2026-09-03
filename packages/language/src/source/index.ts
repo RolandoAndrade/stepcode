@@ -77,7 +77,8 @@ export class LineMap {
   offsetAt(position: Position): number {
     const line = Math.max(1, Math.min(position.line, this.starts.length))
     const start = this.lineStart(line)
-    const nextLineStart = line < this.starts.length ? (this.starts[line] ?? this.source.length) : this.source.length
+    const nextLineStart =
+      line < this.starts.length ? (this.starts[line] ?? this.source.length) : this.source.length
     const column = Math.max(1, position.column)
     const maxOffset = line === this.starts.length ? nextLineStart : nextLineStart - 1
     return Math.min(start + column - 1, maxOffset)
