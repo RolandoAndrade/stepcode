@@ -229,6 +229,22 @@ describe('E2003 carries the opener line and a related span', () => {
     expect(result.diagnostics.map((item) => item.code)).toEqual(['E2003'])
     expect(sexpr(result.program)).toBe('(program (main p (if a (write (literal 1)))))')
   })
+
+  it('reports the innermost of two mismatched levels and lets the outer closer close', () => {
+    const source =
+      'Proceso p\n  Si a Entonces\n  Para i <- 1 Hasta 3 Hacer\n  Escribir i;\n  FinSi\nFinProceso'
+    const result = parseSource(source)
+    expect(result.diagnostics).toHaveLength(1)
+    const diagnostic = result.diagnostics[0]
+    expect(diagnostic?.code).toBe('E2003')
+    expect(diagnostic?.data).toMatchObject({ closer: 'endFor', opener: 'for', openerLine: 3 })
+    expect(diagnostic?.related).toEqual([
+      { span: { start: source.indexOf('FinSi'), end: source.indexOf('FinSi') + 'FinSi'.length } },
+    ])
+    expect(sexpr(result.program)).toBe(
+      '(program (main p (if a (for i (literal 1) (literal 3) - (write i)))))',
+    )
+  })
 })
 
 describe('recovery: one mistake, one diagnostic, an intact AST', () => {
@@ -272,6 +288,12 @@ describe('recovery: one mistake, one diagnostic, an intact AST', () => {
     const source = 'a <- 1;\nProceso p\n  b <- 2;\nFinProceso'
     expect(diagnosticCodes(source)).toEqual(['E2012'])
     expect(ast(source)).toBe('(program (main p (assign b (literal 2))))')
+  })
+
+  it('a missing terminator right before a closer on the next line', () => {
+    const source = 'Proceso p\n  Si a Entonces\n  Escribir 1\n  FinSi\nFinProceso'
+    expect(diagnosticCodes(source)).toEqual(['E2001'])
+    expect(ast(source)).toBe('(program (main p (if a (write (literal 1)))))')
   })
 
   it('a broken expression leaves the statement terminated', () => {
