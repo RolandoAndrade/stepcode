@@ -1,0 +1,98 @@
+export const KEYWORD_KEYS = [
+  'program',
+  'endProgram',
+  'define',
+  'as',
+  'constant',
+  'dimension',
+  'if',
+  'then',
+  'elseIf',
+  'else',
+  'endIf',
+  'switch',
+  'case',
+  'otherwise',
+  'endSwitch',
+  'while',
+  'do',
+  'endWhile',
+  'for',
+  'to',
+  'step',
+  'endFor',
+  'repeat',
+  'until',
+  'break',
+  'continue',
+  'procedure',
+  'endProcedure',
+  'function',
+  'endFunction',
+  'return',
+  'byRef',
+  'byValue',
+  'write',
+  'writeNoNewline',
+  'read',
+  'clearScreen',
+  'wait',
+  'waitKey',
+  'and',
+  'or',
+  'not',
+  'mod',
+  'true',
+  'false',
+] as const
+
+export const TYPE_KEYS = ['integer', 'real', 'string', 'char', 'boolean'] as const
+
+export const OPERATOR_KEYS = [
+  'assign',
+  'equal',
+  'notEqual',
+  'lt',
+  'le',
+  'gt',
+  'ge',
+  'plus',
+  'minus',
+  'times',
+  'divide',
+  'power',
+  'comment',
+] as const
+
+export const BUILTIN_KEYS = [
+  'abs',
+  'sqrt',
+  'ln',
+  'exp',
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan',
+  'trunc',
+  'round',
+  'random',
+  'randomBetween',
+  'pi',
+  'length',
+  'upper',
+  'lower',
+  'substring',
+  'concat',
+  'toNumber',
+  'toText',
+] as const
+
+export type KeywordKey = (typeof KEYWORD_KEYS)[number]
+export type TypeKey = (typeof TYPE_KEYS)[number]
+export type OperatorKey = (typeof OPERATOR_KEYS)[number]
+export type BuiltinKey = (typeof BUILTIN_KEYS)[number]
+
+/** Keyword keys that may legitimately have no spelling. */
+export const OPTIONAL_KEYWORD_KEYS: readonly KeywordKey[] = ['case']

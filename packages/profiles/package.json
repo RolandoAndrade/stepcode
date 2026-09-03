@@ -35,6 +35,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "zod": "^4.5.4"
+  },
   "devDependencies": {
     "tsdown": "catalog:",
     "typescript": "catalog:",
