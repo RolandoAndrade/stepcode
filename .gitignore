@@ -11,3 +11,4 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 .atl/
+.claude/settings.local.json
