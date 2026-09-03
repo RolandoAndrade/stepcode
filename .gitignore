@@ -10,3 +10,4 @@ coverage/
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.atl/
