@@ -86,5 +86,22 @@ export const ProfileInputSchema = z.union([ExtendingProfileSchema, RootProfileSc
 
 export type ProfileInput = z.infer<typeof ProfileInputSchema>
 
+/**
+ * Strips `readOnly` recursively from a JSON Schema.
+ *
+ * `SpellingsSchema` is `.readonly()` so the TS type (`ProfileData['keywords'][K]`, etc.) stays
+ * a readonly array — but Zod's `toJSONSchema` surfaces `.readonly()` as JSON Schema
+ * `readOnly: true`. Editor form generators (and the `$schema` consumers this is for) treat
+ * `readOnly` as "disable this field", which would disable exactly the spelling arrays a
+ * profile author must edit. The Zod-level readonly-ness is a TypeScript concern only.
+ */
+function stripReadOnly(schema: object): Record<string, unknown> {
+  return JSON.parse(
+    JSON.stringify(schema, (key, value) => (key === 'readOnly' ? undefined : value)),
+  ) as Record<string, unknown>
+}
+
 /** JSON Schema for editor tooling and `$schema` in user profile files. */
-export const profileJsonSchema = z.toJSONSchema(RootProfileSchema)
+export const profileJsonSchema: Record<string, unknown> = stripReadOnly(
+  z.toJSONSchema(RootProfileSchema),
+)

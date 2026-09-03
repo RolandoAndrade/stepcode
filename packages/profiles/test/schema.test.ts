@@ -97,4 +97,10 @@ describe('defaults and resolved schema', () => {
       ]),
     )
   })
+
+  it('never marks fields readOnly, even though Spellings is a readonly array in TS', () => {
+    // Zod's .readonly() surfaces as JSON Schema `readOnly: true`, which would tell an editor
+    // form generator to disable exactly the fields a profile author must edit.
+    expect(JSON.stringify(profileJsonSchema)).not.toContain('"readOnly"')
+  })
 })
