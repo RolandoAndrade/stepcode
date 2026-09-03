@@ -1,0 +1,71 @@
+import type { KeywordKey } from '@stepcode/profiles'
+import type { Stmt } from '../ast/index'
+import type { Span } from '../source/index'
+import { type BlockFrame, type ParserContext, report } from './context'
+import { parseStatement } from './statement'
+import { BLOCK_BOUNDARY_KEYWORDS } from './terminator'
+import { keywordKeyOf } from './tokens'
+
+export interface BlockOptions {
+  /**
+   * An extra stop test, run before each statement: a `Segun` case label that carries no
+   * keyword, or the `Mientras Que` that closes a `Repetir`.
+   */
+  readonly stop?: (ctx: ParserContext) => boolean
+}
+
+/**
+ * Statements until a block boundary. Guarantees progress: a statement that consumed nothing
+ * costs one token, so no input loops forever.
+ */
+export function parseBlock(ctx: ParserContext, options: BlockOptions = {}): Stmt[] {
+  const body: Stmt[] = []
+  while (!ctx.cursor.atEnd()) {
+    const key = keywordKeyOf(ctx.cursor.peek())
+    if (key !== null && BLOCK_BOUNDARY_KEYWORDS.has(key)) break
+    if (options.stop?.(ctx) === true) break
+    const before = ctx.cursor.at()
+    const statement = parseStatement(ctx)
+    if (statement !== null) body.push(statement)
+    if (ctx.cursor.at() === before) ctx.cursor.next()
+  }
+  return body
+}
+
+export function openBlock(ctx: ParserContext, frame: BlockFrame): void {
+  ctx.blocks.push(frame)
+}
+
+/**
+ * One block body. Task 8 gives this the dangling-closer recovery; here it is just a block.
+ */
+export function parseSection(ctx: ParserContext, options: BlockOptions = {}): Stmt[] {
+  return parseBlock(ctx, options)
+}
+
+export function reportUnclosed(ctx: ParserContext, frame: BlockFrame, closerSpan: Span): void {
+  const opener = ctx.tokens[frame.openerToken]
+  const span = opener?.span ?? closerSpan
+  report(
+    ctx,
+    'E2003',
+    span,
+    {
+      opener: frame.opener,
+      closer: frame.closer,
+      openerLine: ctx.lineMap.positionAt(span.start).line,
+    },
+    [{ span: closerSpan }],
+  )
+}
+
+/** Consumes the closer, or reports E2003 against the innermost open block. */
+export function finishBlock(ctx: ParserContext, closer: KeywordKey): void {
+  const frame = ctx.blocks.pop()
+  const token = ctx.cursor.peek()
+  if (keywordKeyOf(token) === closer) {
+    ctx.cursor.next()
+    return
+  }
+  if (frame !== undefined) reportUnclosed(ctx, frame, token.span)
+}

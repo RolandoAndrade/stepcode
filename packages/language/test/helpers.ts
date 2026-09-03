@@ -1,10 +1,11 @@
 import { profiles, type ResolvedProfile } from '@stepcode/profiles'
 import type { Expr, Node, Stmt, TypeRef } from '../src/ast/index'
-import type { Diagnostic } from '../src/diagnostics/index'
+import type { Diagnostic, DiagnosticCode } from '../src/diagnostics/index'
 import type { Token } from '../src/lexer/index'
 import { tokenize } from '../src/lexer/index'
 import { createContext } from '../src/parser/context'
 import { parseExpression } from '../src/parser/expression'
+import { type ParseResult, parse } from '../src/parser/parse'
 
 /**
  * A token stream as `kind:value` strings, the compact form the lexer tests assert against.
@@ -158,4 +159,20 @@ export function parseExprResult(
 
 export function parseExpr(source: string, profile: ResolvedProfile = profiles.es): Expr {
   return parseExprResult(source, profile).expr
+}
+
+export function parseSource(source: string, profile: ResolvedProfile = profiles.es): ParseResult {
+  return parse(source, { profile })
+}
+
+/** The parsed program as an S-expression. */
+export function ast(source: string, profile: ResolvedProfile = profiles.es): string {
+  return sexpr(parseSource(source, profile).program)
+}
+
+export function diagnosticCodes(
+  source: string,
+  profile: ResolvedProfile = profiles.es,
+): DiagnosticCode[] {
+  return parseSource(source, profile).diagnostics.map((diagnostic) => diagnostic.code)
 }
