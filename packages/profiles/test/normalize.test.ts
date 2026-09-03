@@ -30,6 +30,11 @@ describe('createNormalizer', () => {
     expect(normalize('Año')).toBe('año')
   })
 
+  it('recomposes Ñ before stripping combining marks, so it never gets folded to n', () => {
+    const normalize = createNormalizer({ caseSensitive: false, foldAccents: true })
+    expect(normalize('Ñandú')).toBe('ñandu')
+  })
+
   it('collapses whitespace inside multi-word spellings', () => {
     const normalize = createNormalizer({ caseSensitive: false, foldAccents: true })
     expect(normalize('Escribir  Sin   Saltar')).toBe('escribir sin saltar')
