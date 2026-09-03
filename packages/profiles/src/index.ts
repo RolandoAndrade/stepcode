@@ -12,10 +12,12 @@ export { MAX_EXTENDS_DEPTH, resolveProfile } from './resolve'
 export type { ProfileData, ProfileInput, ProfileOptions } from './schema'
 export {
   DEFAULT_OPTIONS,
+  ExtendingProfileSchema,
   LOCALE_PATTERN,
   ProfileInputSchema,
   ProfileOptionsSchema,
   profileJsonSchema,
   ResolvedProfileDataSchema,
+  RootProfileSchema,
   SpellingsSchema,
 } from './schema'

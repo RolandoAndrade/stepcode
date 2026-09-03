@@ -4,11 +4,13 @@ import { BUILTIN_KEYS, KEYWORD_KEYS, OPERATOR_KEYS, OPTIONAL_KEYWORD_KEYS, TYPE_
 import { collapseWhitespace, createNormalizer, type Normalizer } from './normalize'
 import {
   DEFAULT_OPTIONS,
+  ExtendingProfileSchema,
   type ProfileData,
   type ProfileInput,
-  ProfileInputSchema,
   ResolvedProfileDataSchema,
+  RootProfileSchema,
 } from './schema'
+import { sealMap } from './seal'
 
 /** Spellings may not contain punctuation the lexer owns, and may not look like numbers. */
 const FORBIDDEN_IN_SPELLING = /[;,()[\]"']/
@@ -24,9 +26,19 @@ export interface LookupEntry {
 }
 
 export interface ResolvedProfile extends ProfileData {
-  /** normalized spelling → construct, for keywords, types and builtins */
+  /**
+   * normalized spelling → construct, for keywords, types and builtins.
+   *
+   * Sealed via `sealMap`: `set`/`delete`/`clear` throw `TypeError`. Shipped profiles are
+   * module-level singletons shared by every caller, so this table must never be mutated in
+   * place — build a derived table as a new `Map` instead (e.g. `new Map(resolved.lookup)`).
+   */
   readonly lookup: ReadonlyMap<string, LookupEntry>
-  /** exact operator spelling → operator key */
+  /**
+   * exact operator spelling → operator key.
+   *
+   * Sealed the same way as `lookup`: mutation throws, derive a new `Map` if you need one.
+   */
   readonly operatorLookup: ReadonlyMap<string, OperatorKey>
   /** words in the longest multi-word spelling (for longest-match lexing) */
   readonly maxWords: number
@@ -38,8 +50,21 @@ export const MAX_EXTENDS_DEPTH = 8
 
 type Sections = Pick<ProfileData, 'keywords' | 'types' | 'operators' | 'builtins'>
 
+/**
+ * Parses with the branch the input's shape actually asks for, instead of `ProfileInputSchema`
+ * (the `z.union` of both branches). Zod reports a union failure against the union as a whole:
+ * for a root profile that message collapses to `<root>: Invalid input` with an empty path,
+ * because neither branch is picked as "the" one being validated. Picking the branch by shape
+ * — an object with an `extends` key is an extending profile, anything else is a root profile —
+ * means a failure is reported against the one schema the input actually meant to satisfy, so
+ * issues carry real paths (`keywords.if: Invalid input: expected array, received string`).
+ */
 function parseInput(input: unknown, path: readonly string[]): ProfileInput {
-  const result = ProfileInputSchema.safeParse(input)
+  const schema =
+    typeof input === 'object' && input !== null && !Array.isArray(input) && 'extends' in input
+      ? ExtendingProfileSchema
+      : RootProfileSchema
+  const result = schema.safeParse(input)
   if (!result.success) {
     const issue = result.error.issues[0]
     const issuePath = issue ? issue.path.map(String) : []
@@ -164,7 +189,13 @@ export function resolveProfile(
   const data = checked.data
   const normalize = createNormalizer(data.options)
   const { lookup, operatorLookup, maxWords } = buildLookups(data, normalize)
-  return deepFreeze({ ...data, lookup, operatorLookup, maxWords, normalize })
+  return deepFreeze({
+    ...data,
+    lookup: sealMap(lookup),
+    operatorLookup: sealMap(operatorLookup),
+    maxWords,
+    normalize,
+  })
 }
 
 type WordSectionName = 'keywords' | 'types' | 'builtins'

@@ -59,7 +59,7 @@ const partialSections = {
 }
 
 /** A profile that extends another may omit anything the parent provides. */
-const ExtendingProfileSchema = z.strictObject({
+export const ExtendingProfileSchema = z.strictObject({
   id: IdSchema,
   extends: IdSchema,
   locale: LocaleSchema.optional(),
@@ -72,7 +72,7 @@ const ExtendingProfileSchema = z.strictObject({
  * extending profile to ExtendingProfileSchema, and `z.undefined()` cannot be rendered
  * by `toJSONSchema`.
  */
-const RootProfileSchema = z.strictObject({
+export const RootProfileSchema = z.strictObject({
   id: IdSchema,
   locale: LocaleSchema,
   keywords: z.record(keywordKeys, SpellingsSchema),

@@ -70,6 +70,21 @@ describe('shipped profiles', () => {
     }
   })
 
+  it('lookup size equals the number of distinct normalized spellings', () => {
+    const profile = profiles.es
+    const distinct = new Set<string>()
+    for (const key of KEYWORD_KEYS) {
+      for (const spelling of profile.keywords[key]) distinct.add(profile.normalize(spelling))
+    }
+    for (const key of TYPE_KEYS) {
+      for (const spelling of profile.types[key]) distinct.add(profile.normalize(spelling))
+    }
+    for (const key of BUILTIN_KEYS) {
+      for (const spelling of profile.builtins[key]) distinct.add(profile.normalize(spelling))
+    }
+    expect(profile.lookup.size).toBe(distinct.size)
+  })
+
   it('the registry resolves user profiles that extend a shipped one', () => {
     const custom = resolveProfile(
       { id: 'clase', extends: 'es', keywords: { if: ['Cuando'] } },

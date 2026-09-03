@@ -64,6 +64,44 @@ describe('resolveProfile — root profiles', () => {
       expect((error as ProfileError).code).toBe('PROFILE_INVALID')
     }
   })
+
+  it('gives a root profile a real path and message, not <root>: Invalid input', () => {
+    const input = base()
+    // biome-ignore lint/suspicious/noExplicitAny: deliberately breaking the type for the test
+    ;(input.keywords as any).if = 'Si'
+    expect.assertions(3)
+    try {
+      resolveProfile(input, registry())
+    } catch (error) {
+      expect(error).toBeInstanceOf(ProfileError)
+      expect((error as ProfileError).path).toEqual(['keywords', 'if'])
+      expect((error as ProfileError).message).toContain('keywords.if')
+    }
+  })
+
+  it('gives a root profile missing an entire section a path to that section', () => {
+    // biome-ignore lint/suspicious/noExplicitAny: deliberately breaking the type for the test
+    const input = base() as any
+    delete input.types
+    expect.assertions(2)
+    try {
+      resolveProfile(input, registry())
+    } catch (error) {
+      expect(error).toBeInstanceOf(ProfileError)
+      expect((error as ProfileError).path).toEqual(['types'])
+    }
+  })
+
+  it('gives an extending profile with a bad option a real path', () => {
+    const input = { id: 'x', extends: 'base', options: { indexBase: 7 } }
+    expect.assertions(2)
+    try {
+      resolveProfile(input, registry(base()))
+    } catch (error) {
+      expect(error).toBeInstanceOf(ProfileError)
+      expect((error as ProfileError).path).toEqual(['options', 'indexBase'])
+    }
+  })
 })
 
 describe('resolveProfile — extends', () => {
@@ -232,5 +270,53 @@ describe('resolveProfile — lookup tables', () => {
   it('normalize on the resolved profile matches the options', () => {
     const resolved = resolveProfile({ ...base(), options: { caseSensitive: true } })
     expect(resolved.normalize('Función')).toBe('Funcion')
+  })
+})
+
+describe('resolveProfile — sealed lookup tables', () => {
+  it('throws TypeError on lookup.set/delete/clear', () => {
+    const resolved = resolveProfile(base())
+    const lookup = resolved.lookup as Map<string, unknown>
+    expect(() => lookup.set('x', {})).toThrow(TypeError)
+    expect(() => lookup.delete('si')).toThrow(TypeError)
+    expect(() => lookup.clear()).toThrow(TypeError)
+  })
+
+  it('throws TypeError on operatorLookup.set/delete/clear', () => {
+    const resolved = resolveProfile(base())
+    const operatorLookup = resolved.operatorLookup as Map<string, unknown>
+    expect(() => operatorLookup.set('@', 'plus')).toThrow(TypeError)
+    expect(() => operatorLookup.delete('op0')).toThrow(TypeError)
+    expect(() => operatorLookup.clear()).toThrow(TypeError)
+  })
+
+  it('reads still work on lookup and operatorLookup after failed mutation attempts', () => {
+    const resolved = resolveProfile(base())
+    const lookup = resolved.lookup as Map<string, unknown>
+    try {
+      lookup.set('x', {})
+    } catch {
+      // expected
+    }
+    expect(resolved.lookup.get('si')).toEqual({ kind: 'keyword', key: 'if' })
+    expect(resolved.lookup.has('si')).toBe(true)
+    expect(resolved.lookup.size).toBeGreaterThan(0)
+    expect([...resolved.lookup.keys()].length).toBe(resolved.lookup.size)
+    let forEachCount = 0
+    resolved.lookup.forEach(() => {
+      forEachCount++
+    })
+    expect(forEachCount).toBe(resolved.lookup.size)
+
+    const operatorLookup = resolved.operatorLookup as Map<string, unknown>
+    try {
+      operatorLookup.set('@', 'plus')
+    } catch {
+      // expected
+    }
+    for (const [k, v] of resolved.operatorLookup.entries()) {
+      expect(resolved.operatorLookup.get(k)).toBe(v)
+    }
+    expect([...resolved.operatorLookup.values()].length).toBe(resolved.operatorLookup.size)
   })
 })
