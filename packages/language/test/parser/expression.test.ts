@@ -105,7 +105,7 @@ describe('expression diagnostics', () => {
   it('reports a chained comparison once, and still builds an AST', () => {
     const { expr, diagnostics } = parseExprResult('a < b < c')
     expect(diagnostics.map((d) => d.code)).toEqual(['E2030'])
-    expect(diagnostics[0]!.data.text).toBe('<')
+    expect(diagnostics[0]!.data).toMatchObject({ first: '<', second: '<' })
     expect(sexpr(expr)).toBe('(binary lt (binary lt a b) c)')
   })
 
@@ -137,8 +137,9 @@ describe('expression diagnostics', () => {
     expect(bracket.diagnostics[0]!.data.bracket).toBe(']')
   })
 
-  it('keeps the lexer diagnostics ahead of the parser ones', () => {
-    expect(codes('== b')).toEqual(['E1006', 'E2031'])
+  it('leaves an error token to the lexer instead of piling E2031 on it', () => {
+    expect(codes('== b')).toEqual(['E1006'])
+    expect(codes('10abc')).toEqual(['E1003'])
   })
 
   it('never throws on a hostile expression', () => {

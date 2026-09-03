@@ -68,6 +68,8 @@ Binding rules:
   this package (`es`, `en`; locale fallback `pt-BR → pt → en`, `registerCatalog` for more).
   Templates quote the active profile's first spelling of a construct via `{kw:endIf}` slots.
 - **Deterministic**: same `(source, profile)` → identical tokens, AST, diagnostics.
+- **Ordered**: `parse` returns diagnostics sorted by `span.start`, stably — at the same offset
+  a lexer diagnostic comes before a parser one.
 - **Lossless**: `tokens.map(t => t.text).join('') === source`; every significant token
   (trivia, `newline` and `eof` aside) lies in the token range of exactly one innermost node.
   A child's range always lies inside its parent's and siblings never overlap; recovery
@@ -300,8 +302,19 @@ Goal: one mistake, one diagnostic, and an AST that is intact everywhere else.
     `Si` on line N", `related` = closer span), close the inner block virtually, and let the
     outer block consume the closer;
   - matches nothing → E2006 ("`FinSi` closes nothing"), token dropped.
-  EOF with open blocks → one E2003 per open block, innermost first.
+  EOF with open blocks → one E2003 per open block, found innermost first and then sorted by
+  position like every other diagnostic.
 - **Missing `Entonces`/`Hacer`** → E2004, inserted virtually.
+- **Lexer `error` tokens** are already diagnosed (E1001, E1003, E1006), so the parser swallows
+  them without a second diagnostic: in expression position one becomes an `ErrorExpr`, in
+  operator position it takes an operand with it, and the terminator, the statement dispatcher
+  and the keyword expectations step over it.
+- **`Sino Si` after `Sino`** → E2014 at the branch, which is parsed and appended to `branches`
+  all the same, so nothing of the program is lost.
+- **A subprogram inside a block** → E2015 at its opener; it is parsed in full, kept in
+  `Program.subprograms`, and the enclosing block resumes after its closer. Its tokens then lie
+  inside the main block's range as well: the one place a token has two owners.
+- **Mixed sized and unsized dimensions** (`Entero[3,]`) → E2023 at the empty slot.
 - **Expression errors** → `ErrorExpr` with E2031; the enclosing statement still terminates.
 - **Unbalanced `)` / `]`** → E2005 at the opener; recovery at the terminator.
 - **Nesting limits.** Expressions descend at most `MAX_EXPRESSION_DEPTH` (500) levels and
@@ -323,9 +336,12 @@ Goal: one mistake, one diagnostic, and an AST that is intact everywhere else.
 | E2011 | error | second main block |
 | E2012 | error | statement outside a block |
 | E2013 | error | second `De Otro Modo` |
+| E2014 | error | `Sino Si` after `Sino` |
+| E2015 | error | subprogram declared inside a block |
 | E2020 | error | assignment to a call |
 | E2021 | error | parameter without a type (`typedParameters`) |
 | E2022 | error | repeated parameter modifier |
+| E2023 | error | mixed sized and unsized dimensions |
 | E2030 | error | chained comparison |
 | E2031 | error | expected an expression |
 | E2032 | error | nesting too deep (data: `limit`) |

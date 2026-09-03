@@ -14,12 +14,15 @@ export interface ParseResult {
 
 /**
  * Source to AST. Never throws; every option comes from `options.profile.options`.
- * Lexer diagnostics come first, then parser diagnostics in the order they were found.
+ * Diagnostics come sorted by position; at the same offset the lexer's come first.
  */
 export function parse(source: string, options: { profile: ResolvedProfile }): ParseResult {
   const { tokens, diagnostics } = tokenize(source, options.profile)
   const ctx = createContext(source, tokens, options.profile, diagnostics)
   const program = parseProgram(ctx)
   sealRanges(program, tokens)
-  return { program, tokens, diagnostics: ctx.diagnostics }
+  // Sorted by position, stably: at the same offset the lexer's diagnostic comes first, because
+  // it was pushed first. Readers want the file's order, not the parser's discovery order.
+  const sorted = [...ctx.diagnostics].sort((left, right) => left.span.start - right.span.start)
+  return { program, tokens, diagnostics: sorted }
 }

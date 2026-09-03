@@ -14,7 +14,13 @@ import type {
 import type { Token } from '../lexer/index'
 import { finishBlock, openBlock, parseSection, reportUnclosed } from './blocks'
 import { nodeRange, type ParserContext, placeholderRange, report } from './context'
-import { expectIdentifier, parseDefine, parseTypeRef } from './declarations'
+import {
+  expectIdentifier,
+  parseDefine,
+  parseFunction,
+  parseProcedure,
+  parseTypeRef,
+} from './declarations'
 import { parseExpression, parseTarget } from './expression'
 import { BLOCK_BOUNDARY_KEYWORDS, consumeTerminator, skipToRecoveryPoint } from './terminator'
 import { isKeyword, isOperator, isPunct, keywordKeyOf } from './tokens'
@@ -25,6 +31,8 @@ function errorStmt(ctx: ParserContext, start: number): Stmt {
 
 /** Consumes a required keyword (`Entonces`, `Hacer`) or reports E2004 and carries on. */
 function expectKeyword(ctx: ParserContext, key: KeywordKey): void {
+  // An `error` token in the way is the lexer's business, not a missing keyword.
+  while (ctx.cursor.peek().kind === 'error') ctx.cursor.next()
   if (isKeyword(ctx.cursor.peek(), key)) {
     ctx.cursor.next()
     return
@@ -49,7 +57,15 @@ export function parseStatement(ctx: ParserContext): Stmt | null {
     ctx.cursor.next()
     return null
   }
+  // The lexer already reported this run; it produces no node and no second diagnostic.
+  if (token.kind === 'error') {
+    ctx.cursor.next()
+    return null
+  }
   switch (keywordKeyOf(token)) {
+    case 'procedure':
+    case 'function':
+      return parseMisplacedSubprogram(ctx)
     case 'define':
       return parseDefine(ctx)
     case 'dimension':
@@ -89,6 +105,20 @@ export function parseStatement(ctx: ParserContext): Stmt | null {
   }
   if (token.kind === 'identifier' || token.kind === 'builtin') return parseAssignOrCall(ctx)
   return parseErrorStatement(ctx)
+}
+
+/**
+ * A `SubProceso`/`Funcion` met inside an open block. It is parsed in full and kept in
+ * `Program.subprograms`, where it belongs, so only its placement is wrong: E2015 at the opener
+ * and the enclosing block goes on after its closer.
+ */
+function parseMisplacedSubprogram(ctx: ParserContext): Stmt | null {
+  const token = ctx.cursor.peek()
+  report(ctx, 'E2015', token.span)
+  ctx.subprograms.push(
+    keywordKeyOf(token) === 'procedure' ? parseProcedure(ctx) : parseFunction(ctx),
+  )
+  return null
 }
 
 /** E2002 at the offending token, then skip to the next recovery point: one `ErrorStmt`. */
@@ -270,6 +300,13 @@ function parseIf(ctx: ParserContext): Stmt {
   if (isKeyword(ctx.cursor.peek(), 'else')) {
     ctx.cursor.next()
     elseBody = parseSection(ctx)
+  }
+  // A branch written after the `Sino` is out of order, not lost: E2015's sibling E2014 says so
+  // and the branch joins the others, so the tree still holds every statement of the program.
+  while (isKeyword(ctx.cursor.peek(), 'elseIf')) {
+    report(ctx, 'E2014', ctx.cursor.peek().span)
+    ctx.cursor.next()
+    branches.push(parseIfBranch(ctx))
   }
   finishBlock(ctx, 'endIf')
   const range = nodeRange(ctx, start)

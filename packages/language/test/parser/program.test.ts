@@ -192,8 +192,8 @@ describe('type references', () => {
     expect(diagnosticCodes('Proceso p\nDefinir a Como Entero[n + 1];\nFinProceso')).toEqual([])
   })
 
-  it('reports E2002 when some sizes are present and others are not', () => {
-    expect(diagnosticCodes('Proceso p\nDefinir a Como Entero[3,];\nFinProceso')).toEqual(['E2002'])
+  it('reports E2023 when some sizes are present and others are not', () => {
+    expect(diagnosticCodes('Proceso p\nDefinir a Como Entero[3,];\nFinProceso')).toEqual(['E2023'])
   })
 
   it('reads a list of names sharing one type', () => {

@@ -309,11 +309,14 @@ export function assertTreeInvariants(result: ParseResult): void {
         )
         previousStart = child.tokens[0]
         if (isPlaceholder(child)) continue
+        // A subprogram written inside a block is hoisted to `Program.subprograms` (E2015), so
+        // its tokens sit inside the main block's range: the one place a token has two owners.
+        const hoisted = node.kind === 'Program' && child.tokens[1] <= previousEnd
         check(
-          child.tokens[0] > previousEnd,
+          hoisted || child.tokens[0] > previousEnd,
           `children of ${describeNode(node)} overlap at token ${child.tokens[0]}`,
         )
-        previousEnd = child.tokens[1]
+        previousEnd = Math.max(previousEnd, child.tokens[1])
       }
       for (const container of containersOf(node)) {
         const label = `${describeNode(node)} ${container.label}`

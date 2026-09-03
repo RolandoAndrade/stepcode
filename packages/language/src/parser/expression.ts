@@ -110,19 +110,29 @@ function parseExpressionAt(ctx: ParserContext, minBinding: number): Expr {
   const start = ctx.cursor.at()
   let left = parsePrefix(ctx)
   let afterComparison = false
+  let firstComparison = ''
   for (;;) {
     const token = ctx.cursor.peek()
+    if (token.kind === 'error') {
+      // An `error` token where an operator belongs (`a == b`) is already diagnosed. Consume it
+      // and the operand behind it so the statement layer sees a finished expression; the
+      // operand is dropped, since nothing can be said about what it was an operand of.
+      ctx.cursor.next()
+      parseExpression(ctx, minBinding)
+      continue
+    }
     const op = binaryOpOf(token)
     if (op === null) break
     const binding = LEFT_BINDING[op]
     if (binding < minBinding) break
     // The relational level is non-associative: `a < b < c` is a mistake, not a nesting.
     if (afterComparison && COMPARISONS.has(op))
-      report(ctx, 'E2030', token.span, { text: token.text })
+      report(ctx, 'E2030', token.span, { first: firstComparison, second: token.text })
     ctx.cursor.next()
     const right = parseExpression(ctx, RIGHT_BINDING[op])
     left = { kind: 'Binary', op, left, right, ...nodeRange(ctx, start) }
     afterComparison = COMPARISONS.has(op)
+    if (afterComparison) firstComparison = token.text
   }
   return left
 }
@@ -194,6 +204,12 @@ function parsePrimary(ctx: ParserContext): Expr {
   const start = ctx.cursor.at()
   const token = ctx.cursor.peek()
   switch (token.kind) {
+    // The lexer already diagnosed this run (E1001, E1003, E1006). Swallow it instead of
+    // piling E2031 on top, and let the placeholder carry the gap.
+    case 'error': {
+      ctx.cursor.next()
+      return { kind: 'ErrorExpr', ...nodeRange(ctx, start) }
+    }
     case 'integer':
     case 'real': {
       ctx.cursor.next()

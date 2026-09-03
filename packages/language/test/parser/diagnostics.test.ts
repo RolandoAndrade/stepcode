@@ -132,6 +132,30 @@ const cases: {
     en: 'Otherwise',
   },
   {
+    code: 'E2014',
+    source: 'Proceso p\n  Si a Entonces\n  Sino\n  Sino Si b Entonces\n  FinSi\nFinProceso',
+    line: 4,
+    column: 3,
+    es: 'Sino Si',
+    en: 'ElseIf',
+  },
+  {
+    code: 'E2015',
+    source: 'Proceso p\n  SubProceso f\n  FinSubProceso\nFinProceso',
+    line: 2,
+    column: 3,
+    es: 'SubProceso',
+    en: 'Procedure',
+  },
+  {
+    code: 'E2023',
+    source: 'Proceso p\n  Definir a Como Entero[3,];\nFinProceso',
+    line: 2,
+    column: 27,
+    es: 'tamaño',
+    en: 'size',
+  },
+  {
     code: 'E2020',
     source: 'Proceso p\n  f(1) <- 2;\nFinProceso',
     line: 2,
@@ -222,13 +246,14 @@ describe('E2003 carries the opener line and a related span', () => {
     expect(diagnostic?.related).toHaveLength(1)
   })
 
-  it('reports one E2003 per open block at end of file, innermost first', () => {
+  it('reports one E2003 per open block at end of file, in opener order', () => {
     const result = parseSource('Proceso p\n  Si a Entonces\n  Mientras b Hacer\n')
     expect(result.diagnostics.map((item) => item.code)).toEqual(['E2003', 'E2003', 'E2003'])
+    // Found innermost first, then sorted by position: each one sits on its own opener.
     expect(result.diagnostics.map((item) => item.data.closer)).toEqual([
-      'endWhile',
-      'endIf',
       'endProgram',
+      'endIf',
+      'endWhile',
     ])
   })
 
@@ -311,16 +336,93 @@ describe('recovery: one mistake, one diagnostic, an intact AST', () => {
   })
 })
 
-describe('diagnostic ordering and shape', () => {
-  it('puts lexer diagnostics before parser ones', () => {
-    const codes = diagnosticCodes('Proceso p\n  a <- @;\n  b <- ) ;\nFinProceso')
-    expect(codes).toContain('E1001')
-    const lastLexer = codes.reduce(
-      (last, code, index) => (code.startsWith('E1') ? index : last),
-      -1,
+describe('a lexer error token does not cascade into the parser', () => {
+  it('reports only the malformed number', () => {
+    const source = 'Proceso p\n  a <- 10abc;\n  b <- 2;\nFinProceso'
+    expect(diagnosticCodes(source)).toEqual(['E1003'])
+    expect(ast(source)).toBe('(program (main p (assign a (error-expr)) (assign b (literal 2))))')
+  })
+
+  it('reports only the == mistake and keeps the Si intact', () => {
+    const source = 'Proceso p\n  Si a == b Entonces\n  Escribir 1;\n  FinSi\nFinProceso'
+    expect(diagnosticCodes(source)).toEqual(['E1006'])
+    expect(ast(source)).toBe('(program (main p (if a (write (literal 1)))))')
+  })
+
+  it('reports only the stray character in statement position', () => {
+    const source = 'Proceso p\n  @\n  b <- 2;\nFinProceso'
+    expect(diagnosticCodes(source)).toEqual(['E1001'])
+    expect(ast(source)).toBe('(program (main p (assign b (literal 2))))')
+  })
+})
+
+describe('«Sino Si» after «Sino»', () => {
+  it('reports E2014 once and keeps the branch', () => {
+    const source =
+      'Proceso p\n  Si a Entonces\n  Escribir 1;\n  Sino\n  Escribir 2;\n  Sino Si b Entonces\n  Escribir 3;\n  FinSi\nFinProceso'
+    expect(diagnosticCodes(source)).toEqual(['E2014'])
+    expect(ast(source)).toBe(
+      '(program (main p (if a (write (literal 1)) elseif b (write (literal 3)) else (write (literal 2)))))',
     )
-    const firstParser = codes.findIndex((code) => code.startsWith('E2'))
-    expect(lastLexer).toBeLessThan(firstParser)
+  })
+})
+
+describe('a subprogram inside a block', () => {
+  it('reports E2015, keeps the subprogram and the enclosing block', () => {
+    const source =
+      'Proceso p\n  a <- 1;\n  SubProceso f\n    Escribir 1;\n  FinSubProceso\n  b <- 2;\nFinProceso'
+    expect(diagnosticCodes(source)).toEqual(['E2015'])
+    const result = parseSource(source)
+    expect(result.program.subprograms.map((one) => one.name.name)).toEqual(['f'])
+    expect(sexpr(result.program)).toBe(
+      '(program (procedure f (params ) (returns - -) (write (literal 1))) (main p (assign a (literal 1)) (assign b (literal 2))))',
+    )
+  })
+})
+
+describe('mixed sized and unsized dimensions', () => {
+  it('reports E2023 at the bracket that follows the empty slot', () => {
+    const source = 'Proceso p\n  Definir a Como Entero[3,];\nFinProceso'
+    expect(diagnosticCodes(source)).toEqual(['E2023'])
+    const diagnostic = parseSource(source).diagnostics[0]
+    expect(source.slice(diagnostic?.span.start ?? 0, diagnostic?.span.end ?? 0)).toBe(']')
+  })
+
+  it('reports E2023 at the comma that follows a leading empty slot', () => {
+    const source = 'Proceso p\n  Definir a Como Entero[,3];\nFinProceso'
+    expect(diagnosticCodes(source)).toEqual(['E2023'])
+    const diagnostic = parseSource(source).diagnostics[0]
+    expect(source.slice(diagnostic?.span.start ?? 0, diagnostic?.span.end ?? 0)).toBe(',')
+  })
+
+  it('says nothing when every dimension is sized or every one is empty', () => {
+    expect(diagnosticCodes('Proceso p\n  Definir a Como Entero[3,3];\nFinProceso')).toEqual([])
+    expect(diagnosticCodes('Proceso p\n  Definir a Como Entero[,];\nFinProceso')).toEqual([])
+  })
+})
+
+describe('a chained comparison names both operators', () => {
+  it('renders the hint with the operator each side was written with', () => {
+    const report = diagnosticReport('Proceso p\n  Escribir a < b <= c;\nFinProceso')
+    const chained = report.find((item) => item.code === 'E2030')
+    expect(chained?.es).toContain('a < b Y b <= c')
+    expect(chained?.en).toContain('a < b And b <= c')
+  })
+})
+
+describe('diagnostic ordering and shape', () => {
+  it('sorts diagnostics by position, lexer first at the same offset', () => {
+    const source = 'Proceso p\n  b <- ) ;\n  a <- @;\nFinProceso'
+    const result = parseSource(source)
+    const offsets = result.diagnostics.map((item) => item.span.start)
+    expect([...offsets].sort((left, right) => left - right)).toEqual(offsets)
+  })
+
+  it('puts a lexer diagnostic before a parser one at the same offset', () => {
+    const result = parseSource('Proceso p\n  a <- 10abc + ;\nFinProceso')
+    const codes = result.diagnostics.map((item) => item.code)
+    expect(codes).toContain('E1003')
+    expect(codes.indexOf('E1003')).toBeLessThan(codes.indexOf('E2031'))
   })
 
   it('is deterministic across runs', () => {

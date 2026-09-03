@@ -20,9 +20,12 @@ export const DIAGNOSTIC_CODES = [
   'E2011', // second main block
   'E2012', // statement outside a block
   'E2013', // second `De Otro Modo`
+  'E2014', // `Sino Si` after `Sino`
+  'E2015', // subprogram inside a block
   'E2020', // assignment to a call
   'E2021', // parameter without a type
   'E2022', // repeated parameter modifier
+  'E2023', // mixed sized and unsized dimensions
   'E2030', // chained comparison
   'E2031', // expected an expression
   'E2032', // nesting too deep
@@ -47,9 +50,12 @@ export const DIAGNOSTIC_SEVERITY: Readonly<Record<DiagnosticCode, Severity>> = O
   E2011: 'error',
   E2012: 'error',
   E2013: 'error',
+  E2014: 'error',
+  E2015: 'error',
   E2020: 'error',
   E2021: 'error',
   E2022: 'error',
+  E2023: 'error',
   E2030: 'error',
   E2031: 'error',
   E2032: 'error',

@@ -1,5 +1,5 @@
 import type { KeywordKey, ResolvedProfile } from '@stepcode/profiles'
-import type { TokenRange } from '../ast/index'
+import type { SubprogramDecl, TokenRange } from '../ast/index'
 import {
   createDiagnostic,
   type Diagnostic,
@@ -34,6 +34,11 @@ export interface ParserContext {
   readonly diagnostics: Diagnostic[]
   readonly blocks: BlockFrame[]
   /**
+   * Every subprogram of the file, in the order they were met — including one found inside a
+   * block, which is reported (E2015) but still belongs to the program, not to the block.
+   */
+  readonly subprograms: SubprogramDecl[]
+  /**
    * Nesting counters for the depth guards (`MAX_EXPRESSION_DEPTH`, `MAX_BLOCK_DEPTH`). Deep
    * input must not reach the JavaScript stack limit, so both parsers stop descending past
    * their limit and report E2032 — once per parse, however many times the limit is hit.
@@ -55,6 +60,7 @@ export function createContext(
     lineMap: new LineMap(source),
     diagnostics,
     blocks: [],
+    subprograms: [],
     depth: { expression: 0, block: 0, reported: false },
   }
 }

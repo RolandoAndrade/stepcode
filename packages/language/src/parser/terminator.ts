@@ -17,11 +17,10 @@ export const BLOCK_BOUNDARY_KEYWORDS: ReadonlySet<KeywordKey> = new Set([
   'endWhile',
   'endFor',
   'until',
-  // A top-level opener can never appear inside a block, so meeting one ends the block and
-  // hands the token back to `parseProgram` instead of garbling the rest of the file.
+  // A main block can never appear inside a block, so meeting one ends the block and hands the
+  // token back to `parseProgram` instead of garbling the rest of the file. A misplaced
+  // subprogram is not here: the statement layer parses it in place and reports E2015.
   'program',
-  'procedure',
-  'function',
 ])
 
 /** Keywords a statement may start with. */
@@ -43,6 +42,10 @@ export const STATEMENT_START_KEYWORDS: ReadonlySet<KeywordKey> = new Set([
   'clearScreen',
   'wait',
   'waitKey',
+  // Not legal inside a block, but the statement layer parses them there anyway (E2015), so
+  // meeting one still ends the statement before it instead of garbling the line.
+  'procedure',
+  'function',
 ])
 
 /** Used by the missing-terminator rule to tell "next statement" from "garbled tail". */
@@ -67,6 +70,8 @@ export type TerminatorResult =
  */
 export function consumeTerminator(ctx: ParserContext): TerminatorResult {
   const { cursor } = ctx
+  // An `error` token carries its own lexer diagnostic; it never makes the statement garbled.
+  while (cursor.peek().kind === 'error') cursor.next()
   if (isPunct(cursor.peekRaw(), ';')) {
     cursor.next()
     return 'ok'

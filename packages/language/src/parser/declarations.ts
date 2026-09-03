@@ -9,6 +9,7 @@ import type {
   SubprogramDecl,
   TypeRef,
 } from '../ast/index'
+import type { Span } from '../source/index'
 import { finishBlock, openBlock, parseSection } from './blocks'
 import { nodeRange, type ParserContext, placeholderRange, report } from './context'
 import { parseExpression } from './expression'
@@ -49,23 +50,26 @@ export function parseTypeRef(ctx: ParserContext): TypeRef | null {
   ctx.cursor.next()
   const base = token.value as TypeKey
   const dimensions: (Expr | null)[] = []
+  /** Spans of the empty slots: the `,` or `]` that stands where a size would have been. */
+  const empty: Span[] = []
   if (isPunct(ctx.cursor.peek(), '[')) {
     const open = ctx.cursor.next()
     for (;;) {
       const head = ctx.cursor.peek()
-      if (isPunct(head, ']') || isPunct(head, ',')) dimensions.push(null)
-      else dimensions.push(parseExpression(ctx))
+      if (isPunct(head, ']') || isPunct(head, ',')) {
+        dimensions.push(null)
+        empty.push(head.span)
+      } else dimensions.push(parseExpression(ctx))
       if (!isPunct(ctx.cursor.peek(), ',')) break
       ctx.cursor.next()
     }
     if (isPunct(ctx.cursor.peek(), ']')) ctx.cursor.next()
     else report(ctx, 'E2005', open.span, { bracket: ']' })
     const sized = dimensions.filter((dimension) => dimension !== null)
-    if (sized.length !== 0 && sized.length !== dimensions.length) {
-      const first = sized[0] as Expr
-      report(ctx, 'E2002', first.span, {
-        found: ctx.source.slice(first.span.start, first.span.end),
-      })
+    // Reported at the first empty slot — where the missing size would go — not at a size that
+    // is perfectly fine on its own.
+    if (sized.length !== 0 && sized.length !== dimensions.length && empty[0] !== undefined) {
+      report(ctx, 'E2023', empty[0])
     }
   }
   return { kind: 'TypeRef', base, dimensions, ...nodeRange(ctx, start) }
@@ -231,7 +235,7 @@ function skipToTopLevel(ctx: ParserContext): void {
 /** The top level admits subprograms and exactly one main block, in any order. */
 export function parseProgram(ctx: ParserContext): Program {
   const start = ctx.cursor.at()
-  const subprograms: SubprogramDecl[] = []
+  const subprograms = ctx.subprograms
   let main: MainBlock | null = null
   while (!ctx.cursor.atEnd()) {
     const token = ctx.cursor.peek()
