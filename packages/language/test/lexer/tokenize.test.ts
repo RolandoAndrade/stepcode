@@ -1,6 +1,7 @@
 import { builtinProfiles, profiles, resolveProfile } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
-import { symbolicKeywords, tokenize } from '../../src/lexer/index'
+import { tokenize } from '../../src/lexer/index'
+import { punctuationTable } from '../../src/lexer/tokenize'
 import { tokenSummary } from '../helpers'
 
 const es = profiles.es
@@ -110,10 +111,59 @@ describe('the en profile', () => {
 })
 
 describe('symbolic keyword spellings', () => {
-  it('derives a letter-free table, longest first, cached per profile', () => {
-    const table = symbolicKeywords(es)
-    expect(symbolicKeywords(es)).toBe(table)
-    expect([...table.map(([spelling]) => spelling)].sort()).toEqual(['%', '&', '|', '~'])
+  it('derives one punctuation table, longest first, cached per profile', () => {
+    const table = punctuationTable(es)
+    expect(punctuationTable(es)).toBe(table)
+    const spellings = table.map(([spelling]) => spelling)
+    expect(spellings).toContain('&')
+    expect(spellings).toContain('<-')
+    expect([...spellings]).toEqual(
+      [...spellings].sort((left, right) =>
+        left.length === right.length
+          ? left < right
+            ? -1
+            : left > right
+              ? 1
+              : 0
+          : right.length - left.length,
+      ),
+    )
+  })
+
+  it('lets a longer operator win over a shorter symbolic keyword', () => {
+    const amp = resolveProfile(
+      { id: 'amp', extends: 'es', operators: { power: ['**', '&&'] } },
+      builtinProfiles,
+    )
+    expect(summary('a && b', amp)).toEqual([
+      'identifier:a',
+      'operator:power',
+      'identifier:b',
+      'eof',
+    ])
+    expect(summary('a & b', amp)).toEqual(['identifier:a', 'keyword:and', 'identifier:b', 'eof'])
+  })
+
+  it('lexes an operator spelled with letters as that operator', () => {
+    const worded = resolveProfile(
+      { id: 'worded', extends: 'es', operators: { power: ['elevado'] } },
+      builtinProfiles,
+    )
+    expect(summary('2 elevado 3', worded)).toEqual([
+      'integer:2',
+      'operator:power',
+      'integer:3',
+      'eof',
+    ])
+  })
+
+  it('starts a comment at a comment spelling written with letters', () => {
+    const remmed = resolveProfile(
+      { id: 'remmed', extends: 'es', operators: { comment: ['REM'] } },
+      builtinProfiles,
+    )
+    const { tokens } = tokenize('a <- 1; REM nota\nb <- 2;', remmed)
+    expect(tokenSummary(tokens, true)).toContain('comment:REM nota')
   })
 
   it('lexes & | ~ % as keywords, not operators', () => {

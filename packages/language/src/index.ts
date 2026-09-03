@@ -62,7 +62,7 @@ export {
   registerCatalog,
 } from './diagnostics/index'
 export type { Token, TokenizeResult, TokenKind } from './lexer/index'
-export { isTrivia, symbolicKeywords, tokenize } from './lexer/index'
+export { isTrivia, tokenize } from './lexer/index'
 export type { ParseResult } from './parser/index'
 export { parse } from './parser/index'
 export type { Position, Span } from './source/index'

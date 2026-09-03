@@ -10,11 +10,13 @@ const BLANK = /[^\S\r\n]/
 const HAS_LETTER = /\p{L}/u
 const PUNCT = new Set(['(', ')', '[', ']', ',', ':', ';'])
 
-type SymbolicTable = readonly (readonly [string, LookupEntry])[]
-type OperatorTable = readonly (readonly [string, OperatorKey])[]
+/** What a punctuation spelling produces: a keyword/type/builtin, or an operator. */
+export type PunctuationEntry =
+  | LookupEntry
+  | { readonly kind: 'operator'; readonly key: OperatorKey }
+export type PunctuationTable = readonly (readonly [string, PunctuationEntry])[]
 
-const symbolicCache = new WeakMap<ResolvedProfile, SymbolicTable>()
-const operatorCache = new WeakMap<ResolvedProfile, OperatorTable>()
+const punctuationCache = new WeakMap<ResolvedProfile, PunctuationTable>()
 
 /** Longest first, then alphabetical, so matching is deterministic across runs. */
 function byLengthThenText<T extends readonly [string, unknown]>(a: T, b: T): number {
@@ -23,27 +25,27 @@ function byLengthThenText<T extends readonly [string, unknown]>(a: T, b: T): num
 }
 
 /**
- * Keyword/type/builtin spellings that contain no letter (`&`, `|`, `~`, `%`, or whatever a
- * custom profile adds). They live in the punctuation path, ahead of operators.
+ * The one table the punctuation path matches against: keyword/type/builtin spellings that
+ * contain no letter (`&`, `|`, `~`, `%`, or whatever a custom profile adds) together with
+ * every operator spelling, sorted longest first so the longest match always wins — `&&` on
+ * `power` beats the `&` that spells `and`, whichever table each came from. A spelling claimed
+ * by both goes to the construct, which is the older rule and the safer default.
  *
- * `profile.lookup` is a sealed read-only Map, so this derived table is a brand-new array,
- * memoised per profile object in a `WeakMap`.
+ * `profile.lookup` and `profile.operatorLookup` are sealed read-only Maps, so this derived
+ * table is a brand-new array, memoised per profile object in a `WeakMap`.
  */
-export function symbolicKeywords(profile: ResolvedProfile): SymbolicTable {
-  const cached = symbolicCache.get(profile)
+export function punctuationTable(profile: ResolvedProfile): PunctuationTable {
+  const cached = punctuationCache.get(profile)
   if (cached !== undefined) return cached
-  const table: SymbolicTable = [...profile.lookup.entries()]
-    .filter(([spelling]) => !HAS_LETTER.test(spelling))
-    .sort(byLengthThenText)
-  symbolicCache.set(profile, table)
-  return table
-}
-
-function operatorSpellings(profile: ResolvedProfile): OperatorTable {
-  const cached = operatorCache.get(profile)
-  if (cached !== undefined) return cached
-  const table: OperatorTable = [...profile.operatorLookup.entries()].sort(byLengthThenText)
-  operatorCache.set(profile, table)
+  const entries = new Map<string, PunctuationEntry>()
+  for (const [spelling, entry] of profile.lookup) {
+    if (!HAS_LETTER.test(spelling)) entries.set(spelling, entry)
+  }
+  for (const [spelling, key] of profile.operatorLookup) {
+    if (!entries.has(spelling)) entries.set(spelling, { kind: 'operator', key })
+  }
+  const table: PunctuationTable = [...entries.entries()].sort(byLengthThenText)
+  punctuationCache.set(profile, table)
   return table
 }
 
@@ -78,8 +80,7 @@ function readWord(source: string, from: number): number {
 export function tokenize(source: string, profile: ResolvedProfile): TokenizeResult {
   const tokens: Token[] = []
   const diagnostics: Diagnostic[] = []
-  const symbolic = symbolicKeywords(profile)
-  const operators = operatorSpellings(profile)
+  const punctuation = punctuationTable(profile)
   const caseSensitive = profile.options.caseSensitive
   const hasDoubleEquals = profile.operatorLookup.has('==')
 
@@ -98,6 +99,18 @@ export function tokenize(source: string, profile: ResolvedProfile): TokenizeResu
     data: DiagnosticData = {},
   ): void => {
     diagnostics.push(createDiagnostic(code, { start, end }, data))
+  }
+
+  /** An operator token, or a comment running to the end of the line. Returns the new offset. */
+  const pushOperator = (key: OperatorKey, start: number, end: number): number => {
+    if (key !== 'comment') {
+      push('operator', start, end, key)
+      return end
+    }
+    let stop = start
+    while (stop < source.length && source[stop] !== '\n' && source[stop] !== '\r') stop++
+    push('comment', start, stop)
+    return stop
   }
 
   let at = 0
@@ -146,6 +159,13 @@ export function tokenize(source: string, profile: ResolvedProfile): TokenizeResu
       if (matched) continue
       const end = ends[0] as number
       const text = source.slice(at, end)
+      // A profile may spell an operator with letters (`elevado`, `REM`). Exact match: unlike a
+      // construct, an operator spelling is not run through `profile.normalize`.
+      const operatorKey = profile.operatorLookup.get(text)
+      if (operatorKey !== undefined) {
+        at = pushOperator(operatorKey, at, end)
+        continue
+      }
       // Identifiers are never run through `profile.normalize`: it folds accents too.
       push('identifier', at, end, caseSensitive ? text : text.toLowerCase())
       at = end
@@ -202,28 +222,15 @@ export function tokenize(source: string, profile: ResolvedProfile): TokenizeResu
       continue
     }
 
-    // 7. symbolic keyword spellings, ahead of operators
-    const symbol = matchTable(symbolic, source, at)
+    // 7. constructs spelled with punctuation and operators: one longest match over both
+    const symbol = matchTable(punctuation, source, at)
     if (symbol !== undefined) {
       const [spelling, entry] = symbol
-      push(entry.kind, at, at + spelling.length, entry.key)
-      at += spelling.length
-      continue
-    }
-
-    // 8. operators, and the comment spelling
-    const operator = matchTable(operators, source, at)
-    if (operator !== undefined) {
-      const [spelling, key] = operator
-      if (key === 'comment') {
-        let end = at
-        while (end < source.length && source[end] !== '\n' && source[end] !== '\r') end++
-        push('comment', at, end)
-        at = end
-        continue
-      }
-      push('operator', at, at + spelling.length, key)
-      at += spelling.length
+      const end = at + spelling.length
+      at =
+        entry.kind === 'operator'
+          ? pushOperator(entry.key, at, end)
+          : (push(entry.kind, at, end, entry.key), end)
       continue
     }
 
@@ -247,8 +254,7 @@ export function tokenize(source: string, profile: ResolvedProfile): TokenizeResu
         stray === '"' ||
         stray === "'" ||
         PUNCT.has(stray) ||
-        matchTable(symbolic, source, end) !== undefined ||
-        matchTable(operators, source, end) !== undefined
+        matchTable(punctuation, source, end) !== undefined
       ) {
         break
       }

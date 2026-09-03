@@ -115,12 +115,15 @@ interface Token {
   (`collapseWhitespace` semantics: inner runs of blanks become one space). The first hit wins
   and emits `keyword` / `type` / `builtin`. No hit: a single-word `identifier`. Hence
   `Escribir Sin Saltar` beats `Escribir`, `Sino Si` beats `Sino`, and a `Si` on the next line
-  after `Sino` is never joined.
-- **Symbolic keyword spellings** (`&`, `|`, `~`, `%`, or anything a custom profile adds that
-  contains no letter): a table derived once per profile from `profile.lookup` entries with no
-  letters, consulted in the punctuation path before operators, longest match first.
-- **Operators.** Exact match against `profile.operatorLookup`, longest first (`<=` before `<`,
-  `<-` before `<`, `**` before `*`). `==` is scanned as a single `error` token with E1006.
+  after `Sino` is never joined. A word that is no construct is matched exactly (no
+  `normalize`) against `profile.operatorLookup` before it becomes an identifier, so a profile
+  may spell an operator with letters (`elevado`, or `REM` on `comment`).
+- **Punctuation.** One table per profile, derived from the `profile.lookup` entries that
+  contain no letter (`&`, `|`, `~`, `%`, or anything a custom profile adds) *together with*
+  every `profile.operatorLookup` spelling, sorted longest first: the longest match wins
+  whichever table it came from, so `&&` on `power` beats the `&` that spells `and`, and `<=`
+  beats `<`, `<-` beats `<`, `**` beats `*`. A spelling both tables claim goes to the
+  construct. `==` is scanned as a single `error` token with E1006.
 - **Comments.** The `comment` spelling starts a `comment` token to end of line. No block
   comments.
 - **Numbers.** `digits` → `integer`; `digits.digits` → `real`. No leading dot, no exponent.
