@@ -2,7 +2,7 @@ import type { Expr, Node } from './nodes'
 
 export interface Visitor {
   /** Return `false` to skip this node's children (and its `exit` call). */
-  enter?(node: Node, parent: Node | null): boolean | void
+  enter?(node: Node, parent: Node | null): boolean | undefined
   exit?(node: Node, parent: Node | null): void
 }
 
