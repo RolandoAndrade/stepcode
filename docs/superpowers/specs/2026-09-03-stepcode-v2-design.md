@@ -39,7 +39,7 @@ transpiling to other languages, records/structs (the AST leaves room for them).
   fixed.
 - **Typed parameters and returns** use `Como`:
   `SubProceso intercambiar(a Por Referencia Como Entero, b Por Referencia Como Entero)`,
-  `Funcion r Como Real <- promedio(valores Como Arreglo De Real)`. In flexible mode the type
+  `Funcion r Como Real <- promedio(valores Como Real[])`. In flexible mode the type
   may be omitted and is inferred from the first call site; later mismatches are errors.
 - **Types:** `Entero`, `Real`, `Cadena`, `Caracter`, `Logico`, arrays (n-dimensional).
 - **Arrays:** `Dimension a[3,3]` and `Dimension a[3][3]` are equivalent; so are `a[i,j]` and
