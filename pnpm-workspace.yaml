@@ -17,3 +17,5 @@ minimumReleaseAgeExclude:
   - '@biomejs/cli-linux-x64@2.5.12'
   - '@biomejs/cli-win32-arm64@2.5.12'
   - '@biomejs/cli-win32-x64@2.5.12'
+  - '@types/react-dom@19.2.7'
+  - happy-dom@20.13.2
