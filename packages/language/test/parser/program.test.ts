@@ -1,6 +1,6 @@
 import { builtinProfiles, profiles, resolveProfile } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
-import { ast, diagnosticCodes, parseSource } from '../helpers'
+import { ast, diagnosticCodes, parseSource, sexpr } from '../helpers'
 
 const untyped = resolveProfile(
   { id: 'untyped', extends: 'es', options: { typedParameters: false } },
@@ -164,6 +164,23 @@ describe('parameters', () => {
         'SubProceso f(a Como Entero Como Real)\nFinSubProceso\nProceso p\nFinProceso',
       ),
     ).toEqual(['E2022'])
+  })
+})
+
+describe('a second main block is reported but kept', () => {
+  it('parses it into extraMains with its body intact', () => {
+    const source = 'Proceso uno\n  a <- 1;\nFinProceso\nProceso dos\n  b <- 2;\nFinProceso'
+    const result = parseSource(source)
+    expect(result.diagnostics.map((item) => item.code)).toEqual(['E2011'])
+    expect(result.program.main?.name.name).toBe('uno')
+    expect(result.program.extraMains.map((block) => block.name.name)).toEqual(['dos'])
+    expect(sexpr(result.program)).toBe(
+      '(program (main uno (assign a (literal 1))) (main dos (assign b (literal 2))))',
+    )
+  })
+
+  it('leaves extraMains empty for a well-formed program', () => {
+    expect(parseSource('Proceso p\nFinProceso').program.extraMains).toEqual([])
   })
 })
 

@@ -19,8 +19,11 @@ export function childrenOf(node: Node): Node[] {
 
 function assembleChildren(node: Node): Node[] {
   switch (node.kind) {
-    case 'Program':
-      return node.main === null ? [...node.subprograms] : [...node.subprograms, node.main]
+    case 'Program': {
+      const children: Node[] = [...node.subprograms, ...node.extraMains]
+      if (node.main !== null) children.push(node.main)
+      return children
+    }
     case 'MainBlock':
       return [node.name, ...node.body]
     case 'SubprogramDecl': {

@@ -490,7 +490,12 @@ function parseSwitch(ctx: ParserContext): Stmt {
       if (isPunct(ctx.cursor.peek(), ':')) ctx.cursor.next()
       const body = parseSection(ctx, options)
       if (otherwise === undefined) otherwise = body
-      else report(ctx, 'E2013', token.span)
+      else {
+        // A second one is a mistake (E2013), but its statements are real: they join the first
+        // `De Otro Modo` rather than vanishing from the tree.
+        report(ctx, 'E2013', token.span)
+        otherwise = [...otherwise, ...body]
+      }
       if (ctx.cursor.at() === before) ctx.cursor.next()
       continue
     }

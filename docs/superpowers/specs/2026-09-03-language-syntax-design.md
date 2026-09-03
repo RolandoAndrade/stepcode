@@ -182,8 +182,10 @@ Case         := [case] Expr ("," Expr)* ":" Block           `case` keyword only 
 Notes:
 
 - Top level admits only subprograms and one main block, in any order. Zero main blocks →
-  E2010 at EOF; a second one → E2011 at its opener. A statement at top level → E2012 with a
-  hint to wrap it in `Proceso … FinProceso`.
+  E2010 at EOF; a second one → E2011 at its opener, and the block itself is kept in
+  `Program.extraMains`. A statement at top level → E2012 with a hint to wrap it in
+  `Proceso … FinProceso`. A subprogram inside a block → E2015, and it is kept in
+  `Program.subprograms`.
 - Function header forms, all normalized to the same node: `Funcion f()`, `Funcion f(): Entero`,
   `Funcion r <- f()`, `Funcion r Como Real <- f(x Como Real)`, and `SubProceso f` with or
   without parens. A `Funcion` with neither return name nor return type is valid syntax; the
@@ -192,7 +194,8 @@ Notes:
   `a Por Referencia Como Entero`). A repeated modifier is E2022. A parameter without `Como`
   is E2021 when `typedParameters` is true.
 - `Segun` requires `Hacer` after the selector. Labels are expression lists; literal-ness is
-  the checker's business. `De Otro Modo` is optional and may appear only once (E2013).
+  the checker's business. `De Otro Modo` is optional and may appear only once (E2013); a
+  second one's statements are appended to the first, so nothing is dropped.
 - `Para` has no `Desde`; `Con Paso` takes any expression. `Repetir` closes with `Hasta Que`
   or `Mientras Que`; the node stores `until`.
 - `Esperar` takes an expression in milliseconds.
@@ -231,7 +234,8 @@ Every node: `{ kind, span, tokens: [first, last] }` (inclusive token indices int
 `ParseResult.tokens`) plus its fields.
 
 ```
-Program        { subprograms: SubprogramDecl[]; main: MainBlock | null }
+Program        { subprograms: SubprogramDecl[]; main: MainBlock | null; extraMains: MainBlock[] }
+                 // extraMains: every main block after the first (E2011), parsed and kept
 MainBlock      { name: Identifier; body: Stmt[] }
 SubprogramDecl { form: 'procedure' | 'function'; name: Identifier; params: Param[];
                  returnName?: Identifier; returnType?: TypeRef; body: Stmt[] }
@@ -289,7 +293,9 @@ range when a diagnostic needs them; nodes carry no extra keyword spans.
 
 ## 7. Error recovery
 
-Goal: one mistake, one diagnostic, and an AST that is intact everywhere else.
+Goal: one mistake, one diagnostic, and an AST that is intact everywhere else. Recovery never
+drops code that parsed: an extra main block, an extra `De Otro Modo` and a misplaced
+subprogram are all reported *and* kept in the tree.
 
 - **Missing terminator.** If the next token is on a later line and can start a statement,
   emit E2001 at the end of the previous token and continue as if `;` were present. Otherwise

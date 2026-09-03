@@ -33,6 +33,7 @@ const ifStmt: IfStmt = {
 const program: Program = {
   kind: 'Program',
   subprograms: [],
+  extraMains: [],
   main: {
     kind: 'MainBlock',
     name: { kind: 'Identifier', name: 'p', text: 'p', ...at() },

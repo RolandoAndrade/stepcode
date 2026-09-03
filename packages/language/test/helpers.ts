@@ -59,6 +59,7 @@ export function sexpr(node: Node): string {
     case 'Program': {
       const parts = node.subprograms.map(sexpr)
       parts.push(node.main === null ? '-' : sexpr(node.main))
+      parts.push(...node.extraMains.map(sexpr))
       return `(program ${parts.join(' ')})`
     }
     case 'MainBlock':

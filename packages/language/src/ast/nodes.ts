@@ -36,6 +36,11 @@ export interface Program extends NodeBase {
   readonly kind: 'Program'
   readonly subprograms: readonly SubprogramDecl[]
   readonly main: MainBlock | null
+  /**
+   * Every main block after the first, which is a mistake (E2011) but not a reason to lose the
+   * code: the blocks are parsed in full and kept here. Always present, usually empty.
+   */
+  readonly extraMains: readonly MainBlock[]
 }
 
 export interface MainBlock extends NodeBase {

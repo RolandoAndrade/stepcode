@@ -236,6 +236,7 @@ function skipToTopLevel(ctx: ParserContext): void {
 export function parseProgram(ctx: ParserContext): Program {
   const start = ctx.cursor.at()
   const subprograms = ctx.subprograms
+  const extraMains: MainBlock[] = []
   let main: MainBlock | null = null
   while (!ctx.cursor.atEnd()) {
     const token = ctx.cursor.peek()
@@ -243,7 +244,12 @@ export function parseProgram(ctx: ParserContext): Program {
     if (key === 'program') {
       const block = parseMainBlock(ctx)
       if (main === null) main = block
-      else report(ctx, 'E2011', token.span)
+      else {
+        // One main block is the rule; a second one is still parsed and kept, so a tool can
+        // show it, fold it, or offer to merge it.
+        report(ctx, 'E2011', token.span)
+        extraMains.push(block)
+      }
       continue
     }
     if (key === 'procedure') {
@@ -258,5 +264,5 @@ export function parseProgram(ctx: ParserContext): Program {
     skipToTopLevel(ctx)
   }
   if (main === null) report(ctx, 'E2010', ctx.cursor.peek().span)
-  return { kind: 'Program', subprograms, main, ...nodeRange(ctx, start) }
+  return { kind: 'Program', subprograms, main, extraMains, ...nodeRange(ctx, start) }
 }

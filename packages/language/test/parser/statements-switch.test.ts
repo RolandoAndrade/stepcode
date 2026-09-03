@@ -49,14 +49,14 @@ describe('Segun without the case keyword', () => {
     expect(diagnosticCodes(body('Segun a\n1: Escribir "x";\nFinSegun'))).toEqual(['E2004'])
   })
 
-  it('reports E2013 for a second default clause and keeps the first', () => {
+  it('reports E2013 for a second default clause and keeps both bodies', () => {
     const source = body(
       'Segun a Hacer\nDe Otro Modo: Escribir "uno";\nDe Otro Modo: Escribir "dos";\nFinSegun',
     )
     const result = parseSource(source)
     expect(result.diagnostics.map((d) => d.code)).toEqual(['E2013'])
     const statement = result.program.main?.body[0]
-    expect(statement?.kind === 'SwitchStmt' && statement.otherwise).toHaveLength(1)
+    expect(statement?.kind === 'SwitchStmt' && statement.otherwise).toHaveLength(2)
   })
 })
 
@@ -72,6 +72,17 @@ describe('Segun with a profile that spells the case keyword', () => {
   it('still accepts a label without the keyword', () => {
     expect(diagnosticCodes(body('Segun a Hacer\n1: Escribir "uno";\nFinSegun'), withCaso)).toEqual(
       [],
+    )
+  })
+})
+
+describe('a second «De Otro Modo»', () => {
+  it('is reported once and its statements join the first one', () => {
+    const source =
+      'Proceso p\n  Segun a Hacer\n  De Otro Modo:\n    Escribir 1;\n  De Otro Modo:\n    Escribir 2;\n  FinSegun\nFinProceso'
+    expect(diagnosticCodes(source)).toEqual(['E2013'])
+    expect(ast(source)).toBe(
+      '(program (main p (switch a (otherwise (write (literal 1)) (write (literal 2))))))',
     )
   })
 })
