@@ -65,6 +65,13 @@ export function createContext(
   }
 }
 
+/**
+ * Diagnostics that a depth-limited parse would only invent about itself: the brackets and
+ * closers it stopped short of reading. Once E2032 has been reported they are noise — the one
+ * real problem is the nesting — so they are dropped for the rest of the parse.
+ */
+const AFTER_TOO_DEEP: ReadonlySet<DiagnosticCode> = new Set(['E2003', 'E2005', 'E2006'])
+
 export function report(
   ctx: ParserContext,
   code: DiagnosticCode,
@@ -72,14 +79,19 @@ export function report(
   data: DiagnosticData = {},
   related?: readonly RelatedSpan[],
 ): void {
+  if (ctx.depth.reported && AFTER_TOO_DEEP.has(code)) return
   ctx.diagnostics.push(createDiagnostic(code, span, data, related))
 }
 
-/** E2032, at most once per parse: the input nests deeper than the parser will descend. */
+/**
+ * E2032, at most once per parse: the input nests deeper than the parser will descend. From
+ * here on the unclosed-bracket and unclosed-block diagnostics are suppressed (`report`), since
+ * the parser stopped reading, not the program.
+ */
 export function reportTooDeep(ctx: ParserContext, limit: number): void {
   if (ctx.depth.reported) return
-  ctx.depth.reported = true
   report(ctx, 'E2032', ctx.cursor.peek().span, { limit })
+  ctx.depth.reported = true
 }
 
 /**

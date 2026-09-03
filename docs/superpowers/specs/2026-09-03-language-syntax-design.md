@@ -304,7 +304,10 @@ range when a diagnostic needs them; nodes carry no extra keyword spans.
 
 Goal: one mistake, one diagnostic, and an AST that is intact everywhere else. Recovery never
 drops code that parsed: an extra main block, an extra `De Otro Modo` and a misplaced
-subprogram are all reported *and* kept in the tree.
+subprogram are all reported *and* kept in the tree. The one exception is an `error` token in
+operator position (`a == b`): it takes its right operand with it, and that operand is
+discarded, because nothing can be said about what it was an operand of. Its tokens stay inside
+the enclosing statement.
 
 - **Missing terminator.** If the next token is on a later line and can start a statement,
   emit E2001 at the end of the previous token and continue as if `;` were present. Otherwise
@@ -337,7 +340,9 @@ subprogram are all reported *and* kept in the tree.
 - **Nesting limits.** Expressions descend at most `MAX_EXPRESSION_DEPTH` (500) levels and
   block statements at most `MAX_BLOCK_DEPTH` (200); past either, the parser stops descending,
   reports E2032 once per parse, and yields an `ErrorExpr` (expressions) or an empty block. The
-  limits keep `parse` total on pathological input instead of overflowing the stack.
+  limits keep `parse` total on pathological input instead of overflowing the stack. From that
+  point on E2003, E2005 and E2006 are suppressed: the brackets and closers the parser never
+  read are its own doing, not the program's, so E2032 is the only thing said about them.
 
 ### 7.1 Parser diagnostics
 

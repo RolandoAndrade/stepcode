@@ -18,13 +18,16 @@ describe('a bracket in case-label position never spins', () => {
 })
 
 describe('depth guards keep deep input from overflowing the stack', () => {
-  it('reports E2032 once for 10 000 nested parentheses', { timeout: 20_000 }, () => {
+  it('reports E2032 alone for 10 000 nested parentheses', { timeout: 20_000 }, () => {
     const source = `Proceso p\n  a <- ${'('.repeat(10_000)}1${')'.repeat(10_000)};\nFinProceso`
     let codes: string[] = []
     expect(() => {
       codes = diagnosticCodes(source)
     }).not.toThrow()
-    expect(codes.filter((code) => code === 'E2032')).toHaveLength(1)
+    // The unwind's E2005 storm is suppressed: one depth error, then at most the garbled tail.
+    expect(codes[0]).toBe('E2032')
+    expect(codes.slice(1).every((code) => code === 'E2002')).toBe(true)
+    expect(codes.length).toBeLessThanOrEqual(2)
   })
 
   it('parses a 10 000-term left chain without a depth error', { timeout: 20_000 }, () => {
@@ -34,13 +37,13 @@ describe('depth guards keep deep input from overflowing the stack', () => {
     expect(result.program.main?.body[0]?.kind).toBe('AssignStmt')
   })
 
-  it('reports E2032 once for 5 000 nested Si', { timeout: 20_000 }, () => {
+  it('reports E2032 alone for 5 000 nested Si', { timeout: 20_000 }, () => {
     const source = `Proceso p\n${'Si a Entonces\n'.repeat(5000)}${'FinSi\n'.repeat(5000)}FinProceso`
     let codes: string[] = []
     expect(() => {
       codes = diagnosticCodes(source)
     }).not.toThrow()
-    expect(codes.filter((code) => code === 'E2032')).toHaveLength(1)
+    expect(codes).toEqual(['E2032'])
   })
 
   it('walks a 20 000-node chain without overflowing', { timeout: 20_000 }, () => {

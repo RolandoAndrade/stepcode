@@ -91,6 +91,7 @@ describe('catalogs', () => {
             closer: 'endIf',
             expected: 'then',
             modifier: 'byRef',
+            form: 'procedure',
             limit: 500,
             first: '<',
             second: '<=',

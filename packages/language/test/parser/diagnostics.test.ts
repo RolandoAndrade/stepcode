@@ -382,6 +382,21 @@ describe('a subprogram inside a block', () => {
   })
 })
 
+describe('a misplaced subprogram names the keyword it was written with', () => {
+  it('names Funcion for a function and SubProceso for a procedure', () => {
+    const asFunction = diagnosticReport('Proceso p\n  Funcion f()\n  FinFuncion\nFinProceso').find(
+      (item) => item.code === 'E2015',
+    )
+    expect(asFunction?.es).toContain('Funcion')
+    expect(asFunction?.en).toContain('Function')
+    const asProcedure = diagnosticReport(
+      'Proceso p\n  SubProceso f\n  FinSubProceso\nFinProceso',
+    ).find((item) => item.code === 'E2015')
+    expect(asProcedure?.es).toContain('SubProceso')
+    expect(asProcedure?.en).toContain('Procedure')
+  })
+})
+
 describe('mixed sized and unsized dimensions', () => {
   it('reports E2023 at the bracket that follows the empty slot', () => {
     const source = 'Proceso p\n  Definir a Como Entero[3,];\nFinProceso'
@@ -421,10 +436,11 @@ describe('diagnostic ordering and shape', () => {
   })
 
   it('puts a lexer diagnostic before a parser one at the same offset', () => {
-    const result = parseSource('Proceso p\n  a <- 10abc + ;\nFinProceso')
-    const codes = result.diagnostics.map((item) => item.code)
-    expect(codes).toContain('E1003')
-    expect(codes.indexOf('E1003')).toBeLessThan(codes.indexOf('E2031'))
+    const result = parseSource('Proceso p\n  Definir a Como @;\nFinProceso')
+    const [lexer, parser] = result.diagnostics
+    expect(lexer?.code).toBe('E1001')
+    expect(parser?.code).toBe('E2002')
+    expect(parser?.span.start).toBe(lexer?.span.start)
   })
 
   it('is deterministic across runs', () => {

@@ -19,7 +19,7 @@ const templates: Record<DiagnosticCode, string> = {
   E2013: 'This "{kw:switch}" already has an "{kw:otherwise}": only one is allowed.',
   E2014: '"{kw:elseIf}" cannot come after "{kw:else}": move this branch before the "{kw:else}".',
   E2015:
-    'A subprogram cannot be nested inside another block; declare "{kw:procedure}" outside "{kw:program}" … "{kw:endProgram}".',
+    'A subprogram cannot be nested inside another block; declare "{kw:$form}" outside "{kw:program}" … "{kw:endProgram}".',
   E2020: 'You cannot assign to the result of a call: the left side must be a variable.',
   E2021: 'Parameter "{name}" has no type: write "{name} {kw:as} {type:integer}", for example.',
   E2022: 'This parameter already has "{kw:$modifier}".',

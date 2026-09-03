@@ -19,7 +19,7 @@ const templates: Record<DiagnosticCode, string> = {
   E2013: 'Este «{kw:switch}» ya tiene un «{kw:otherwise}»: solo puede haber uno.',
   E2014: '«{kw:elseIf}» no puede ir después de «{kw:else}»: mueve esta rama antes del «{kw:else}».',
   E2015:
-    'Los subprogramas no pueden ir dentro de otro bloque; declara «{kw:procedure}» fuera de «{kw:program}» … «{kw:endProgram}».',
+    'Los subprogramas no pueden ir dentro de otro bloque; declara «{kw:$form}» fuera de «{kw:program}» … «{kw:endProgram}».',
   E2020: 'No se puede asignar al resultado de una llamada: a la izquierda va una variable.',
   E2021:
     'Al parámetro «{name}» le falta su tipo: escribe «{name} {kw:as} {type:integer}», por ejemplo.',
