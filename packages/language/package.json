@@ -1,6 +1,6 @@
 {
   "name": "stepcode",
-  "version": "0.0.0",
+  "version": "2.0.0-dev.0",
   "description": "StepCode: a PSeInt-compatible pseudocode language. Parser, checker and steppable interpreter.",
   "license": "MIT",
   "author": "Rolando Andrade",

@@ -36,6 +36,8 @@ never need a build. Published packages resolve to `dist/`.
 ## Releasing
 
 `pnpm changeset` records a change; merging the generated "Version Packages" PR publishes to npm.
+Changesets diffs against `master` and the release workflow runs only on `master`, so versioning
+and publishing are not available from `RolandoAndrade/v2` until it merges.
 
 ## Design
 
