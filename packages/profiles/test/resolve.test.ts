@@ -120,3 +120,117 @@ describe('resolveProfile — extends', () => {
     expect(() => resolveProfile(base())).not.toThrow()
   })
 })
+
+describe('resolveProfile — validation', () => {
+  it('requires at least one spelling per key except case', () => {
+    const input = base()
+    input.keywords.if = []
+    expect(() => resolveProfile(input)).toThrow(
+      expect.objectContaining({ code: 'PROFILE_MISSING_SPELLING', path: ['keywords', 'if'] }),
+    )
+    const okay = base()
+    okay.keywords.case = []
+    expect(() => resolveProfile(okay)).not.toThrow()
+  })
+
+  it('rejects spellings that are empty, contain punctuation, or start with a digit', () => {
+    for (const bad of ['', 'Si;', 'Si,No', 'Si(', '1Si', 'Si"']) {
+      const input = base()
+      input.keywords.if = [bad]
+      expect(() => resolveProfile(input)).toThrow(
+        expect.objectContaining({ code: 'PROFILE_INVALID_SPELLING', path: ['keywords', 'if'] }),
+      )
+    }
+  })
+
+  it('allows symbolic spellings for word operators (& | ~ %)', () => {
+    const input = base()
+    input.keywords.and = ['Y', '&']
+    input.keywords.mod = ['MOD', '%']
+    expect(() => resolveProfile(input)).not.toThrow()
+  })
+
+  it('detects a collision between two keywords', () => {
+    const input = base()
+    input.keywords.else = ['Si']
+    expect(() => resolveProfile(input)).toThrow(
+      expect.objectContaining({ code: 'PROFILE_COLLISION' }),
+    )
+  })
+
+  it('detects a keyword/type and a keyword/builtin collision', () => {
+    const a = base()
+    a.types.integer = ['Si']
+    expect(() => resolveProfile(a)).toThrow(expect.objectContaining({ code: 'PROFILE_COLLISION' }))
+    const b = base()
+    b.builtins.abs = ['si']
+    expect(() => resolveProfile(b)).toThrow(expect.objectContaining({ code: 'PROFILE_COLLISION' }))
+  })
+
+  it('detects an operator collision separately from words', () => {
+    const input = base()
+    input.operators.lt = ['<']
+    input.operators.assign = ['<']
+    // Collisions are reported on the key processed second, in OPERATOR_KEYS order.
+    expect(() => resolveProfile(input)).toThrow(
+      expect.objectContaining({ code: 'PROFILE_COLLISION', path: ['operators', 'lt'] }),
+    )
+  })
+
+  it('a collision that only appears after folding is caught only when folding is on', () => {
+    const folded = base()
+    folded.keywords.else = ['sí']
+    expect(() => resolveProfile(folded)).toThrow(
+      expect.objectContaining({ code: 'PROFILE_COLLISION' }),
+    )
+    const unfolded = { ...folded, options: { foldAccents: false, caseSensitive: true } }
+    expect(() => resolveProfile(unfolded)).not.toThrow()
+  })
+
+  it('names both keys in the collision message', () => {
+    const input = base()
+    input.keywords.else = ['Si']
+    expect(() => resolveProfile(input)).toThrow(
+      /keywords\.if.*keywords\.else|keywords\.else.*keywords\.if/,
+    )
+  })
+})
+
+describe('resolveProfile — lookup tables', () => {
+  it('maps every normalized spelling to its construct', () => {
+    const input = base()
+    input.keywords.writeNoNewline = ['Escribir Sin Saltar']
+    input.types.boolean = ['Lógico']
+    input.builtins.sqrt = ['RC', 'Raiz']
+    const resolved = resolveProfile(input)
+    expect(resolved.lookup.get('si')).toEqual({ kind: 'keyword', key: 'if' })
+    expect(resolved.lookup.get('escribir sin saltar')).toEqual({
+      kind: 'keyword',
+      key: 'writeNoNewline',
+    })
+    expect(resolved.lookup.get('logico')).toEqual({ kind: 'type', key: 'boolean' })
+    expect(resolved.lookup.get('raiz')).toEqual({ kind: 'builtin', key: 'sqrt' })
+    expect(resolved.lookup.get('Si')).toBeUndefined()
+  })
+
+  it('operator lookup is exact (no folding)', () => {
+    const resolved = resolveProfile(base())
+    for (const key of Object.keys(resolved.operators)) {
+      for (const spelling of resolved.operators[key as keyof typeof resolved.operators]) {
+        expect(resolved.operatorLookup.get(spelling)).toBe(key)
+      }
+    }
+  })
+
+  it('reports maxWords from the longest multi-word spelling', () => {
+    const input = base()
+    input.keywords.writeNoNewline = ['Escribir Sin Saltar']
+    expect(resolveProfile(input).maxWords).toBe(3)
+    expect(resolveProfile(base()).maxWords).toBe(1)
+  })
+
+  it('normalize on the resolved profile matches the options', () => {
+    const resolved = resolveProfile({ ...base(), options: { caseSensitive: true } })
+    expect(resolved.normalize('Función')).toBe('Funcion')
+  })
+})

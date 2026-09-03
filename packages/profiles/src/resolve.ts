@@ -1,6 +1,6 @@
 import { ProfileError } from './errors'
 import type { BuiltinKey, KeywordKey, OperatorKey, TypeKey } from './keys'
-import { BUILTIN_KEYS, KEYWORD_KEYS, OPERATOR_KEYS, TYPE_KEYS } from './keys'
+import { BUILTIN_KEYS, KEYWORD_KEYS, OPERATOR_KEYS, OPTIONAL_KEYWORD_KEYS, TYPE_KEYS } from './keys'
 import { collapseWhitespace, createNormalizer, type Normalizer } from './normalize'
 import {
   DEFAULT_OPTIONS,
@@ -9,6 +9,10 @@ import {
   ProfileInputSchema,
   ResolvedProfileDataSchema,
 } from './schema'
+
+/** Spellings may not contain punctuation the lexer owns, and may not look like numbers. */
+const FORBIDDEN_IN_SPELLING = /[;,()[\]"']/
+const LEADING_DIGIT = /^\d/
 
 export type ProfileRegistry = ReadonlyMap<string, ProfileInput>
 
@@ -163,10 +167,95 @@ export function resolveProfile(
   return deepFreeze({ ...data, lookup, operatorLookup, maxWords, normalize })
 }
 
-/** Filled in by the validation task; until then returns empty tables. */
+type WordSectionName = 'keywords' | 'types' | 'builtins'
+
+const WORD_SECTIONS: readonly [WordSectionName, LookupKind][] = [
+  ['keywords', 'keyword'],
+  ['types', 'type'],
+  ['builtins', 'builtin'],
+]
+
+function validateSpelling(section: string, key: string, spelling: string): void {
+  if (
+    spelling.length === 0 ||
+    FORBIDDEN_IN_SPELLING.test(spelling) ||
+    LEADING_DIGIT.test(spelling)
+  ) {
+    throw new ProfileError(
+      'PROFILE_INVALID_SPELLING',
+      `${section}.${key}: "${spelling}" is not a valid spelling`,
+      [section, key],
+    )
+  }
+}
+
 function buildLookups(
-  _data: ProfileData,
-  _normalize: Normalizer,
+  data: ProfileData,
+  normalize: Normalizer,
 ): Pick<ResolvedProfile, 'lookup' | 'operatorLookup' | 'maxWords'> {
-  return { lookup: new Map(), operatorLookup: new Map(), maxWords: 1 }
+  const lookup = new Map<string, LookupEntry>()
+  const owner = new Map<string, string>()
+  let maxWords = 1
+
+  for (const [section, kind] of WORD_SECTIONS) {
+    for (const [key, spellings] of Object.entries(data[section])) {
+      if (
+        spellings.length === 0 &&
+        !(section === 'keywords' && OPTIONAL_KEYWORD_KEYS.includes(key as KeywordKey))
+      ) {
+        throw new ProfileError('PROFILE_MISSING_SPELLING', `${section}.${key} has no spelling`, [
+          section,
+          key,
+        ])
+      }
+      for (const spelling of spellings) {
+        validateSpelling(section, key, spelling)
+        const normalized = normalize(spelling)
+        const previous = owner.get(normalized)
+        if (previous !== undefined && previous !== `${section}.${key}`) {
+          throw new ProfileError(
+            'PROFILE_COLLISION',
+            `"${spelling}" is spelled for both ${previous} and ${section}.${key}`,
+            [section, key],
+          )
+        }
+        owner.set(normalized, `${section}.${key}`)
+        lookup.set(normalized, { kind, key: key as LookupEntry['key'] })
+        maxWords = Math.max(maxWords, normalized.split(' ').length)
+      }
+    }
+  }
+
+  const operatorLookup = new Map<string, OperatorKey>()
+  for (const [key, spellings] of Object.entries(data.operators) as [
+    OperatorKey,
+    readonly string[],
+  ][]) {
+    if (spellings.length === 0) {
+      throw new ProfileError('PROFILE_MISSING_SPELLING', `operators.${key} has no spelling`, [
+        'operators',
+        key,
+      ])
+    }
+    for (const spelling of spellings) {
+      if (spelling.length === 0 || /\s/.test(spelling)) {
+        throw new ProfileError(
+          'PROFILE_INVALID_SPELLING',
+          `operators.${key}: "${spelling}" is not a valid operator spelling`,
+          ['operators', key],
+        )
+      }
+      const previous = operatorLookup.get(spelling)
+      if (previous !== undefined && previous !== key) {
+        throw new ProfileError(
+          'PROFILE_COLLISION',
+          `"${spelling}" is spelled for both operators.${previous} and operators.${key}`,
+          ['operators', key],
+        )
+      }
+      operatorLookup.set(spelling, key)
+    }
+  }
+
+  return { lookup, operatorLookup, maxWords }
 }
