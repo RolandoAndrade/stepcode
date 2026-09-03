@@ -1,0 +1,43 @@
+{
+  "name": "@stepcode/profiles",
+  "version": "0.0.0",
+  "description": "Keyword profiles (es, en, pseint, custom) for the StepCode language",
+  "license": "MIT",
+  "author": "Rolando Andrade",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RolandoAndrade/stepcode",
+    "directory": "packages/profiles"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
