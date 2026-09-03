@@ -74,6 +74,12 @@ export interface Identifier extends NodeBase {
   readonly name: string
   /** Exactly as written in the source. */
   readonly text: string
+  /**
+   * Set on an identifier the parser synthesized because the source had none. A missing
+   * identifier always has `name === ''` and `text === ''`, stands on the last token consumed
+   * before the gap, and is never a real symbol: the checker must not declare or resolve it.
+   */
+  readonly missing?: true
 }
 
 // --- statements ------------------------------------------------------------
@@ -84,7 +90,8 @@ export interface DefineStmt extends NodeBase {
   readonly type: TypeRef
 }
 
-export interface DimensionItem {
+/** A plain record, not a `Node`: it carries a range but no `kind`. Same for the two below. */
+export interface DimensionItem extends NodeBase {
   readonly name: Identifier
   readonly sizes: readonly Expr[]
 }
@@ -120,7 +127,7 @@ export interface ReadStmt extends NodeBase {
   readonly targets: readonly (Identifier | Index)[]
 }
 
-export interface IfBranch {
+export interface IfBranch extends NodeBase {
   readonly condition: Expr
   readonly body: readonly Stmt[]
 }
@@ -132,7 +139,7 @@ export interface IfStmt extends NodeBase {
   readonly elseBody?: readonly Stmt[]
 }
 
-export interface SwitchCase {
+export interface SwitchCase extends NodeBase {
   readonly values: readonly Expr[]
   readonly body: readonly Stmt[]
 }

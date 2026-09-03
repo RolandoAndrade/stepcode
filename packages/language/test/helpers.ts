@@ -1,13 +1,14 @@
 import { profiles, type ResolvedProfile } from '@stepcode/profiles'
-import type { Expr, Node, Stmt, TypeRef } from '../src/ast/index'
+import type { Expr, Node, Stmt, TokenRange, TypeRef } from '../src/ast/index'
+import { childrenOf, walk } from '../src/ast/index'
 import type { Diagnostic, DiagnosticCode } from '../src/diagnostics/index'
 import { formatDiagnostic } from '../src/diagnostics/index'
 import type { Token } from '../src/lexer/index'
-import { tokenize } from '../src/lexer/index'
+import { isTrivia, tokenize } from '../src/lexer/index'
 import { createContext } from '../src/parser/context'
 import { parseExpression } from '../src/parser/expression'
 import { type ParseResult, parse } from '../src/parser/parse'
-import { LineMap } from '../src/source/index'
+import { LineMap, type Span } from '../src/source/index'
 
 /**
  * A token stream as `kind:value` strings, the compact form the lexer tests assert against.
@@ -203,4 +204,140 @@ export function diagnosticReport(
       en: formatDiagnostic(diagnostic, 'en', profiles.en),
     }
   })
+}
+
+interface Container {
+  readonly label: string
+  readonly span: Span
+  readonly tokens: TokenRange
+  readonly children: readonly Node[]
+}
+
+/**
+ * The plain records that group a node's children: `IfBranch`, `SwitchCase`, `DimensionItem`.
+ * They are not nodes (no `kind`), but they carry a range and must contain their own children.
+ */
+function containersOf(node: Node): Container[] {
+  switch (node.kind) {
+    case 'IfStmt':
+      return node.branches.map((branch, index) => ({
+        label: `branch ${index}`,
+        span: branch.span,
+        tokens: branch.tokens,
+        children: [branch.condition, ...branch.body],
+      }))
+    case 'SwitchStmt':
+      return node.cases.map((entry, index) => ({
+        label: `case ${index}`,
+        span: entry.span,
+        tokens: entry.tokens,
+        children: [...entry.values, ...entry.body],
+      }))
+    case 'DimensionStmt':
+      return node.items.map((item, index) => ({
+        label: `item ${index}`,
+        span: item.span,
+        tokens: item.tokens,
+        children: [item.name, ...item.sizes],
+      }))
+    default:
+      return []
+  }
+}
+
+/**
+ * A placeholder stands where syntax is missing. It points at the last token the parser
+ * consumed so it stays inside its parent, which means it may share that token with a sibling;
+ * owning nothing, it is left out of the one-owner check.
+ */
+function isPlaceholder(node: Node): boolean {
+  return node.kind === 'ErrorExpr' || (node.kind === 'Identifier' && node.missing === true)
+}
+
+const describeNode = (node: Node): string => `${node.kind}[${node.tokens.join()}]`
+
+/**
+ * The tree contract of spec §2 and §6, over one parse:
+ *
+ * a. every child's token range lies inside its parent's;
+ * b. every significant token (trivia, newlines and `eof` aside) has exactly one innermost
+ *    owner — siblings never overlap, and the root covers them all;
+ * c. `childrenOf` is sorted by `tokens[0]`;
+ * d. every node's span runs from its first token's start to its last token's end.
+ */
+export function assertTreeInvariants(result: ParseResult): void {
+  const { program, tokens } = result
+  const failures: string[] = []
+  const check = (ok: boolean, message: string): void => {
+    if (!ok) failures.push(message)
+  }
+  const checkRange = (
+    label: string,
+    span: Span,
+    range: TokenRange,
+    parentLabel: string,
+    parent: TokenRange,
+  ): void => {
+    const [start, end] = range
+    check(start <= end, `${label} has an inverted token range`)
+    check(
+      start >= parent[0] && end <= parent[1],
+      `${label} escapes ${parentLabel}[${parent.join()}]`,
+    )
+    const first = tokens[start]
+    const last = tokens[end]
+    check(
+      first !== undefined && last !== undefined && span.start === first.span.start,
+      `${label} does not start at its first token`,
+    )
+    check(
+      last !== undefined && span.end === last.span.end,
+      `${label} does not end at its last token`,
+    )
+  }
+
+  walk(program, {
+    enter: (node) => {
+      const children = childrenOf(node)
+      let previousStart = -1
+      let previousEnd = -1
+      for (const child of children) {
+        checkRange(describeNode(child), child.span, child.tokens, describeNode(node), node.tokens)
+        check(
+          child.tokens[0] >= previousStart,
+          `children of ${describeNode(node)} are not sorted by tokens[0]`,
+        )
+        previousStart = child.tokens[0]
+        if (isPlaceholder(child)) continue
+        check(
+          child.tokens[0] > previousEnd,
+          `children of ${describeNode(node)} overlap at token ${child.tokens[0]}`,
+        )
+        previousEnd = child.tokens[1]
+      }
+      for (const container of containersOf(node)) {
+        const label = `${describeNode(node)} ${container.label}`
+        checkRange(label, container.span, container.tokens, describeNode(node), node.tokens)
+        for (const child of container.children) {
+          checkRange(describeNode(child), child.span, child.tokens, label, container.tokens)
+        }
+      }
+      return true
+    },
+  })
+
+  const significant = tokens.filter(
+    (token) =>
+      !isTrivia(token) && token.kind !== 'newline' && token.kind !== 'eof' && token.text.length > 0,
+  )
+  for (const token of significant) {
+    const index = tokens.indexOf(token)
+    check(
+      index >= program.tokens[0] && index <= program.tokens[1],
+      `token ${index} (${token.kind}) lies outside the Program`,
+    )
+  }
+  if (failures.length > 0) {
+    throw new Error(`tree invariants broken:\n${[...new Set(failures)].join('\n')}`)
+  }
 }

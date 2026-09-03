@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Expr, IfStmt, Literal, Node, Program } from '../../src/ast/index'
 import { childrenOf, walk } from '../../src/ast/index'
+import { parseSource } from '../helpers'
 
 const span = { start: 0, end: 0 }
 const at = (): { span: { start: number; end: number }; tokens: [number, number] } => ({
@@ -17,10 +18,12 @@ const ifStmt: IfStmt = {
     {
       condition: { kind: 'Binary', op: 'lt', left: ident('a'), right: literal(1), ...at() },
       body: [{ kind: 'WriteStmt', args: [literal(2)], newline: true, ...at() }],
+      ...at(),
     },
     {
       condition: ident('b'),
       body: [{ kind: 'WriteStmt', args: [literal(3)], newline: true, ...at() }],
+      ...at(),
     },
   ],
   elseBody: [{ kind: 'WriteStmt', args: [literal(4)], newline: true, ...at() }],
@@ -59,6 +62,42 @@ describe('childrenOf', () => {
   it('returns nothing for a leaf', () => {
     expect(childrenOf(literal(1))).toEqual([])
     expect(childrenOf({ kind: 'BreakStmt', ...at() })).toEqual([])
+  })
+})
+
+describe('childrenOf is in source order', () => {
+  it('puts a main block that follows a subprogram after it', () => {
+    const result = parseSource('SubProceso f\nFinSubProceso\nProceso p\nFinProceso')
+    expect(childrenOf(result.program).map((node) => node.kind)).toEqual([
+      'SubprogramDecl',
+      'MainBlock',
+    ])
+  })
+
+  it('puts a main block that precedes a subprogram first', () => {
+    const result = parseSource('Proceso p\nFinProceso\nSubProceso f\nFinSubProceso')
+    expect(childrenOf(result.program).map((node) => node.kind)).toEqual([
+      'MainBlock',
+      'SubprogramDecl',
+    ])
+  })
+
+  it('orders a function header by what the source writes first', () => {
+    const result = parseSource(
+      'Funcion r Como Real <- f(x Como Real)\nFinFuncion\nProceso p\nFinProceso',
+    )
+    const declaration = result.program.subprograms[0]
+    expect(declaration).toBeDefined()
+    const children = childrenOf(declaration as Node)
+    expect(children.map((node) => node.kind)).toEqual([
+      'Identifier',
+      'TypeRef',
+      'Identifier',
+      'Param',
+    ])
+    expect(children.map((node) => node.tokens[0])).toEqual(
+      [...children.map((node) => node.tokens[0])].sort((left, right) => left - right),
+    )
   })
 })
 

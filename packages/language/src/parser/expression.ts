@@ -1,7 +1,7 @@
 import type { BuiltinKey, KeywordKey, OperatorKey } from '@stepcode/profiles'
 import type { BinaryOp, Expr, Identifier } from '../ast/index'
 import type { Span } from '../source/index'
-import { nodeRange, type ParserContext, report, reportTooDeep } from './context'
+import { nodeRange, type ParserContext, placeholderRange, report, reportTooDeep } from './context'
 import { isKeyword, isPunct, keywordKeyOf, operatorKeyOf } from './tokens'
 
 const BINARY_FROM_OPERATOR: Partial<Record<OperatorKey, BinaryOp>> = {
@@ -89,9 +89,7 @@ export const MAX_EXPRESSION_DEPTH = 500
 /** The placeholder a guard hands back: it stands where the too-deep expression would be. */
 function tooDeepExpr(ctx: ParserContext): Expr {
   reportTooDeep(ctx, MAX_EXPRESSION_DEPTH)
-  const start = ctx.cursor.at()
-  const span = ctx.cursor.peek().span
-  return { kind: 'ErrorExpr', span: { start: span.start, end: span.start }, tokens: [start, start] }
+  return { kind: 'ErrorExpr', ...placeholderRange(ctx, ctx.cursor.at()) }
 }
 
 /**
@@ -248,11 +246,8 @@ function parsePrimary(ctx: ParserContext): Expr {
     default:
       break
   }
-  // The offending token is left in place so the statement layer can recover on it.
+  // The offending token is left in place so the statement layer can recover on it, which is
+  // why the placeholder stands on the last consumed token instead.
   report(ctx, 'E2031', token.span, { found: token.text })
-  return {
-    kind: 'ErrorExpr',
-    span: { start: token.span.start, end: token.span.start },
-    tokens: [start, start],
-  }
+  return { kind: 'ErrorExpr', ...placeholderRange(ctx, start) }
 }

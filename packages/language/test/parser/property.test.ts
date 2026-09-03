@@ -3,6 +3,7 @@ import fc from 'fast-check'
 import { describe, expect, it } from 'vitest'
 import { tokenize } from '../../src/lexer/index'
 import { parse } from '../../src/parser/parse'
+import { assertTreeInvariants } from '../helpers'
 
 /** The pieces a StepCode program is made of, plus a few the parser must survive. */
 const VOCABULARY = [
@@ -90,6 +91,16 @@ describe('parse is total', () => {
         expect(() => parse(source, { profile })).not.toThrow()
       }),
       { numRuns: 500 },
+    )
+  })
+
+  it('keeps the tree invariants on an arbitrary token soup', () => {
+    fc.assert(
+      fc.property(tokenSoup, fc.boolean(), (source, strict) => {
+        const profile = strict ? profiles.es : profiles.pseint
+        assertTreeInvariants(parse(source, { profile }))
+      }),
+      { numRuns: 300 },
     )
   })
 })

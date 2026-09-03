@@ -68,8 +68,11 @@ Binding rules:
   this package (`es`, `en`; locale fallback `pt-BR → pt → en`, `registerCatalog` for more).
   Templates quote the active profile's first spelling of a construct via `{kw:endIf}` slots.
 - **Deterministic**: same `(source, profile)` → identical tokens, AST, diagnostics.
-- **Lossless**: `tokens.map(t => t.text).join('') === source`; every non-trivia token lies in
-  the token range of exactly one innermost node.
+- **Lossless**: `tokens.map(t => t.text).join('') === source`; every significant token
+  (trivia, `newline` and `eof` aside) lies in the token range of exactly one innermost node.
+  A child's range always lies inside its parent's and siblings never overlap; recovery
+  placeholders (`ErrorExpr`, a synthesized `Identifier`) stand on the last token consumed
+  before the gap and own no token of their own.
 
 ## 3. Lexer
 
@@ -232,16 +235,21 @@ SubprogramDecl { form: 'procedure' | 'function'; name: Identifier; params: Param
                  returnName?: Identifier; returnType?: TypeRef; body: Stmt[] }
 Param          { name: Identifier; type?: TypeRef; byRef: boolean }
 TypeRef        { base: TypeKey; dimensions: (Expr | null)[] }   // [] scalar; [null] T[]; [null,null] T[,]; [e1,e2] sized
-Identifier     { name: string /* canonical */; text: string /* as written */ }
+Identifier     { name: string /* canonical */; text: string /* as written */; missing?: true }
+                 // `missing` marks an identifier the parser synthesized: name === '' and it is
+                 // never a real symbol.
 
 DefineStmt     { names: Identifier[]; type: TypeRef }
-DimensionStmt  { items: { name: Identifier; sizes: Expr[] }[] }
+DimensionStmt  { items: DimensionItem[] }
+DimensionItem  { name: Identifier; sizes: Expr[]; span; tokens }      // a record, not a Node
 ConstantStmt   { name: Identifier; type?: TypeRef; value: Expr }
 AssignStmt     { target: Identifier | Index; value: Expr; viaEquals: boolean }
 WriteStmt      { args: Expr[]; newline: boolean }
 ReadStmt       { targets: (Identifier | Index)[] }
-IfStmt         { branches: { condition: Expr; body: Stmt[] }[]; elseBody?: Stmt[] }
-SwitchStmt     { selector: Expr; cases: { values: Expr[]; body: Stmt[] }[]; otherwise?: Stmt[] }
+IfStmt         { branches: IfBranch[]; elseBody?: Stmt[] }
+IfBranch       { condition: Expr; body: Stmt[]; span; tokens }        // a record, not a Node
+SwitchStmt     { selector: Expr; cases: SwitchCase[]; otherwise?: Stmt[] }
+SwitchCase     { values: Expr[]; body: Stmt[]; span; tokens }         // a record, not a Node
 WhileStmt      { condition: Expr; body: Stmt[] }
 RepeatStmt     { body: Stmt[]; condition: Expr; until: boolean }
 ForStmt        { counter: Identifier; from: Expr; to: Expr; step?: Expr; body: Stmt[] }
@@ -265,8 +273,15 @@ BinaryOp = 'plus' | 'minus' | 'times' | 'divide' | 'power' | 'div' | 'mod'
          | 'equal' | 'notEqual' | 'lt' | 'le' | 'gt' | 'ge' | 'and' | 'or'
 ```
 
+`IfBranch`, `SwitchCase` and `DimensionItem` stay plain records — no `kind`, not part of
+`Node` — but carry `span` and `tokens` running from the first to the last token of the branch,
+case or item, so a tool can highlight one without re-deriving it from its children.
+
 `walk(node, { enter?(node, parent), exit?(node, parent) })` is the single traversal utility;
-`enter` may return `false` to skip children. The checker, interpreter, and codemirror
+`enter` may return `false` to skip children. `childrenOf` returns children sorted by their
+first token, which is not always field order (a `Funcion`'s return name precedes its name; a
+main block may follow a subprogram). Both are iterative: no input nests deep enough to
+overflow the stack. The checker, interpreter, and codemirror
 package all use it. Keyword positions (`FinSi`, `Entonces`) are recovered from the token
 range when a diagnostic needs them; nodes carry no extra keyword spans.
 

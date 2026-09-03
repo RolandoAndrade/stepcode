@@ -77,14 +77,35 @@ export function reportTooDeep(ctx: ParserContext, limit: number): void {
 }
 
 /**
+ * The range of a placeholder node standing in for syntax that is not there: an `ErrorExpr`, a
+ * synthesized `Identifier`. It points at the last token the parser consumed — never at the
+ * token still ahead, which belongs to whatever recovers next — so a placeholder always lies
+ * inside its parent's range and never claims a token twice. Before anything is consumed the
+ * parent starts where the placeholder does, so `startIndex` stands in.
+ */
+export function placeholderRange(
+  ctx: ParserContext,
+  startIndex: number,
+): { span: Span; tokens: TokenRange } {
+  const last = ctx.cursor.lastIndex()
+  const index = last < 0 ? startIndex : last
+  const token = ctx.tokens[index]
+  const span = token?.span ?? { start: 0, end: 0 }
+  return { span: { start: span.start, end: span.end }, tokens: [index, index] }
+}
+
+/**
  * The span and inclusive token range of a node that started at token `startIndex` and ended
- * with the last token the cursor consumed.
+ * with the last token the cursor consumed. A node that consumed nothing at all gets the
+ * placeholder range instead of claiming the token ahead, which keeps every node inside its
+ * parent: the end is the last consumed token, so it is never behind a child's end.
  */
 export function nodeRange(
   ctx: ParserContext,
   startIndex: number,
 ): { span: Span; tokens: TokenRange } {
-  const endIndex = Math.max(startIndex, ctx.cursor.lastIndex())
+  const endIndex = ctx.cursor.lastIndex()
+  if (endIndex < startIndex) return placeholderRange(ctx, startIndex)
   const first = ctx.tokens[startIndex]
   const last = ctx.tokens[endIndex]
   const start = first?.span.start ?? 0

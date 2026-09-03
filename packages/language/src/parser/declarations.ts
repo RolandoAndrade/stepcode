@@ -10,7 +10,7 @@ import type {
   TypeRef,
 } from '../ast/index'
 import { finishBlock, openBlock, parseSection } from './blocks'
-import { nodeRange, type ParserContext, report } from './context'
+import { nodeRange, type ParserContext, placeholderRange, report } from './context'
 import { parseExpression } from './expression'
 import { consumeTerminator, skipToRecoveryPoint } from './terminator'
 import { isKeyword, isOperator, isPunct, keywordKeyOf } from './tokens'
@@ -25,8 +25,8 @@ export function expectIdentifier(ctx: ParserContext): Identifier {
       kind: 'Identifier',
       name: '',
       text: '',
-      span: { start: token.span.start, end: token.span.start },
-      tokens: [start, start],
+      missing: true,
+      ...placeholderRange(ctx, start),
     }
   }
   ctx.cursor.next()

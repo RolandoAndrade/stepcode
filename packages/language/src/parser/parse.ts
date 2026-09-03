@@ -4,6 +4,7 @@ import type { Diagnostic } from '../diagnostics/index'
 import { type Token, tokenize } from '../lexer/index'
 import { createContext } from './context'
 import { parseProgram } from './declarations'
+import { sealRanges } from './ranges'
 
 export interface ParseResult {
   readonly program: Program
@@ -19,5 +20,6 @@ export function parse(source: string, options: { profile: ResolvedProfile }): Pa
   const { tokens, diagnostics } = tokenize(source, options.profile)
   const ctx = createContext(source, tokens, options.profile, diagnostics)
   const program = parseProgram(ctx)
+  sealRanges(program, tokens)
   return { program, tokens, diagnostics: ctx.diagnostics }
 }

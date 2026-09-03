@@ -6,8 +6,18 @@ export interface Visitor {
   exit?(node: Node, parent: Node | null): void
 }
 
-/** Every child node, in source order. Plain records (branches, cases, items) are flattened. */
+/**
+ * Every child node, in source order. Plain records (branches, cases, items) are flattened.
+ * The assembled list is sorted by its first token, because a node's fields do not always run
+ * in source order — a `Funcion`'s return name precedes its name, a main block may follow a
+ * subprogram — and every consumer wants source order.
+ */
 export function childrenOf(node: Node): Node[] {
+  const children = assembleChildren(node)
+  return children.sort((left, right) => left.tokens[0] - right.tokens[0])
+}
+
+function assembleChildren(node: Node): Node[] {
   switch (node.kind) {
     case 'Program':
       return node.main === null ? [...node.subprograms] : [...node.subprograms, node.main]

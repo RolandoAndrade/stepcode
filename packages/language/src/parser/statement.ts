@@ -13,7 +13,7 @@ import type {
 } from '../ast/index'
 import type { Token } from '../lexer/index'
 import { finishBlock, openBlock, parseSection, reportUnclosed } from './blocks'
-import { nodeRange, type ParserContext, report } from './context'
+import { nodeRange, type ParserContext, placeholderRange, report } from './context'
 import { expectIdentifier, parseDefine, parseTypeRef } from './declarations'
 import { parseExpression, parseTarget } from './expression'
 import { BLOCK_BOUNDARY_KEYWORDS, consumeTerminator, skipToRecoveryPoint } from './terminator'
@@ -169,6 +169,7 @@ function parseDimension(ctx: ParserContext): Stmt {
   ctx.cursor.next()
   const items: DimensionItem[] = []
   for (;;) {
+    const itemStart = ctx.cursor.at()
     const name = expectIdentifier(ctx)
     const sizes: Expr[] = []
     while (isPunct(ctx.cursor.peek(), '[')) {
@@ -181,7 +182,7 @@ function parseDimension(ctx: ParserContext): Stmt {
       if (isPunct(ctx.cursor.peek(), ']')) ctx.cursor.next()
       else report(ctx, 'E2005', open.span, { bracket: ']' })
     }
-    items.push({ name, sizes })
+    items.push({ name, sizes, ...nodeRange(ctx, itemStart) })
     if (!isPunct(ctx.cursor.peek(), ',')) break
     ctx.cursor.next()
   }
@@ -242,6 +243,15 @@ function parseAssignOrCall(ctx: ParserContext): Stmt {
 
 // --- control flow ----------------------------------------------------------
 
+/** One `Si`/`Sino Si` branch: its condition, `Entonces`, and body, from the condition on. */
+function parseIfBranch(ctx: ParserContext): IfBranch {
+  const start = ctx.cursor.at()
+  const condition = parseExpression(ctx)
+  expectKeyword(ctx, 'then')
+  const body = parseSection(ctx)
+  return { condition, body, ...nodeRange(ctx, start) }
+}
+
 function parseIf(ctx: ParserContext): Stmt {
   const start = ctx.cursor.at()
   ctx.cursor.next()
@@ -251,14 +261,10 @@ function parseIf(ctx: ParserContext): Stmt {
     follows: ['elseIf', 'else', 'endIf'],
     openerToken: start,
   })
-  const condition = parseExpression(ctx)
-  expectKeyword(ctx, 'then')
-  const branches: IfBranch[] = [{ condition, body: parseSection(ctx) }]
+  const branches: IfBranch[] = [parseIfBranch(ctx)]
   while (isKeyword(ctx.cursor.peek(), 'elseIf')) {
     ctx.cursor.next()
-    const next = parseExpression(ctx)
-    expectKeyword(ctx, 'then')
-    branches.push({ condition: next, body: parseSection(ctx) })
+    branches.push(parseIfBranch(ctx))
   }
   let elseBody: Stmt[] | undefined
   if (isKeyword(ctx.cursor.peek(), 'else')) {
@@ -338,11 +344,9 @@ function repeatCloserAhead(ctx: ParserContext): boolean {
   return true
 }
 
-/** A zero-width placeholder condition for a `Repetir` that never got its closer. */
+/** A placeholder condition for a `Repetir` that never got its closer. */
 function parseErrorExpr(ctx: ParserContext): Expr {
-  const index = ctx.cursor.at()
-  const span = ctx.cursor.peek().span
-  return { kind: 'ErrorExpr', span: { start: span.start, end: span.start }, tokens: [index, index] }
+  return { kind: 'ErrorExpr', ...placeholderRange(ctx, ctx.cursor.at()) }
 }
 
 function parseFor(ctx: ParserContext): Stmt {
@@ -454,6 +458,7 @@ function parseSwitch(ctx: ParserContext): Stmt {
       continue
     }
     if (key !== 'case' && !looksLikeCaseLabel(ctx)) break
+    const caseStart = ctx.cursor.at()
     if (key === 'case') ctx.cursor.next()
     const values = parseExprList(ctx)
     if (isPunct(ctx.cursor.peek(), ':')) ctx.cursor.next()
@@ -461,7 +466,8 @@ function parseSwitch(ctx: ParserContext): Stmt {
       const found = ctx.cursor.peek()
       report(ctx, 'E2002', found.span, { found: found.text })
     }
-    cases.push({ values, body: parseSection(ctx, options) })
+    const body = parseSection(ctx, options)
+    cases.push({ values, body, ...nodeRange(ctx, caseStart) })
     if (ctx.cursor.at() === before) ctx.cursor.next()
   }
   finishBlock(ctx, 'endSwitch')

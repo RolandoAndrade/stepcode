@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { profiles } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
 import { parse } from '../../src/parser/parse'
+import { assertTreeInvariants } from '../helpers'
 
 const dir = fileURLToPath(new URL('./programs', import.meta.url))
 const files = readdirSync(dir)
@@ -40,6 +41,10 @@ describe('the v1 conformance corpus', () => {
             (code) => code !== 'W2001',
           ),
         ).toEqual([])
+      })
+
+      it('satisfies the tree invariants', () => {
+        expect(() => assertTreeInvariants(result)).not.toThrow()
       })
 
       it('is lossless', () => {
