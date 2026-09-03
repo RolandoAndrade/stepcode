@@ -1,7 +1,7 @@
 import type { KeywordKey } from '@stepcode/profiles'
 import type { Stmt } from '../ast/index'
 import type { Span } from '../source/index'
-import { type BlockFrame, type ParserContext, report } from './context'
+import { type BlockFrame, type ParserContext, report, reportTooDeep } from './context'
 import { parseStatement } from './statement'
 import { BLOCK_BOUNDARY_KEYWORDS } from './terminator'
 import { keywordKeyOf } from './tokens'
@@ -15,10 +15,30 @@ export interface BlockOptions {
 }
 
 /**
+ * How deep block statements may nest. Each level costs several JavaScript frames, so this
+ * limit keeps `parse` total on pathological input; past it the block parses as empty, the
+ * enclosing statement reports its missing closer, and E2032 explains why.
+ */
+export const MAX_BLOCK_DEPTH = 200
+
+/**
  * Statements until a block boundary. Guarantees progress: a statement that consumed nothing
  * costs one token, so no input loops forever.
  */
 export function parseBlock(ctx: ParserContext, options: BlockOptions = {}): Stmt[] {
+  if (ctx.depth.block >= MAX_BLOCK_DEPTH) {
+    reportTooDeep(ctx, MAX_BLOCK_DEPTH)
+    return []
+  }
+  ctx.depth.block++
+  try {
+    return parseBlockAt(ctx, options)
+  } finally {
+    ctx.depth.block--
+  }
+}
+
+function parseBlockAt(ctx: ParserContext, options: BlockOptions): Stmt[] {
   const body: Stmt[] = []
   while (!ctx.cursor.atEnd()) {
     const key = keywordKeyOf(ctx.cursor.peek())

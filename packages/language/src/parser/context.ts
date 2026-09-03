@@ -33,6 +33,12 @@ export interface ParserContext {
   /** Lexer diagnostics first, then parser diagnostics in the order they are found. */
   readonly diagnostics: Diagnostic[]
   readonly blocks: BlockFrame[]
+  /**
+   * Nesting counters for the depth guards (`MAX_EXPRESSION_DEPTH`, `MAX_BLOCK_DEPTH`). Deep
+   * input must not reach the JavaScript stack limit, so both parsers stop descending past
+   * their limit and report E2032 — once per parse, however many times the limit is hit.
+   */
+  readonly depth: { expression: number; block: number; reported: boolean }
 }
 
 export function createContext(
@@ -49,6 +55,7 @@ export function createContext(
     lineMap: new LineMap(source),
     diagnostics,
     blocks: [],
+    depth: { expression: 0, block: 0, reported: false },
   }
 }
 
@@ -60,6 +67,13 @@ export function report(
   related?: readonly RelatedSpan[],
 ): void {
   ctx.diagnostics.push(createDiagnostic(code, span, data, related))
+}
+
+/** E2032, at most once per parse: the input nests deeper than the parser will descend. */
+export function reportTooDeep(ctx: ParserContext, limit: number): void {
+  if (ctx.depth.reported) return
+  ctx.depth.reported = true
+  report(ctx, 'E2032', ctx.cursor.peek().span, { limit })
 }
 
 /**

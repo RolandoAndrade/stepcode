@@ -1,7 +1,7 @@
 import type { BuiltinKey, KeywordKey, OperatorKey } from '@stepcode/profiles'
 import type { BinaryOp, Expr, Identifier } from '../ast/index'
 import type { Span } from '../source/index'
-import { nodeRange, type ParserContext, report } from './context'
+import { nodeRange, type ParserContext, report, reportTooDeep } from './context'
 import { isKeyword, isPunct, keywordKeyOf, operatorKeyOf } from './tokens'
 
 const BINARY_FROM_OPERATOR: Partial<Record<OperatorKey, BinaryOp>> = {
@@ -79,10 +79,36 @@ function binaryOpOf(token: { kind: string; value?: unknown }): BinaryOp | null {
 }
 
 /**
+ * How deep `parseExpression` will descend. Every nesting level (a parenthesis, a prefix
+ * operator, the right side of a binary operator) costs one JavaScript frame, so a limit well
+ * under the engine's stack keeps `parse` total on pathological input. Past it the expression
+ * becomes one `ErrorExpr` carrying E2032; the tokens are left to the statement layer.
+ */
+export const MAX_EXPRESSION_DEPTH = 500
+
+/** The placeholder a guard hands back: it stands where the too-deep expression would be. */
+function tooDeepExpr(ctx: ParserContext): Expr {
+  reportTooDeep(ctx, MAX_EXPRESSION_DEPTH)
+  const start = ctx.cursor.at()
+  const span = ctx.cursor.peek().span
+  return { kind: 'ErrorExpr', span: { start: span.start, end: span.start }, tokens: [start, start] }
+}
+
+/**
  * Pratt parser over the profile's operators. Never throws: a missing operand becomes an
  * `ErrorExpr` carrying E2031 and parsing continues.
  */
 export function parseExpression(ctx: ParserContext, minBinding = 0): Expr {
+  if (ctx.depth.expression >= MAX_EXPRESSION_DEPTH) return tooDeepExpr(ctx)
+  ctx.depth.expression++
+  try {
+    return parseExpressionAt(ctx, minBinding)
+  } finally {
+    ctx.depth.expression--
+  }
+}
+
+function parseExpressionAt(ctx: ParserContext, minBinding: number): Expr {
   const start = ctx.cursor.at()
   let left = parsePrefix(ctx)
   let afterComparison = false

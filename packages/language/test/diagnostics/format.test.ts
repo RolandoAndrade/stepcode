@@ -32,6 +32,7 @@ describe('codes and severities', () => {
       'E2022',
       'E2030',
       'E2031',
+      'E2032',
       'W2001',
     ])
   })
@@ -87,6 +88,7 @@ describe('catalogs', () => {
             closer: 'endIf',
             expected: 'then',
             modifier: 'byRef',
+            limit: 500,
           },
         ),
         'es',

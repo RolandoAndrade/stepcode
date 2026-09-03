@@ -11,6 +11,7 @@ import type {
   SwitchCase,
   TypeRef,
 } from '../ast/index'
+import type { Token } from '../lexer/index'
 import { finishBlock, openBlock, parseSection, reportUnclosed } from './blocks'
 import { nodeRange, type ParserContext, report } from './context'
 import { expectIdentifier, parseDefine, parseTypeRef } from './declarations'
@@ -379,12 +380,32 @@ const CASE_LABEL_KINDS: ReadonlySet<string> = new Set([
 ])
 
 /**
+ * How far ahead a case label is looked for. A label is `Expr ("," Expr)* ":"`, so 32
+ * significant tokens cover any realistic one; past that the lookahead gives up and the tokens
+ * parse as ordinary statements inside the previous case instead.
+ */
+const CASE_LABEL_LOOKAHEAD = 32
+
+/** True when the token ahead can begin a case label, i.e. can begin an expression. */
+function canStartCaseLabel(token: Token): boolean {
+  if (isPunct(token, '(')) return true
+  if (token.kind === 'operator') return token.value === 'minus' || token.value === 'plus'
+  if (token.kind === 'keyword') {
+    const key = keywordKeyOf(token)
+    return key === 'true' || key === 'false' || key === 'case'
+  }
+  return CASE_LABEL_KINDS.has(token.kind)
+}
+
+/**
  * True when the tokens ahead read as `Expr ("," Expr)* ":"`. A `Segun` label carries the
  * `case` keyword only when the profile spells it, so a bare label needs this lookahead to
- * be told apart from an ordinary statement.
+ * be told apart from an ordinary statement. The first token must be one an expression can
+ * start with: a leading `)` or `,` is never a label, however the line ends.
  */
 export function looksLikeCaseLabel(ctx: ParserContext): boolean {
-  for (let offset = 0; offset < 32; offset++) {
+  if (!canStartCaseLabel(ctx.cursor.peek())) return false
+  for (let offset = 0; offset < CASE_LABEL_LOOKAHEAD; offset++) {
     const token = ctx.cursor.peekAhead(offset)
     if (isPunct(token, ':')) return offset > 0
     if (isPunct(token, ',') || isPunct(token, '(') || isPunct(token, ')')) continue
@@ -418,6 +439,9 @@ function parseSwitch(ctx: ParserContext): Stmt {
   const cases: SwitchCase[] = []
   let otherwise: Stmt[] | undefined
   for (;;) {
+    // Same guard as `parseBlock`: a round that consumed nothing costs one token, so a label
+    // the parsers cannot make sense of can never spin here.
+    const before = ctx.cursor.at()
     const token = ctx.cursor.peek()
     const key = keywordKeyOf(token)
     if (key === 'otherwise') {
@@ -426,6 +450,7 @@ function parseSwitch(ctx: ParserContext): Stmt {
       const body = parseSection(ctx, options)
       if (otherwise === undefined) otherwise = body
       else report(ctx, 'E2013', token.span)
+      if (ctx.cursor.at() === before) ctx.cursor.next()
       continue
     }
     if (key !== 'case' && !looksLikeCaseLabel(ctx)) break
@@ -437,6 +462,7 @@ function parseSwitch(ctx: ParserContext): Stmt {
       report(ctx, 'E2002', found.span, { found: found.text })
     }
     cases.push({ values, body: parseSection(ctx, options) })
+    if (ctx.cursor.at() === before) ctx.cursor.next()
   }
   finishBlock(ctx, 'endSwitch')
   const range = nodeRange(ctx, start)

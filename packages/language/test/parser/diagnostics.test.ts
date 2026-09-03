@@ -173,6 +173,14 @@ const cases: {
     en: 'Entero',
   },
   {
+    code: 'E2032',
+    source: `Proceso p\n  a <- ${'('.repeat(600)}1${')'.repeat(600)};\nFinProceso`,
+    line: 2,
+    column: 508,
+    es: 'anidado',
+    en: 'nested',
+  },
+  {
     code: 'W2001',
     source: 'Proceso p\n  a <- 1;;\nFinProceso',
     line: 2,

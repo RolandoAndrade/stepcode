@@ -23,6 +23,7 @@ const templates: Record<DiagnosticCode, string> = {
   E2022: 'Este parámetro ya tiene «{kw:$modifier}».',
   E2030: 'No se pueden encadenar comparaciones: escribe «a {text} b {kw:and} b {text} c».',
   E2031: 'Falta una expresión aquí: encontré «{found}».',
+  E2032: 'La expresión o el bloque está anidado demasiado profundo (más de {limit} niveles).',
   W2001: 'Instrucción vacía: este «;» sobra.',
 }
 

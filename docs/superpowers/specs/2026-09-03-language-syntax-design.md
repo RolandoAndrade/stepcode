@@ -289,6 +289,10 @@ Goal: one mistake, one diagnostic, and an AST that is intact everywhere else.
 - **Missing `Entonces`/`Hacer`** → E2004, inserted virtually.
 - **Expression errors** → `ErrorExpr` with E2031; the enclosing statement still terminates.
 - **Unbalanced `)` / `]`** → E2005 at the opener; recovery at the terminator.
+- **Nesting limits.** Expressions descend at most `MAX_EXPRESSION_DEPTH` (500) levels and
+  block statements at most `MAX_BLOCK_DEPTH` (200); past either, the parser stops descending,
+  reports E2032 once per parse, and yields an `ErrorExpr` (expressions) or an empty block. The
+  limits keep `parse` total on pathological input instead of overflowing the stack.
 
 ### 7.1 Parser diagnostics
 
@@ -309,6 +313,7 @@ Goal: one mistake, one diagnostic, and an AST that is intact everywhere else.
 | E2022 | error | repeated parameter modifier |
 | E2030 | error | chained comparison |
 | E2031 | error | expected an expression |
+| E2032 | error | nesting too deep (data: `limit`) |
 | W2001 | warning | empty statement |
 
 Ranges: E1xxx lexer; E2001–E2019 statements; E2020–E2029 declarations and headers;

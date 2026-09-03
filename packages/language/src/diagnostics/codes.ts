@@ -25,6 +25,7 @@ export const DIAGNOSTIC_CODES = [
   'E2022', // repeated parameter modifier
   'E2030', // chained comparison
   'E2031', // expected an expression
+  'E2032', // nesting too deep
   'W2001', // empty statement
 ] as const
 
@@ -51,5 +52,6 @@ export const DIAGNOSTIC_SEVERITY: Readonly<Record<DiagnosticCode, Severity>> = O
   E2022: 'error',
   E2030: 'error',
   E2031: 'error',
+  E2032: 'error',
   W2001: 'warning',
 })

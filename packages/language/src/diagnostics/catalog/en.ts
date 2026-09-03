@@ -22,6 +22,7 @@ const templates: Record<DiagnosticCode, string> = {
   E2022: 'This parameter already has "{kw:$modifier}".',
   E2030: 'Comparisons cannot be chained: write "a {text} b {kw:and} b {text} c".',
   E2031: 'An expression is missing here: I found "{found}".',
+  E2032: 'This expression or block is nested too deeply (more than {limit} levels).',
   W2001: 'Empty statement: this ";" is not needed.',
 }
 
