@@ -1,15 +1,46 @@
-import type { Stmt } from '../ast/index'
+import type { KeywordKey } from '@stepcode/profiles'
+import type {
+  BuiltinCall,
+  Call,
+  DimensionItem,
+  Expr,
+  Identifier,
+  IfBranch,
+  Index,
+  Stmt,
+  SwitchCase,
+  TypeRef,
+} from '../ast/index'
+import { finishBlock, openBlock, parseSection, reportUnclosed } from './blocks'
 import { nodeRange, type ParserContext, report } from './context'
-import { parseDefine } from './declarations'
-import { STATEMENT_START_KEYWORDS, skipToRecoveryPoint } from './terminator'
-import { isPunct, keywordKeyOf } from './tokens'
+import { expectIdentifier, parseDefine, parseTypeRef } from './declarations'
+import { parseExpression, parseTarget } from './expression'
+import { BLOCK_BOUNDARY_KEYWORDS, consumeTerminator, skipToRecoveryPoint } from './terminator'
+import { isKeyword, isOperator, isPunct, keywordKeyOf } from './tokens'
 
-/**
- * One statement, or `null` when nothing should be added to the body: an empty statement
- * (`;`), or a statement kind Task 7's dispatcher will own. A keyword from
- * `STATEMENT_START_KEYWORDS` is syntactically a statement even before its parser exists, so
- * it is skipped without a diagnostic rather than reported as an error.
- */
+function errorStmt(ctx: ParserContext, start: number): Stmt {
+  return { kind: 'ErrorStmt', ...nodeRange(ctx, start) }
+}
+
+/** Consumes a required keyword (`Entonces`, `Hacer`) or reports E2004 and carries on. */
+function expectKeyword(ctx: ParserContext, key: KeywordKey): void {
+  if (isKeyword(ctx.cursor.peek(), key)) {
+    ctx.cursor.next()
+    return
+  }
+  report(ctx, 'E2004', ctx.cursor.peek().span, { expected: key })
+}
+
+function parseExprList(ctx: ParserContext): Expr[] {
+  const items: Expr[] = [parseExpression(ctx)]
+  while (isPunct(ctx.cursor.peek(), ',')) {
+    ctx.cursor.next()
+    items.push(parseExpression(ctx))
+  }
+  return items
+}
+
+/** One statement, or `null` for an empty statement (`;`), which produces no node. */
 export function parseStatement(ctx: ParserContext): Stmt | null {
   const token = ctx.cursor.peek()
   if (isPunct(token, ';')) {
@@ -17,12 +48,45 @@ export function parseStatement(ctx: ParserContext): Stmt | null {
     ctx.cursor.next()
     return null
   }
-  const key = keywordKeyOf(token)
-  if (key === 'define') return parseDefine(ctx)
-  if (key !== null && STATEMENT_START_KEYWORDS.has(key)) {
-    skipToRecoveryPoint(ctx)
-    return null
+  switch (keywordKeyOf(token)) {
+    case 'define':
+      return parseDefine(ctx)
+    case 'dimension':
+      return parseDimension(ctx)
+    case 'constant':
+      return parseConstant(ctx)
+    case 'write':
+      return parseWrite(ctx, true)
+    case 'writeNoNewline':
+      return parseWrite(ctx, false)
+    case 'read':
+      return parseRead(ctx)
+    case 'if':
+      return parseIf(ctx)
+    case 'switch':
+      return parseSwitch(ctx)
+    case 'while':
+      return parseWhile(ctx)
+    case 'repeat':
+      return parseRepeat(ctx)
+    case 'for':
+      return parseFor(ctx)
+    case 'break':
+      return parseBare(ctx, 'BreakStmt')
+    case 'continue':
+      return parseBare(ctx, 'ContinueStmt')
+    case 'return':
+      return parseReturn(ctx)
+    case 'clearScreen':
+      return parseBare(ctx, 'ClearStmt')
+    case 'waitKey':
+      return parseBare(ctx, 'WaitKeyStmt')
+    case 'wait':
+      return parseWait(ctx)
+    default:
+      break
   }
+  if (token.kind === 'identifier' || token.kind === 'builtin') return parseAssignOrCall(ctx)
   return parseErrorStatement(ctx)
 }
 
@@ -33,4 +97,350 @@ export function parseErrorStatement(ctx: ParserContext): Stmt {
   report(ctx, 'E2002', token.span, { found: token.text })
   skipToRecoveryPoint(ctx)
   return { kind: 'ErrorStmt', ...nodeRange(ctx, start) }
+}
+
+// --- simple statements -----------------------------------------------------
+
+function parseBare(
+  ctx: ParserContext,
+  kind: 'BreakStmt' | 'ContinueStmt' | 'ClearStmt' | 'WaitKeyStmt',
+): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
+  return { kind, ...nodeRange(ctx, start) }
+}
+
+function parseWait(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  const millis = parseExpression(ctx)
+  if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
+  return { kind: 'WaitStmt', millis, ...nodeRange(ctx, start) }
+}
+
+function parseReturn(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  const token = ctx.cursor.peek()
+  const key = keywordKeyOf(token)
+  const bare =
+    isPunct(token, ';') ||
+    token.kind === 'eof' ||
+    (key !== null && BLOCK_BOUNDARY_KEYWORDS.has(key)) ||
+    ctx.cursor.onNewLine()
+  const value = bare ? undefined : parseExpression(ctx)
+  if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
+  const range = nodeRange(ctx, start)
+  return value === undefined
+    ? { kind: 'ReturnStmt', ...range }
+    : { kind: 'ReturnStmt', value, ...range }
+}
+
+function parseWrite(ctx: ParserContext, newline: boolean): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  const args = parseExprList(ctx)
+  if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
+  return { kind: 'WriteStmt', args, newline, ...nodeRange(ctx, start) }
+}
+
+function parseRead(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  const targets: (Identifier | Index)[] = []
+  for (;;) {
+    const target = parseTarget(ctx)
+    if (target.kind === 'Identifier' || target.kind === 'Index') targets.push(target)
+    else
+      report(ctx, 'E2002', target.span, {
+        found: ctx.source.slice(target.span.start, target.span.end),
+      })
+    if (!isPunct(ctx.cursor.peek(), ',')) break
+    ctx.cursor.next()
+  }
+  if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
+  return { kind: 'ReadStmt', targets, ...nodeRange(ctx, start) }
+}
+
+function parseDimension(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  const items: DimensionItem[] = []
+  for (;;) {
+    const name = expectIdentifier(ctx)
+    const sizes: Expr[] = []
+    while (isPunct(ctx.cursor.peek(), '[')) {
+      const open = ctx.cursor.next()
+      sizes.push(parseExpression(ctx))
+      while (isPunct(ctx.cursor.peek(), ',')) {
+        ctx.cursor.next()
+        sizes.push(parseExpression(ctx))
+      }
+      if (isPunct(ctx.cursor.peek(), ']')) ctx.cursor.next()
+      else report(ctx, 'E2005', open.span, { bracket: ']' })
+    }
+    items.push({ name, sizes })
+    if (!isPunct(ctx.cursor.peek(), ',')) break
+    ctx.cursor.next()
+  }
+  if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
+  return { kind: 'DimensionStmt', items, ...nodeRange(ctx, start) }
+}
+
+function parseConstant(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  const name = expectIdentifier(ctx)
+  let type: TypeRef | undefined
+  if (isKeyword(ctx.cursor.peek(), 'as')) {
+    ctx.cursor.next()
+    type = parseTypeRef(ctx) ?? undefined
+  }
+  if (isOperator(ctx.cursor.peek(), 'assign')) ctx.cursor.next()
+  else {
+    const token = ctx.cursor.peek()
+    report(ctx, 'E2002', token.span, { found: token.text })
+    skipToRecoveryPoint(ctx)
+    return errorStmt(ctx, start)
+  }
+  const value = parseExpression(ctx)
+  if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
+  const range = nodeRange(ctx, start)
+  return type === undefined
+    ? { kind: 'ConstantStmt', name, value, ...range }
+    : { kind: 'ConstantStmt', name, type, value, ...range }
+}
+
+/** `Target assign Expr`, `Target equal Expr` (option), a call statement, or E2002. */
+function parseAssignOrCall(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  const target = parseTarget(ctx)
+  const next = ctx.cursor.peek()
+  const viaEquals = ctx.profile.options.assignWithEquals && isOperator(next, 'equal')
+  if (isOperator(next, 'assign') || viaEquals) {
+    ctx.cursor.next()
+    const value = parseExpression(ctx)
+    const terminator = consumeTerminator(ctx)
+    if (target.kind !== 'Identifier' && target.kind !== 'Index') {
+      report(ctx, 'E2020', target.span)
+      return errorStmt(ctx, start)
+    }
+    if (terminator === 'garbled') return errorStmt(ctx, start)
+    return { kind: 'AssignStmt', target, value, viaEquals, ...nodeRange(ctx, start) }
+  }
+  if (target.kind === 'Call' || target.kind === 'BuiltinCall') {
+    const call: Call | BuiltinCall = target
+    if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
+    return { kind: 'CallStmt', call, ...nodeRange(ctx, start) }
+  }
+  report(ctx, 'E2002', next.span, { found: next.text })
+  skipToRecoveryPoint(ctx)
+  return errorStmt(ctx, start)
+}
+
+// --- control flow ----------------------------------------------------------
+
+function parseIf(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  openBlock(ctx, {
+    opener: 'if',
+    closer: 'endIf',
+    follows: ['elseIf', 'else', 'endIf'],
+    openerToken: start,
+  })
+  const condition = parseExpression(ctx)
+  expectKeyword(ctx, 'then')
+  const branches: IfBranch[] = [{ condition, body: parseSection(ctx) }]
+  while (isKeyword(ctx.cursor.peek(), 'elseIf')) {
+    ctx.cursor.next()
+    const next = parseExpression(ctx)
+    expectKeyword(ctx, 'then')
+    branches.push({ condition: next, body: parseSection(ctx) })
+  }
+  let elseBody: Stmt[] | undefined
+  if (isKeyword(ctx.cursor.peek(), 'else')) {
+    ctx.cursor.next()
+    elseBody = parseSection(ctx)
+  }
+  finishBlock(ctx, 'endIf')
+  const range = nodeRange(ctx, start)
+  return elseBody === undefined
+    ? { kind: 'IfStmt', branches, ...range }
+    : { kind: 'IfStmt', branches, elseBody, ...range }
+}
+
+function parseWhile(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  openBlock(ctx, {
+    opener: 'while',
+    closer: 'endWhile',
+    follows: ['endWhile'],
+    openerToken: start,
+  })
+  const condition = parseExpression(ctx)
+  expectKeyword(ctx, 'do')
+  const body = parseSection(ctx)
+  finishBlock(ctx, 'endWhile')
+  return { kind: 'WhileStmt', condition, body, ...nodeRange(ctx, start) }
+}
+
+/** `Repetir` closes with `until` or `while`; the node keeps which one in `until`. */
+function parseRepeat(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  openBlock(ctx, {
+    opener: 'repeat',
+    closer: 'until',
+    follows: ['until', 'while'],
+    openerToken: start,
+  })
+  const body = parseSection(ctx, { stop: repeatCloserAhead })
+  const frame = ctx.blocks.pop()
+  const token = ctx.cursor.peek()
+  const key = keywordKeyOf(token)
+  let until = true
+  if (key === 'until' || key === 'while') {
+    until = key === 'until'
+    ctx.cursor.next()
+  } else if (frame !== undefined) {
+    reportUnclosed(ctx, frame, token.span)
+    return {
+      kind: 'RepeatStmt',
+      body,
+      condition: parseErrorExpr(ctx),
+      until,
+      ...nodeRange(ctx, start),
+    }
+  }
+  const condition = parseExpression(ctx)
+  if (consumeTerminator(ctx) === 'garbled') return errorStmt(ctx, start)
+  return { kind: 'RepeatStmt', body, condition, until, ...nodeRange(ctx, start) }
+}
+
+/**
+ * True when the `while` keyword ahead closes a `Repetir` rather than opening a loop. Both
+ * spell the same key (`Mientras`, `Mientras Que`), so they are told apart by what follows:
+ * a loop header reaches `do`, a closer reaches the terminator or a block boundary first.
+ */
+function repeatCloserAhead(ctx: ParserContext): boolean {
+  if (keywordKeyOf(ctx.cursor.peek()) !== 'while') return false
+  for (let offset = 1; offset < 64; offset++) {
+    const token = ctx.cursor.peekAhead(offset)
+    if (token.kind === 'eof' || isPunct(token, ';')) return true
+    const key = keywordKeyOf(token)
+    if (key === 'do') return false
+    if (key !== null && BLOCK_BOUNDARY_KEYWORDS.has(key)) return true
+  }
+  return true
+}
+
+/** A zero-width placeholder condition for a `Repetir` that never got its closer. */
+function parseErrorExpr(ctx: ParserContext): Expr {
+  const index = ctx.cursor.at()
+  const span = ctx.cursor.peek().span
+  return { kind: 'ErrorExpr', span: { start: span.start, end: span.start }, tokens: [index, index] }
+}
+
+function parseFor(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  openBlock(ctx, { opener: 'for', closer: 'endFor', follows: ['endFor'], openerToken: start })
+  const counter = expectIdentifier(ctx)
+  if (isOperator(ctx.cursor.peek(), 'assign')) ctx.cursor.next()
+  else report(ctx, 'E2002', ctx.cursor.peek().span, { found: ctx.cursor.peek().text })
+  const from = parseExpression(ctx)
+  expectKeyword(ctx, 'to')
+  const to = parseExpression(ctx)
+  let step: Expr | undefined
+  if (isKeyword(ctx.cursor.peek(), 'step')) {
+    ctx.cursor.next()
+    step = parseExpression(ctx)
+  }
+  expectKeyword(ctx, 'do')
+  const body = parseSection(ctx)
+  finishBlock(ctx, 'endFor')
+  const range = nodeRange(ctx, start)
+  return step === undefined
+    ? { kind: 'ForStmt', counter, from, to, body, ...range }
+    : { kind: 'ForStmt', counter, from, to, step, body, ...range }
+}
+
+// --- Segun -----------------------------------------------------------------
+
+const CASE_LABEL_KINDS: ReadonlySet<string> = new Set([
+  'integer',
+  'real',
+  'string',
+  'identifier',
+  'builtin',
+])
+
+/**
+ * True when the tokens ahead read as `Expr ("," Expr)* ":"`. A `Segun` label carries the
+ * `case` keyword only when the profile spells it, so a bare label needs this lookahead to
+ * be told apart from an ordinary statement.
+ */
+export function looksLikeCaseLabel(ctx: ParserContext): boolean {
+  for (let offset = 0; offset < 32; offset++) {
+    const token = ctx.cursor.peekAhead(offset)
+    if (isPunct(token, ':')) return offset > 0
+    if (isPunct(token, ',') || isPunct(token, '(') || isPunct(token, ')')) continue
+    if (token.kind === 'operator') {
+      const key = token.value
+      if (key === 'minus' || key === 'plus') continue
+      return false
+    }
+    if (token.kind === 'keyword') {
+      const key = keywordKeyOf(token)
+      if (key === 'true' || key === 'false') continue
+      return false
+    }
+    if (!CASE_LABEL_KINDS.has(token.kind)) return false
+  }
+  return false
+}
+
+function parseSwitch(ctx: ParserContext): Stmt {
+  const start = ctx.cursor.at()
+  ctx.cursor.next()
+  openBlock(ctx, {
+    opener: 'switch',
+    closer: 'endSwitch',
+    follows: ['case', 'otherwise', 'endSwitch'],
+    openerToken: start,
+  })
+  const selector = parseExpression(ctx)
+  expectKeyword(ctx, 'do')
+  const options = { stop: looksLikeCaseLabel }
+  const cases: SwitchCase[] = []
+  let otherwise: Stmt[] | undefined
+  for (;;) {
+    const token = ctx.cursor.peek()
+    const key = keywordKeyOf(token)
+    if (key === 'otherwise') {
+      ctx.cursor.next()
+      if (isPunct(ctx.cursor.peek(), ':')) ctx.cursor.next()
+      const body = parseSection(ctx, options)
+      if (otherwise === undefined) otherwise = body
+      else report(ctx, 'E2013', token.span)
+      continue
+    }
+    if (key !== 'case' && !looksLikeCaseLabel(ctx)) break
+    if (key === 'case') ctx.cursor.next()
+    const values = parseExprList(ctx)
+    if (isPunct(ctx.cursor.peek(), ':')) ctx.cursor.next()
+    else {
+      const found = ctx.cursor.peek()
+      report(ctx, 'E2002', found.span, { found: found.text })
+    }
+    cases.push({ values, body: parseSection(ctx, options) })
+  }
+  finishBlock(ctx, 'endSwitch')
+  const range = nodeRange(ctx, start)
+  return otherwise === undefined
+    ? { kind: 'SwitchStmt', selector, cases, ...range }
+    : { kind: 'SwitchStmt', selector, cases, otherwise, ...range }
 }
