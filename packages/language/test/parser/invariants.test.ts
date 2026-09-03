@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { childrenOf } from '../../src/ast/index'
 import { assertTreeInvariants, parseSource } from '../helpers'
 
 /**
@@ -75,4 +76,49 @@ describe('the tree contract holds on broken input', () => {
       expect(() => assertTreeInvariants(parseSource(withCrlf(source)))).not.toThrow()
     })
   }
+})
+
+describe('a placeholder is zero-width', () => {
+  it('carries an empty token range and a zero-width span after the last token consumed', () => {
+    const source = 'Proceso p\n  Escribir 1 + ;\nFinProceso'
+    const result = parseSource(source)
+    const write = result.program.main?.body[0]
+    const argument = write?.kind === 'WriteStmt' ? write.args[0] : undefined
+    const broken = argument?.kind === 'Binary' ? argument.right : undefined
+    expect(broken?.kind).toBe('ErrorExpr')
+    const [first, last] = broken?.tokens ?? [0, 0]
+    expect(first).toBe(last + 1)
+    const plus = result.tokens[last]
+    expect(plus?.text).toBe('+')
+    expect(broken?.span).toEqual({ start: plus?.span.end, end: plus?.span.end })
+  })
+
+  it('leaves the terminator to the statement that consumed it', () => {
+    const result = parseSource('Proceso p\n  Escribir 1 + ;\nFinProceso')
+    const write = result.program.main?.body[0]
+    const semicolon = result.tokens.findIndex((token) => token.text === ';')
+    expect(write?.tokens[1]).toBe(semicolon)
+  })
+
+  it('does not share the opener with the block that consumed it', () => {
+    const result = parseSource('Proceso')
+    const name = result.program.main?.name
+    expect(name?.missing).toBe(true)
+    expect(name?.tokens[0]).toBe((name?.tokens[1] ?? 0) + 1)
+    expect(name?.span).toEqual({ start: 7, end: 7 })
+  })
+})
+
+describe('a subprogram inside a block stays where it was written', () => {
+  it('is a statement of the block and the same object in Program.subprograms', () => {
+    const result = parseSource(
+      'Proceso p\n  a <- 1;\n  SubProceso f\n  FinSubProceso\n  b <- 2;\nFinProceso',
+    )
+    const body = result.program.main?.body ?? []
+    const declaration = body.find((statement) => statement.kind === 'SubprogramDecl')
+    expect(declaration).toBeDefined()
+    expect(result.program.subprograms[0]).toBe(declaration)
+    expect(childrenOf(result.program).map((node) => node.kind)).toEqual(['MainBlock'])
+    expect(() => assertTreeInvariants(result)).not.toThrow()
+  })
 })

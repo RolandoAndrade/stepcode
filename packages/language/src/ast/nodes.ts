@@ -1,7 +1,13 @@
 import type { BuiltinKey, TypeKey } from '@stepcode/profiles'
 import type { Span } from '../source/index'
 
-/** Inclusive first/last token indices into `ParseResult.tokens`. */
+/**
+ * Inclusive first/last token indices into `ParseResult.tokens`.
+ *
+ * By convention `[first, first - 1]` — first past last — is the *empty* range: it covers no
+ * token. A placeholder standing for missing syntax carries one, together with a zero-width
+ * span where the missing token would have begun, so it never claims a token another node owns.
+ */
 export type TokenRange = readonly [number, number]
 
 interface NodeBase {
@@ -57,6 +63,13 @@ export interface SubprogramDecl extends NodeBase {
   readonly returnName?: Identifier
   readonly returnType?: TypeRef
   readonly body: readonly Stmt[]
+  /**
+   * Set when the subprogram was written inside another block (E2015). It stays a statement of
+   * that block, where the source put it, and `Program.subprograms` holds the same object, so
+   * the declaration is reached positionally through the block and semantically through the
+   * program. `childrenOf(Program)` skips it for that reason.
+   */
+  readonly misplaced?: true
 }
 
 export interface Param extends NodeBase {
@@ -261,6 +274,9 @@ export interface ErrorExpr extends NodeBase {
 export type Expr = Literal | Identifier | Index | Call | BuiltinCall | Unary | Binary | ErrorExpr
 
 export type Stmt =
+  // A subprogram is a declaration, not a statement — except when the source wrote one inside
+  // a block (E2015), where it stays in place rather than moving in the tree.
+  | SubprogramDecl
   | DefineStmt
   | DimensionStmt
   | ConstantStmt

@@ -20,7 +20,11 @@ export function childrenOf(node: Node): Node[] {
 function assembleChildren(node: Node): Node[] {
   switch (node.kind) {
     case 'Program': {
-      const children: Node[] = [...node.subprograms, ...node.extraMains]
+      // A misplaced subprogram is reached through the block that holds it, not from here.
+      const children: Node[] = [
+        ...node.subprograms.filter((one) => one.misplaced !== true),
+        ...node.extraMains,
+      ]
       if (node.main !== null) children.push(node.main)
       return children
     }

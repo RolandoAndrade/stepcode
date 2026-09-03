@@ -8,6 +8,7 @@ import type {
   IfBranch,
   Index,
   Stmt,
+  SubprogramDecl,
   SwitchCase,
   TypeRef,
 } from '../ast/index'
@@ -100,17 +101,19 @@ export function parseStatement(ctx: ParserContext): Stmt | null {
 }
 
 /**
- * A `SubProceso`/`Funcion` met inside an open block. It is parsed in full and kept in
- * `Program.subprograms`, where it belongs, so only its placement is wrong: E2015 at the opener
- * and the enclosing block goes on after its closer.
+ * A `SubProceso`/`Funcion` met inside an open block. It is parsed in full and stays where the
+ * source put it — a statement of this block — while `Program.subprograms` keeps the very same
+ * object, so only its placement is wrong: E2015 at the opener and the block goes on after its
+ * closer.
  */
-function parseMisplacedSubprogram(ctx: ParserContext): Stmt | null {
+function parseMisplacedSubprogram(ctx: ParserContext): Stmt {
   const token = ctx.cursor.peek()
-  report(ctx, 'E2015', token.span)
-  ctx.subprograms.push(
-    keywordKeyOf(token) === 'procedure' ? parseProcedure(ctx) : parseFunction(ctx),
-  )
-  return null
+  const form = keywordKeyOf(token) === 'procedure' ? 'procedure' : 'function'
+  report(ctx, 'E2015', token.span, { form })
+  const declaration = form === 'procedure' ? parseProcedure(ctx) : parseFunction(ctx)
+  const misplaced: SubprogramDecl = { ...declaration, misplaced: true }
+  ctx.subprograms.push(misplaced)
+  return misplaced
 }
 
 /** E2002 at the offending token, then skip to the next recovery point: one `ErrorStmt`. */

@@ -8,6 +8,7 @@ import { isTrivia, tokenize } from '../src/lexer/index'
 import { createContext } from '../src/parser/context'
 import { parseExpression } from '../src/parser/expression'
 import { type ParseResult, parse } from '../src/parser/parse'
+import { sealRanges } from '../src/parser/ranges'
 import { LineMap, type Span } from '../src/source/index'
 
 /**
@@ -57,7 +58,8 @@ const typeRef = (node: TypeRef): string => {
 export function sexpr(node: Node): string {
   switch (node.kind) {
     case 'Program': {
-      const parts = node.subprograms.map(sexpr)
+      // A misplaced subprogram prints inside the block that holds it, not twice.
+      const parts = node.subprograms.filter((one) => one.misplaced !== true).map(sexpr)
       parts.push(node.main === null ? '-' : sexpr(node.main))
       parts.push(...node.extraMains.map(sexpr))
       return `(program ${parts.join(' ')})`
@@ -158,6 +160,7 @@ export function parseExprResult(
   const { tokens, diagnostics } = tokenize(source, profile)
   const ctx = createContext(source, tokens, profile, [...diagnostics])
   const expr = parseExpression(ctx)
+  sealRanges(expr, tokens)
   return { expr, diagnostics: ctx.diagnostics }
 }
 
@@ -246,14 +249,8 @@ function containersOf(node: Node): Container[] {
   }
 }
 
-/**
- * A placeholder stands where syntax is missing. It points at the last token the parser
- * consumed so it stays inside its parent, which means it may share that token with a sibling;
- * owning nothing, it is left out of the one-owner check.
- */
-function isPlaceholder(node: Node): boolean {
-  return node.kind === 'ErrorExpr' || (node.kind === 'Identifier' && node.missing === true)
-}
+/** The empty-range convention: `[first, first - 1]` covers no token at all. */
+const isEmptyRange = (range: TokenRange): boolean => range[0] === range[1] + 1
 
 const describeNode = (node: Node): string => `${node.kind}[${node.tokens.join()}]`
 
@@ -262,9 +259,12 @@ const describeNode = (node: Node): string => `${node.kind}[${node.tokens.join()}
  *
  * a. every child's token range lies inside its parent's;
  * b. every significant token (trivia, newlines and `eof` aside) has exactly one innermost
- *    owner — siblings never overlap, and the root covers them all;
+ *    owner — siblings never overlap, and the root covers them all. When the parse reported no
+ *    error, the stronger form holds too: every significant token lies inside some node other
+ *    than `Program`, so nothing that parsed cleanly was dropped on the way into the tree;
  * c. `childrenOf` is sorted by `tokens[0]`;
- * d. every node's span runs from its first token's start to its last token's end.
+ * d. a node's span runs from its first token's start to its last token's end — or, for the
+ *    empty range a placeholder carries, is zero-width where that token would have begun.
  */
 export function assertTreeInvariants(result: ParseResult): void {
   const { program, tokens } = result
@@ -280,6 +280,21 @@ export function assertTreeInvariants(result: ParseResult): void {
     parent: TokenRange,
   ): void => {
     const [start, end] = range
+    if (isEmptyRange(range)) {
+      // A placeholder stands where syntax is missing: it owns no token, and sits where the
+      // token it stands for would have begun.
+      const at = tokens[start]
+      check(span.start === span.end, `${label} is empty but its span is not zero-width`)
+      check(
+        at !== undefined && span.start === at.span.start,
+        `${label} is not zero-width at the token that follows it`,
+      )
+      check(
+        start >= parent[0] && start <= parent[1] + 1,
+        `${label} escapes ${parentLabel}[${parent.join()}]`,
+      )
+      return
+    }
     check(start <= end, `${label} has an inverted token range`)
     check(
       start >= parent[0] && end <= parent[1],
@@ -288,7 +303,7 @@ export function assertTreeInvariants(result: ParseResult): void {
     const first = tokens[start]
     const last = tokens[end]
     check(
-      first !== undefined && last !== undefined && span.start === first.span.start,
+      first !== undefined && span.start === first.span.start,
       `${label} does not start at its first token`,
     )
     check(
@@ -297,8 +312,12 @@ export function assertTreeInvariants(result: ParseResult): void {
     )
   }
 
+  const owned: boolean[] = tokens.map(() => false)
   walk(program, {
     enter: (node) => {
+      if (node.kind !== 'Program' && !isEmptyRange(node.tokens)) {
+        for (let index = node.tokens[0]; index <= node.tokens[1]; index++) owned[index] = true
+      }
       const children = childrenOf(node)
       let previousStart = -1
       let previousEnd = -1
@@ -309,15 +328,14 @@ export function assertTreeInvariants(result: ParseResult): void {
           `children of ${describeNode(node)} are not sorted by tokens[0]`,
         )
         previousStart = child.tokens[0]
-        if (isPlaceholder(child)) continue
-        // A subprogram written inside a block is hoisted to `Program.subprograms` (E2015), so
-        // its tokens sit inside the main block's range: the one place a token has two owners.
-        const hoisted = node.kind === 'Program' && child.tokens[1] <= previousEnd
+        // An empty range owns nothing, so it can neither overlap a sibling nor push the
+        // boundary the next sibling has to clear.
+        if (isEmptyRange(child.tokens)) continue
         check(
-          hoisted || child.tokens[0] > previousEnd,
+          child.tokens[0] > previousEnd,
           `children of ${describeNode(node)} overlap at token ${child.tokens[0]}`,
         )
-        previousEnd = Math.max(previousEnd, child.tokens[1])
+        previousEnd = child.tokens[1]
       }
       for (const container of containersOf(node)) {
         const label = `${describeNode(node)} ${container.label}`
@@ -330,17 +348,16 @@ export function assertTreeInvariants(result: ParseResult): void {
     },
   })
 
-  const significant = tokens.filter(
-    (token) =>
-      !isTrivia(token) && token.kind !== 'newline' && token.kind !== 'eof' && token.text.length > 0,
-  )
-  for (const token of significant) {
-    const index = tokens.indexOf(token)
+  const clean = result.diagnostics.every((diagnostic) => diagnostic.severity !== 'error')
+  tokens.forEach((token, index) => {
+    if (isTrivia(token) || token.kind === 'newline' || token.kind === 'eof') return
+    if (token.text.length === 0) return
     check(
       index >= program.tokens[0] && index <= program.tokens[1],
       `token ${index} (${token.kind}) lies outside the Program`,
     )
-  }
+    check(!clean || owned[index] === true, `token ${index} (${token.kind}) is in no node`)
+  })
   if (failures.length > 0) {
     throw new Error(`tree invariants broken:\n${[...new Set(failures)].join('\n')}`)
   }

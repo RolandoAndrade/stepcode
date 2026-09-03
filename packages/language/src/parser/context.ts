@@ -83,21 +83,23 @@ export function reportTooDeep(ctx: ParserContext, limit: number): void {
 }
 
 /**
- * The range of a placeholder node standing in for syntax that is not there: an `ErrorExpr`, a
- * synthesized `Identifier`. It points at the last token the parser consumed — never at the
- * token still ahead, which belongs to whatever recovers next — so a placeholder always lies
- * inside its parent's range and never claims a token twice. Before anything is consumed the
- * parent starts where the placeholder does, so `startIndex` stands in.
+ * The range of a placeholder standing in for syntax that is not there: an `ErrorExpr`, a
+ * synthesized `Identifier`, a node that consumed nothing at all.
+ *
+ * It is genuinely empty. The token range is `[last + 1, last]` — first past last, the empty
+ * range of spec §6 — so the placeholder owns no token: neither the one still ahead, which
+ * belongs to whatever recovers next, nor the last one consumed, which belongs to the node that
+ * consumed it. The span is zero-width where the missing token would have begun.
  */
 export function placeholderRange(
   ctx: ParserContext,
   startIndex: number,
 ): { span: Span; tokens: TokenRange } {
   const last = ctx.cursor.lastIndex()
-  const index = last < 0 ? startIndex : last
-  const token = ctx.tokens[index]
-  const span = token?.span ?? { start: 0, end: 0 }
-  return { span: { start: span.start, end: span.end }, tokens: [index, index] }
+  const first = last < 0 ? startIndex : last + 1
+  // The stream is contiguous, so this is also the end of the token before it.
+  const at = ctx.tokens[first]?.span.start ?? ctx.source.length
+  return { span: { start: at, end: at }, tokens: [first, first - 1] }
 }
 
 /**

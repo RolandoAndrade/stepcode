@@ -1,5 +1,5 @@
-import type { Node, Program, TokenRange } from '../ast/index'
-import { childrenOf, walk } from '../ast/index'
+import type { Node, TokenRange } from '../ast/index'
+import { childrenOf } from '../ast/index'
 import type { Token } from '../lexer/index'
 import type { Span } from '../source/index'
 
@@ -33,6 +33,9 @@ function groupsOf(node: Node): Group[] {
   }
 }
 
+/** The empty range of a placeholder: `[first, first - 1]`, owning no token. */
+const isEmpty = (range: TokenRange): boolean => range[0] === range[1] + 1
+
 /** `span` and `tokens` are readonly to consumers; the parser owns them until `parse` returns. */
 function setRange(target: Record_, start: number, end: number, tokens: readonly Token[]): void {
   const first = tokens[start]
@@ -47,20 +50,32 @@ function setRange(target: Record_, start: number, end: number, tokens: readonly 
  * Widens every node so it covers its children, and every node's `span` so it runs from its
  * first token's start to its last token's end.
  *
- * A recovery placeholder stands on the last token the parser consumed, which can sit before
- * the node that ends up holding it (`Si Hasta`: the branch begins at `Hasta`, its placeholder
- * condition on the `Si`). Rather than teach each of the twenty construction sites about that,
+ * A recovery placeholder sits just past the last token consumed, which can be before the node
+ * that ends up holding it (`Si Hasta`: the branch begins at `Hasta`, its placeholder condition
+ * right after the `Si`). Rather than teach each of the twenty construction sites about that,
  * the finished tree is sealed once here, so the tree contract — a child's token range always
  * lies inside its parent's — holds by construction of `parse`, not by vigilance.
  */
-export function sealRanges(program: Program, tokens: readonly Token[]): void {
+export function sealRanges(root: Node, tokens: readonly Token[]): void {
+  // One `childrenOf` call per node: the traversal that collects the nodes keeps what it read.
   const nodes: Node[] = []
-  walk(program, { enter: (node) => void nodes.push(node) })
-  // Reverse pre-order visits every child before its parent, so widening propagates outwards.
+  const childrenByNode = new Map<Node, Node[]>()
+  const stack: Node[] = [root]
+  while (stack.length > 0) {
+    const node = stack.pop() as Node
+    nodes.push(node)
+    const children = childrenOf(node)
+    childrenByNode.set(node, children)
+    stack.push(...children)
+  }
+  // Reverse order visits every child before its parent, so widening propagates outwards.
   for (let index = nodes.length - 1; index >= 0; index--) {
     const node = nodes[index] as Node
+    // An empty range is a placeholder: it stands for nothing and is never given a token.
+    if (isEmpty(node.tokens)) continue
     let [start, end] = node.tokens
     for (const group of groupsOf(node)) {
+      if (isEmpty(group.record.tokens)) continue
       let [recordStart, recordEnd] = group.record.tokens
       for (const child of group.children) {
         recordStart = Math.min(recordStart, child.tokens[0])
@@ -70,7 +85,7 @@ export function sealRanges(program: Program, tokens: readonly Token[]): void {
       start = Math.min(start, recordStart)
       end = Math.max(end, recordEnd)
     }
-    for (const child of childrenOf(node)) {
+    for (const child of childrenByNode.get(node) ?? []) {
       start = Math.min(start, child.tokens[0])
       end = Math.max(end, child.tokens[1])
     }

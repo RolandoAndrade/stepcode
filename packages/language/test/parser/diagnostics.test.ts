@@ -374,8 +374,10 @@ describe('a subprogram inside a block', () => {
     expect(diagnosticCodes(source)).toEqual(['E2015'])
     const result = parseSource(source)
     expect(result.program.subprograms.map((one) => one.name.name)).toEqual(['f'])
+    // The declaration stays where it was written and `Program.subprograms` points at it.
+    expect(result.program.main?.body[1]).toBe(result.program.subprograms[0])
     expect(sexpr(result.program)).toBe(
-      '(program (procedure f (params ) (returns - -) (write (literal 1))) (main p (assign a (literal 1)) (assign b (literal 2))))',
+      '(program (main p (assign a (literal 1)) (procedure f (params ) (returns - -) (write (literal 1))) (assign b (literal 2))))',
     )
   })
 })

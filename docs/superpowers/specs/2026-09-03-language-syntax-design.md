@@ -72,9 +72,11 @@ Binding rules:
   a lexer diagnostic comes before a parser one.
 - **Lossless**: `tokens.map(t => t.text).join('') === source`; every significant token
   (trivia, `newline` and `eof` aside) lies in the token range of exactly one innermost node.
-  A child's range always lies inside its parent's and siblings never overlap; recovery
-  placeholders (`ErrorExpr`, a synthesized `Identifier`) stand on the last token consumed
-  before the gap and own no token of their own.
+  A child's range always lies inside its parent's and siblings never overlap. Recovery
+  placeholders (`ErrorExpr`, a synthesized `Identifier`, any node that consumed nothing) carry
+  the *empty* token range `[first, first - 1]` and a zero-width span just past the last token
+  consumed, so they own nothing and take nothing from the node that does. The contract is a
+  property of the finished `parse`, which seals the ranges before returning.
 
 ## 3. Lexer
 
@@ -234,14 +236,18 @@ Pratt parser. Binding power, lowest to highest:
 ## 6. AST
 
 Every node: `{ kind, span, tokens: [first, last] }` (inclusive token indices into
-`ParseResult.tokens`) plus its fields.
+`ParseResult.tokens`) plus its fields. `[first, first - 1]` is the empty range: it covers no
+token, and its zero-width span sits where the missing token would have begun. Placeholders and
+nodes that consumed nothing carry it.
 
 ```
 Program        { subprograms: SubprogramDecl[]; main: MainBlock | null; extraMains: MainBlock[] }
                  // extraMains: every main block after the first (E2011), parsed and kept
 MainBlock      { name: Identifier; body: Stmt[] }
 SubprogramDecl { form: 'procedure' | 'function'; name: Identifier; params: Param[];
-                 returnName?: Identifier; returnType?: TypeRef; body: Stmt[] }
+                 returnName?: Identifier; returnType?: TypeRef; body: Stmt[]; misplaced?: true }
+                 // `SubprogramDecl` is part of `Stmt`: only a misplaced one (E2015) ever
+                 // appears in a block's body, and it carries `misplaced` there.
 Param          { name: Identifier; type?: TypeRef; byRef: boolean }
 TypeRef        { base: TypeKey; dimensions: (Expr | null)[] }   // [] scalar; [null] T[]; [null,null] T[,]; [e1,e2] sized
 Identifier     { name: string /* canonical */; text: string /* as written */; missing?: true }
@@ -320,9 +326,11 @@ subprogram are all reported *and* kept in the tree.
   and the keyword expectations step over it.
 - **`Sino Si` after `Sino`** → E2014 at the branch, which is parsed and appended to `branches`
   all the same, so nothing of the program is lost.
-- **A subprogram inside a block** → E2015 at its opener; it is parsed in full, kept in
-  `Program.subprograms`, and the enclosing block resumes after its closer. Its tokens then lie
-  inside the main block's range as well: the one place a token has two owners.
+- **A subprogram inside a block** → E2015 at its opener; it is parsed in full and the block
+  resumes after its closer. It stays where the source wrote it — a statement of that block,
+  which is what owns its tokens — while `Program.subprograms` holds the same object, so tools
+  find it positionally through the block and semantically through the program. It is marked
+  `misplaced`, and `childrenOf(Program)` skips it so the traversal reaches it exactly once.
 - **Mixed sized and unsized dimensions** (`Entero[3,]`) → E2023 at the empty slot.
 - **Expression errors** → `ErrorExpr` with E2031; the enclosing statement still terminates.
 - **Unbalanced `)` / `]`** → E2005 at the opener; recovery at the terminator.
