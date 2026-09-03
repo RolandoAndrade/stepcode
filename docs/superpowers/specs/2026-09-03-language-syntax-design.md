@@ -342,8 +342,12 @@ spelling. `formatDiagnostic` resolves locale with fallback `pt-BR → pt → en`
   `typedParameters: false` accepting a bare `arreglo` parameter.
 - **Corpus** (`test/corpus/`): a one-off script extracts every program from
   `v1/*.v1.ts` and `v1/programs/*.ts` into committed `test/corpus/programs/*.stepcode`
-  files (name = test title, slugified). `parse.test.ts` asserts each parses with zero
-  diagnostics under `pseint` and satisfies losslessness. These files seed the conformance
+  files (name = test title, slugified). The script drops the legacy `$ arrays@stepcode`
+  first line and records the affected programs in `test/corpus/programs/index-base-0.txt`
+  so sub-spec C can run them with `indexBase: 0`; it also rewrites the v1-only builtin
+  spellings `round` → `Redondear` and `random` → `Azar`, which no profile defines.
+  `parse.test.ts` asserts each program parses with zero diagnostics under `pseint` and
+  satisfies losslessness. These files seed the conformance
   corpus that sub-specs B and C extend with inputs and expected outputs.
 - **Property tests** (`fast-check`, added to the workspace catalog): `parse` never throws on
   random token sequences and random strings, and is deterministic.
