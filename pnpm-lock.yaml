@@ -42,6 +42,22 @@ importers:
         specifier: 'catalog:'
         version: 4.1.11(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3)(yaml@2.9.0))
 
+  packages/language:
+    dependencies:
+      '@stepcode/profiles':
+        specifier: workspace:*
+        version: link:../profiles
+    devDependencies:
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.22.14(typescript@7.0.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.11(@types/node@24.13.3)(vite@8.2.2(@types/node@24.13.3)(yaml@2.9.0))
+
   packages/profiles:
     devDependencies:
       tsdown:
