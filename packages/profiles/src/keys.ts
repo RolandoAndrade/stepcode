@@ -42,6 +42,7 @@ export const KEYWORD_KEYS = [
   'or',
   'not',
   'mod',
+  'div',
   'true',
   'false',
 ] as const

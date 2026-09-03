@@ -45,6 +45,7 @@
     "or": ["Or", "|"],
     "not": ["Not", "~"],
     "mod": ["Mod", "%"],
+    "div": ["Div"],
     "true": ["True"],
     "false": ["False"]
   },
@@ -67,7 +68,7 @@
     "minus": ["-"],
     "times": ["*"],
     "divide": ["/"],
-    "power": ["^"],
+    "power": ["^", "**"],
     "comment": ["//"]
   },
   "builtins": {

@@ -45,6 +45,7 @@
     "or": ["O", "|"],
     "not": ["No", "~"],
     "mod": ["MOD", "%"],
+    "div": ["DIV"],
     "true": ["Verdadero"],
     "false": ["Falso"]
   },
@@ -67,7 +68,7 @@
     "minus": ["-"],
     "times": ["*"],
     "divide": ["/"],
-    "power": ["^"],
+    "power": ["^", "**"],
     "comment": ["//"]
   },
   "builtins": {
@@ -92,7 +93,7 @@
     "substring": ["Subcadena"],
     "concat": ["Concatenar"],
     "toNumber": ["ConvertirANumero"],
-    "toText": ["ConvertirATexto"]
+    "toText": ["ConvertirATexto", "ConvertirACadena"]
   },
   "options": {}
 }

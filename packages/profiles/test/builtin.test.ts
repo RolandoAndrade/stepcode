@@ -46,6 +46,19 @@ describe('shipped profiles', () => {
     expect(profiles.es.locale).toBe('es')
   })
 
+  it('es carries the v1 extensions: DIV, ** and ConvertirACadena', () => {
+    expect(profiles.es.keywords.div).toEqual(['DIV'])
+    expect(profiles.es.operators.power).toEqual(['^', '**'])
+    expect(profiles.es.builtins.toText).toEqual(['ConvertirATexto', 'ConvertirACadena'])
+    expect(profiles.es.lookup.get('div')).toEqual({ kind: 'keyword', key: 'div' })
+    expect(profiles.es.operatorLookup.get('**')).toBe('power')
+  })
+
+  it('en carries DIV and **', () => {
+    expect(profiles.en.keywords.div).toEqual(['Div'])
+    expect(profiles.en.operators.power).toEqual(['^', '**'])
+  })
+
   it('en has the spec spellings', () => {
     expect(profiles.en.keywords.program).toEqual(['Program'])
     expect(profiles.en.keywords.write).toEqual(['Write', 'Print'])

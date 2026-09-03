@@ -37,7 +37,7 @@ These are the keys. Every profile must spell each key (`case` may be empty).
 | byRef / byValue | parameter passing | Por Referencia / Por Valor | ByRef / ByValue |
 | write / writeNoNewline / read | console I/O | Escribir, Mostrar, Imprimir / Escribir Sin Saltar, Mostrar Sin Saltar / Leer | Write, Print / WriteNoNewline / Read |
 | clearScreen / wait / waitKey | console control (no-ops outside a console host) | Limpiar Pantalla, Borrar Pantalla / Esperar / Esperar Tecla | ClearScreen / Wait / WaitKey |
-| and / or / not / mod | logical and modulo operators spelled as words | Y, & / O, \| / No, ~ / MOD, % | And, & / Or, \| / Not, ~ / Mod, % |
+| and / or / not / mod / div | logical, modulo and integer-division operators spelled as words | Y, & / O, \| / No, ~ / MOD, % / DIV | And, & / Or, \| / Not, ~ / Mod, % / Div |
 | true / false | boolean literals | Verdadero / Falso | True / False |
 
 `case` is empty by default because PSeInt's `Segun` branches are `valor, valor: …` with no
@@ -63,7 +63,7 @@ Arrays are syntax (`Dimension`, `Entero[3]`), not a named type.
 | equal | `=` |
 | notEqual | `<>`, `!=`, `≠` |
 | lt / le / gt / ge | `<` / `<=`, `≤` / `>` / `>=`, `≥` |
-| plus / minus / times / divide / power | `+` / `-` / `*` / `/` / `^` |
+| plus / minus / times / divide / power | `+` / `-` / `*` / `/` / `^`, `**` |
 | comment | `//` |
 
 `==` is deliberately not an equality spelling; the parser reports it with a fix hint.
@@ -82,7 +82,7 @@ Punctuation (`,` `;` `:` `(` `)` `[` `]`) is fixed by the language and not in pr
 | pi | PI | PI | constant |
 | length, upper, lower | Longitud, Mayusculas, Minusculas | Length, Upper, Lower | `length` also applies to arrays |
 | substring, concat | Subcadena, Concatenar | Substring, Concat | |
-| toNumber, toText | ConvertirANumero, ConvertirATexto | ToNumber, ToText | |
+| toNumber, toText | ConvertirANumero, ConvertirATexto + ConvertirACadena | ToNumber, ToText | |
 
 Semantics of builtins live in the language package; profiles only spell them.
 
