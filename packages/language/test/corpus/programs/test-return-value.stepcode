@@ -1,0 +1,10 @@
+Funcion max(a, b): Entero
+        Si a > b Entonces
+          Retornar a;
+        Sino
+          Retornar b;
+        FinSi
+      FinFuncion
+      Proceso prueba
+        Escribir max(10, 20);
+      FinProceso

@@ -1,0 +1,6 @@
+Proceso prueba
+      Definir a, b Como Logico;
+      a <- Falso;
+      b <- No a;
+      Escribir b;
+      FinProceso

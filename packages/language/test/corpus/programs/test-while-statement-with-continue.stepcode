@@ -1,0 +1,11 @@
+Proceso prueba
+        Definir a Como Entero;
+        a <- 0;
+        Mientras a < 10 Hacer
+          a <- a + 1;
+          Si a MOD 2 Entonces
+            Continuar;
+          FinSi
+          Escribir a;
+        FinMientras
+      FinProceso

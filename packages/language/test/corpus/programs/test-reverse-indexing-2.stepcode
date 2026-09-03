@@ -1,0 +1,6 @@
+Proceso prueba
+      Definir a, b Como Cadena;
+      a <- "Hola";
+      b <- a[-1];
+      Escribir b;
+      FinProceso

@@ -1,0 +1,48 @@
+SubProceso Ordenar(n1 Por Referencia, n2 Por Referencia)
+	Definir aux como Cadena;
+	Si Longitud(n1) < Longitud(n2) Entonces
+		aux ← n1;
+		n1 ← n2;
+		n2 ← aux;
+	FinSi
+FinSubProceso
+
+Funcion strInvertida ← InvertirCadena(str)
+    Definir strInvertida Como Cadena;
+    Definir i Como Entero;
+    strInvertida ← "";
+    Para i ← 1 Hasta Longitud(str) Con Paso 1 Hacer
+        strInvertida ← str[i] + strInvertida;
+    FinPara
+FinFuncion
+
+Proceso SumarComoPrimaria
+	Definir n1, n2, resultado como Cadena;
+	Definir i, suma, acarreo como Entero;
+	Escribir 'n1';
+	Leer n1;
+	Escribir 'n2';
+	Leer n2;
+	Ordenar(n1, n2);
+    n1 ← InvertirCadena(n1);
+	n2 ← InvertirCadena(n2);
+	resultado ← '';
+    acarreo ← 0;
+	suma ← 0;
+	Para i ← 1 Hasta Longitud(n2) Con Paso 1 Hacer
+	    suma ← ConvertirANumero(n1[i]) + ConvertirANumero(n2[i]) + acarreo;
+        acarreo ← suma div 10;
+        suma ← suma mod 10;
+        resultado ← ConvertirATexto(suma) + resultado;
+	FinPara
+    Para i ← Longitud(n2) + 1 Hasta Longitud(n1) Con Paso 1 Hacer
+	    suma ← ConvertirANumero(n1[i]) + acarreo;
+        acarreo ← suma div 10;
+        suma ← suma mod 10;
+        resultado ← ConvertirATexto(suma) + resultado;
+    FinPara
+    Si acarreo > 0 Entonces
+        resultado ← ConvertirATexto(acarreo) + resultado;
+    FinSi
+    Escribir resultado;
+FinProceso

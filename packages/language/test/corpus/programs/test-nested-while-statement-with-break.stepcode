@@ -1,0 +1,15 @@
+Proceso prueba
+          Definir a, b Como Entero;
+          a <- 1;
+          Mientras a <= 5 Hacer
+            b <- 1;
+            Mientras b <= 5 Hacer
+              Escribir a, ' * ', b, ' = ', a * b;
+              b <- b + 1;
+              Si b = 3 Entonces
+                Romper;
+              FinSi
+            FinMientras
+            a <- a + 1; 
+          FinMientras
+        FinProceso

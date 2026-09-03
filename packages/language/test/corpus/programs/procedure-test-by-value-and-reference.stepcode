@@ -1,0 +1,14 @@
+SubProceso swap(a por valor, b por referencia)
+        Definir temp Como Entero;
+        temp <- a;
+        a <- b;
+        b <- temp;
+      FinSubProceso
+      Proceso prueba
+        Definir a, b Como Entero;
+        a <- 10;
+        b <- 20;
+        swap(a, b);
+        Escribir 'a=',a;
+        Escribir 'b=',b;
+      FinProceso

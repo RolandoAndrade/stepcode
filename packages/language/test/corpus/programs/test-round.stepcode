@@ -1,0 +1,6 @@
+Proceso prueba
+    Definir a, b Como Real;
+    Leer a, b;
+    Escribir Redondear(a);
+    Escribir Redondear(b);
+    FinProceso

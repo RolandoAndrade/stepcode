@@ -1,0 +1,9 @@
+Proceso prueba
+        Definir a Como Entero;
+        Para a <- 1 Hasta 5 Hacer
+          Si a MOD 2 Entonces
+            Continuar;
+          FinSi
+          Escribir a;
+        FinPara
+      FinProceso

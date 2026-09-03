@@ -1,0 +1,6 @@
+Proceso prueba
+      Definir a, c Como Entero;
+      a <- 10;
+      c <- 10 >= a;
+      Escribir c;
+      FinProceso

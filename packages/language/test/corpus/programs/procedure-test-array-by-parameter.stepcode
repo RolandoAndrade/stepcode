@@ -1,0 +1,12 @@
+SubProceso cambio(a)
+        a[1] <- 10;
+      FinSubProceso
+      Proceso prueba
+        Definir a Como Entero;
+        Dimension a[3];
+        a[1] <- 20;
+        a[2] <- 30;
+        a[3] <- 40;
+        cambio(a);
+        Escribir a;
+      FinProceso

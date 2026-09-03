@@ -1,0 +1,8 @@
+    Proceso prueba
+    Definir a Como Entero;
+    Dimension a[3];
+    Leer a[0];
+    Leer a[1];
+    Leer a[2];
+    Escribir a[0], a[1], a[2];
+    FinProceso

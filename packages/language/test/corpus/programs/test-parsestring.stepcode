@@ -1,0 +1,6 @@
+Proceso prueba
+    Definir a, b Como Entero;
+    a <- 1;
+    b <- 2;
+    Escribir ConvertirACadena(a) + ConvertirACadena(b);
+    FinProceso

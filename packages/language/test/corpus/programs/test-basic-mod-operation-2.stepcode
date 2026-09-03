@@ -1,0 +1,6 @@
+Proceso prueba
+      Definir a, b Como Real;
+      a <- 5.5;
+      b <- 4.5;
+      Escribir a MOD b;
+      FinProceso
