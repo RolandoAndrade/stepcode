@@ -109,7 +109,7 @@ aliases mixed into the Spanish grammar (a profile is one language).
 ```ts
 type Spellings = readonly string[]           // ≥ 1 entry, except keywords.case
 
-interface Profile {
+interface ProfileData {
   id: string                                 // 'es' | 'en' | 'pseint' | user-chosen
   extends?: string                           // id of a registered profile
   locale: string                             // BCP-47 tag; catalog resolution is the language's job
@@ -125,7 +125,7 @@ interface Profile {
   tuples; the TypeScript types and the Zod 4 schema derive from them, so adding a construct
   is one edit.
 - Input schema (`ProfileInputSchema`) accepts partial profiles when `extends` is set;
-  `ResolvedProfileSchema` requires everything.
+  `ResolvedProfileDataSchema` requires everything.
 - `profileJsonSchema` is exported (via Zod's `toJSONSchema`) for `$schema` in user files and
   for the editor's grammar builder.
 - `locale` is validated for shape only (`/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/`). Unknown locales
@@ -175,8 +175,8 @@ resolved) and `builtinProfiles` (the registry). `defaultProfile` is `es`.
 
 ```ts
 export { KEYWORD_KEYS, TYPE_KEYS, OPERATOR_KEYS, BUILTIN_KEYS }
-export type { KeywordKey, TypeKey, OperatorKey, BuiltinKey, Profile, ProfileInput, ProfileOptions, ResolvedProfile }
-export { ProfileInputSchema, ResolvedProfileSchema, profileJsonSchema }
+export type { KeywordKey, TypeKey, OperatorKey, BuiltinKey, ProfileData, ProfileInput, ProfileOptions, ResolvedProfile }
+export { ProfileInputSchema, ExtendingProfileSchema, RootProfileSchema, ResolvedProfileDataSchema, profileJsonSchema }
 export { resolveProfile, ProfileError }
 export { profiles, builtinProfiles, defaultProfile }
 ```
