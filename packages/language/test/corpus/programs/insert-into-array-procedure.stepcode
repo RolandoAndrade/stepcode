@@ -1,0 +1,27 @@
+Procedimiento CambioDeVariables(a como Entero por Referencia, b como Entero por Referencia)
+      Definir aux Como Entero;
+      aux ← a;
+      a ← b;
+      b ← aux;
+    FinProcedimiento
+    Procedimiento Insertar(arreglo, elemento como Entero, posicion como Entero, cantidad como Entero por Referencia)
+      Para i ← posicion Hasta cantidad Hacer
+        CambioDeVariables(elemento, arreglo[i]);
+      FinPara
+      Si cantidad < 10 Entonces
+        cantidad ← cantidad + 1;
+        arreglo[cantidad] ← elemento;
+      FinSi         
+    FinProcedimiento
+    Proceso ProgramaInsertar
+      Definir arreglo, cantidad Como Entero;
+      Dimension arreglo[10];
+      Definir elemento, posicion Como Entero;
+      Escribir "Introduce elemento a insertar: ";
+      Leer elemento;
+      Escribir "Introduce posicion a insertar: ";
+      Leer posicion;
+      Insertar(arreglo, elemento, posicion, cantidad);
+      Escribir arreglo;
+    FinProceso
+    

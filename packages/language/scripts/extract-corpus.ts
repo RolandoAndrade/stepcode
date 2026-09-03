@@ -6,11 +6,16 @@
  * (Node >= 22.18 runs TypeScript directly; on an older Node use
  *  `node --experimental-strip-types packages/language/scripts/extract-corpus.ts`.)
  *
- * Three rewrites are applied, all recorded in the language sub-spec §8:
+ * Four rewrites are applied, all recorded in the language sub-spec §8 and in
+ * `test/corpus/programs/README.md`:
  *   - the legacy `$ arrays@stepcode` first line is dropped and its program is listed in
  *     `index-base-0.txt`, so sub-spec C can re-run it with `indexBase: 0`;
  *   - `round(` becomes `Redondear(` and `random(` becomes `Azar(`, the v1-only builtin
- *     spellings no profile defines.
+ *     spellings no profile defines;
+ *   - a whole-word, case-insensitive `longitud` not immediately followed by `(` becomes
+ *     `cantidad`: two v1 programs use `longitud` as a variable/parameter name, which
+ *     collides with the `Longitud` (`length`) builtin spelling the es/pseint profiles
+ *     reserve unconditionally. Real `Longitud(...)` builtin calls are left untouched.
  */
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
@@ -64,13 +69,20 @@ function emit(title: string, raw: string): void {
     indexBaseZero.push(slug)
     program = lines.slice(1).join('\n')
   }
-  program = program.replace(/\bround\s*\(/g, 'Redondear(').replace(/\brandom\s*\(/g, 'Azar(')
+  program = program
+    .replace(/\bround\s*\(/g, 'Redondear(')
+    .replace(/\brandom\s*\(/g, 'Azar(')
+    .replace(/\blongitud\b(?!\s*\()/gi, 'cantidad')
   if (!program.endsWith('\n')) program += '\n'
   writeFileSync(join(out, `${slug}.stepcode`), program, 'utf8')
 }
 
-rmSync(out, { recursive: true, force: true })
 mkdirSync(out, { recursive: true })
+for (const name of readdirSync(out)) {
+  if (name.endsWith('.stepcode') || name === 'index-base-0.txt') {
+    rmSync(join(out, name), { force: true })
+  }
+}
 
 for (const file of readdirSync(v1)
   .filter((name) => name.endsWith('.v1.ts'))
