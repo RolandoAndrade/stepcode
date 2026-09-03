@@ -297,7 +297,7 @@ Goal: one mistake, one diagnostic, and an AST that is intact everywhere else.
 | E2001 | error | expected `;` |
 | E2002 | error | unexpected token |
 | E2003 | error | expected closer for open block (data: `opener`, `closer`, `openerLine`) |
-| E2004 | error | expected `Entonces` / `Hacer` |
+| E2004 | error | expected a specific keyword (`Entonces`, `Hacer`, `Como`, …); data names it |
 | E2005 | error | unbalanced bracket |
 | E2006 | error | closer without an open block |
 | E2010 | error | no main block |
@@ -319,7 +319,10 @@ E4xxx (runtime).
 
 `diagnostics/catalog/es.ts`, `en.ts`: `Record<DiagnosticCode, string>` templates. Slots:
 `{name}` from `data`, `{kw:key}` / `{type:key}` / `{op:key}` replaced by the profile's first
-spelling. `formatDiagnostic` resolves locale with fallback `pt-BR → pt → en`.
+spelling, and `{kw:$field}` where the key is read from `data.field` (for codes whose keyword
+varies per occurrence, e.g. E2003's closer). A catalog may add `E1001.indexBase`-style
+variants; `formatDiagnostic` picks `${code}.${data.hint}` when present. Locale resolves with
+fallback `pt-BR → pt → en`.
 `registerCatalog(locale, entries)` adds or overrides.
 
 ## 8. Testing
