@@ -1,11 +1,13 @@
 import { profiles, type ResolvedProfile } from '@stepcode/profiles'
 import type { Expr, Node, Stmt, TypeRef } from '../src/ast/index'
 import type { Diagnostic, DiagnosticCode } from '../src/diagnostics/index'
+import { formatDiagnostic } from '../src/diagnostics/index'
 import type { Token } from '../src/lexer/index'
 import { tokenize } from '../src/lexer/index'
 import { createContext } from '../src/parser/context'
 import { parseExpression } from '../src/parser/expression'
 import { type ParseResult, parse } from '../src/parser/parse'
+import { LineMap } from '../src/source/index'
 
 /**
  * A token stream as `kind:value` strings, the compact form the lexer tests assert against.
@@ -175,4 +177,30 @@ export function diagnosticCodes(
   profile: ResolvedProfile = profiles.es,
 ): DiagnosticCode[] {
   return parseSource(source, profile).diagnostics.map((diagnostic) => diagnostic.code)
+}
+
+export interface DiagnosticReport {
+  code: string
+  line: number
+  column: number
+  es: string
+  en: string
+}
+
+/** Every diagnostic of one parse, with its 1-based position and both rendered messages. */
+export function diagnosticReport(
+  source: string,
+  profile: ResolvedProfile = profiles.es,
+): DiagnosticReport[] {
+  const map = new LineMap(source)
+  return parseSource(source, profile).diagnostics.map((diagnostic) => {
+    const position = map.positionAt(diagnostic.span.start)
+    return {
+      code: diagnostic.code,
+      line: position.line,
+      column: position.column,
+      es: formatDiagnostic(diagnostic, 'es', profile),
+      en: formatDiagnostic(diagnostic, 'en', profiles.en),
+    }
+  })
 }

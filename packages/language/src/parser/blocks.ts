@@ -37,10 +37,39 @@ export function openBlock(ctx: ParserContext, frame: BlockFrame): void {
 }
 
 /**
- * One block body. Task 8 gives this the dangling-closer recovery; here it is just a block.
+ * Keywords that end or continue some block. One of these is *dangling* when no open block
+ * lists it in `follows`: it closes nothing, so it is reported and dropped (spec §7).
+ */
+export const DANGLING_KEYWORDS: ReadonlySet<KeywordKey> = new Set([
+  'endProgram',
+  'endProcedure',
+  'endFunction',
+  'endIf',
+  'elseIf',
+  'else',
+  'endSwitch',
+  'otherwise',
+  'endWhile',
+  'endFor',
+  'until',
+])
+
+/**
+ * One block body, plus the dangling-closer recovery: a closer no open block is waiting for
+ * gets E2006, is dropped, and the body keeps parsing. A closer an *enclosing* block wants is
+ * left alone so `finishBlock` can report the inner block unclosed and hand it outwards.
  */
 export function parseSection(ctx: ParserContext, options: BlockOptions = {}): Stmt[] {
-  return parseBlock(ctx, options)
+  const body: Stmt[] = []
+  for (;;) {
+    body.push(...parseBlock(ctx, options))
+    const token = ctx.cursor.peek()
+    const key = keywordKeyOf(token)
+    if (key === null || !DANGLING_KEYWORDS.has(key)) return body
+    if (ctx.blocks.some((frame) => frame.follows.includes(key))) return body
+    report(ctx, 'E2006', token.span, { closer: key })
+    ctx.cursor.next()
+  }
 }
 
 export function reportUnclosed(ctx: ParserContext, frame: BlockFrame, closerSpan: Span): void {
