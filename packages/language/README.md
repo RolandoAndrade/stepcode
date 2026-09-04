@@ -141,8 +141,9 @@ type, or `null` for `Esperar Tecla`; `rejected` carries the E4004 of a text that
 
 `runProgram(program, options)` drives that loop for you: `io.read(request)` answers input
 requests, `sleep` handles `Esperar`, `budget` (default 10 000 statements) is how often it
-yields to the event loop, and an `AbortSignal` returns `{ kind: 'aborted' }`. Pass a seeded
-`random` and the same inputs and a run is reproducible to the byte.
+yields to the event loop, and `signal` — any `{ aborted }` object, an `AbortSignal` included —
+returns `{ kind: 'aborted' }`. Pass a seeded `random` and the same inputs and a run is
+reproducible to the byte.
 
 Values are what JavaScript gives: `Entero` and `Real` are numbers (`4 / 2` prints `2`,
 `7 / 2` prints `3.5`, `Redondear(-1.5)` is `-2`), text is a string, `Logico` a boolean

@@ -3,6 +3,11 @@ import type { Diagnostic } from '../diagnostics/index'
 import type { Frame } from './frame'
 import { type InputRequest, type RunOptions, start } from './run'
 
+/** The shape `runProgram` needs from an abort signal — a real `AbortSignal` satisfies it. */
+export interface AbortLike {
+  readonly aborted: boolean
+}
+
 export interface RunProgramOptions extends RunOptions {
   readonly io: {
     write(text: string): void
@@ -10,8 +15,11 @@ export interface RunProgramOptions extends RunOptions {
     /** Answers one input request; called again with `rejected` set when the text did not parse. */
     read(request: InputRequest): Promise<string>
   }
-  /** Checked before every `continue` and after every `await`; an abort returns `aborted`. */
-  readonly signal?: AbortSignal
+  /**
+   * Checked before every `continue` and after every `await`; an abort returns `aborted`. Pass
+   * an `AbortSignal` — this is only `{ aborted }` so the core stays free of platform lib types.
+   */
+  readonly signal?: AbortLike
   /** Default `setTimeout`. Tests pass a no-op. */
   readonly sleep?: (millis: number) => Promise<void>
   /** Statements per slice before yielding one macrotask to the host's event loop. */
@@ -25,9 +33,17 @@ export type RunOutcome =
 
 export const DEFAULT_BUDGET = 10_000
 
+/**
+ * Read from `globalThis` rather than referencing the `setTimeout` global's type, so this file
+ * typechecks under a `lib` with no DOM or Node types (the core is host-agnostic by spec).
+ */
+type Schedule = (callback: () => void, millis: number) => unknown
+
 const timeout = (millis: number): Promise<void> =>
   new Promise((resolve) => {
-    setTimeout(resolve, millis)
+    const schedule = (globalThis as { setTimeout?: Schedule }).setTimeout
+    if (schedule === undefined) throw new Error('runProgram requires a global setTimeout')
+    schedule(resolve, millis)
   })
 
 /**

@@ -69,6 +69,7 @@ export {
   sortDiagnostics,
 } from './diagnostics/index'
 export type {
+  AbortLike,
   ArrayValue,
   Frame,
   FrameVariable,

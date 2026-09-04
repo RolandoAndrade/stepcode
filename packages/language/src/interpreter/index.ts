@@ -1,5 +1,5 @@
 export type { Frame, FrameVariable } from './frame'
-export type { RunOutcome, RunProgramOptions } from './program'
+export type { AbortLike, RunOutcome, RunProgramOptions } from './program'
 export { DEFAULT_BUDGET, runProgram } from './program'
 export { renderValue } from './render'
 export type { InputRequest, PauseReason, Run, RunOptions, RunState, StepResult } from './run'
