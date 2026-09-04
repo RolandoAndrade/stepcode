@@ -516,3 +516,11 @@ the reasoning.
 - The barrel exports the §3 list and nothing else; `treeDataAt`, `TreeData`, `stepcodeDiagnostics`,
   and `breakpointsChanged` were added to §3 because hosts need them. Node-set, block, snippet,
   symbol, hover, and signature helpers stay internal.
+- Completion types (§5.6): constants complete with `type: 'constant'`, not `variable`, so a
+  host's completion icons can tell them apart. A zero-parameter callable (`Azar`, a
+  parameterless subprogram) applies `Name()` with the cursor *after* the parentheses; only a
+  callable with parameters leaves the cursor inside.
+- `breakpoints()` and `currentLine()` each include the base theme, so `debug()` installed
+  without `stepcode()` renders visible markers; the theme is deduplicated when both are present.
+- The barrel also exports `packageName` while the editor package is a stub that imports it to
+  prove workspace resolution; it goes when the editor consumes the real language support.
