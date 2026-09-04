@@ -240,5 +240,8 @@ export function indentOnInputPatterns(profile: ResolvedProfile): RegExp[] {
   const flags = profile.options.caseSensitive ? '' : 'i'
   // `(?:)` would match every line start, so a profile that spells no dedent keyword gets `(?!)`.
   const alternation = spellings.length === 0 ? '(?!)' : `(?:${spellings.join('|')})`
+  // The case-line trigger below is intentionally loose — it may fire inside a string containing
+  // `:` — because `indentOnInput` only decides *when* to re-indent. What the line is actually
+  // indented to is decided by the whole-line `CASE_LINE` test in the indent rules above.
   return [new RegExp(`^\\s*${alternation}$`, flags), /^\s*[^:\s][^:]*:$/]
 }

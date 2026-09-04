@@ -11,7 +11,10 @@ const options = { profile: es, locale: 'es' }
 
 describe('stepcodeDiagnostics', () => {
   const guides = corpusSources().filter((one) => one.source.startsWith('// expect: E'))
-  expect(guides.length).toBeGreaterThan(20)
+
+  it('has more than 20 error guides to check', () => {
+    expect(guides.length).toBeGreaterThan(20)
+  })
 
   it.each(guides.map((one) => [one.slug, one] as const))(
     '%s: one lint diagnostic per compile diagnostic, formatted per locale',

@@ -19,7 +19,10 @@ export function widen(state: EditorState, span: Span): { from: number; to: numbe
 }
 
 /** The tree's compile diagnostics as CodeMirror diagnostics; empty before the first parse. */
-export function stepcodeDiagnostics(state: EditorState, options: StepcodeOptions): Diagnostic[] {
+export function stepcodeDiagnostics(
+  state: EditorState,
+  options: StepcodeOptions,
+): readonly Diagnostic[] {
   const data = treeDataAt(state)
   if (data === null) return []
   const strings = stringsFor(options.locale)

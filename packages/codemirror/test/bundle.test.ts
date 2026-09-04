@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { ensureSyntaxTree, foldable, syntaxTree } from '@codemirror/language'
 import { diagnosticCount, forceLinting, forEachDiagnostic } from '@codemirror/lint'
-import { EditorState } from '@codemirror/state'
+import { Compartment, EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import type { ResolvedProfile } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
@@ -94,6 +94,40 @@ describe('stepcode()', () => {
     })
     expect(view.dom.querySelector('.cm-lineNumbers')).toBeNull()
     expect(view.dom.querySelector('.cm-gutter-lint')).toBeNull()
+    view.destroy()
+  })
+
+  it('reconfigures from one profile to another through a Compartment', () => {
+    const compartment = new Compartment()
+    const esSource = 'Proceso p\n  Si 1 < 2 Entonces\n    Escribir 1;\n  FinSi\nFinProceso'
+    const view = new EditorView({
+      state: EditorState.create({
+        doc: esSource,
+        extensions: [compartment.of(stepcode({ profile: es }))],
+      }),
+      parent: document.body,
+    })
+    ensureSyntaxTree(view.state, view.state.doc.length, 1e9)
+
+    // Under `es`, "Si" lexes as the if-keyword.
+    const esSiOffset = esSource.indexOf('Si')
+    expect(syntaxTree(view.state).resolveInner(esSiOffset, 1).name).toBe('IfKeyword')
+
+    const enSource =
+      'Program p\n  Define Si As Integer;\n  If Si < 2 Then\n    Write Si;\n  EndIf\nEndProgram'
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: enSource },
+      effects: compartment.reconfigure(stepcode({ profile: en })),
+    })
+    ensureSyntaxTree(view.state, view.state.doc.length, 1e9)
+
+    // No `es` extension is left: "Si" is no longer the if-keyword — it is just an ordinary
+    // identifier now — while "If", the `en` spelling, lexes as the if-keyword instead.
+    const siOffset = enSource.indexOf('Si')
+    const ifOffset = enSource.indexOf('If')
+    expect(syntaxTree(view.state).resolveInner(siOffset, 1).name).toBe('VariableDefinition')
+    expect(syntaxTree(view.state).resolveInner(ifOffset, 1).name).toBe('IfKeyword')
+    expect(view.state.languageDataAt('commentTokens', 0)).toEqual([{ line: '//' }])
     view.destroy()
   })
 })

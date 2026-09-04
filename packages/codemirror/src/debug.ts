@@ -10,7 +10,15 @@ import {
   type Text,
   type Transaction,
 } from '@codemirror/state'
-import { Decoration, EditorView, GutterMarker, gutter, type ViewUpdate } from '@codemirror/view'
+import {
+  type BlockInfo,
+  Decoration,
+  EditorView,
+  GutterMarker,
+  gutter,
+  type ViewUpdate,
+} from '@codemirror/view'
+import { stepcodeBaseTheme } from './theme'
 
 export const toggleBreakpoint = StateEffect.define<{ readonly line: number }>()
 export const setBreakpoints = StateEffect.define<readonly number[]>()
@@ -177,21 +185,31 @@ const debugGutter = gutter({
     update.state.field(currentLineField, false),
   initialSpacer: () => spacerMarker,
   domEventHandlers: {
-    mousedown(view, line) {
-      view.dispatch({
-        effects: toggleBreakpoint.of({ line: view.state.doc.lineAt(line.from).number }),
-      })
-      return true
-    },
+    mousedown: toggleOnMouseDown,
   },
 })
 
-export function breakpoints(): Extension {
-  return [breakpointField, debugGutter]
+/** Spec §6.1: only the primary (left) button toggles a breakpoint. */
+export function toggleOnMouseDown(view: EditorView, line: BlockInfo, event: Event): boolean {
+  if ((event as MouseEvent).button !== 0) return false
+  view.dispatch({
+    effects: toggleBreakpoint.of({ line: view.state.doc.lineAt(line.from).number }),
+  })
+  return true
 }
 
+/**
+ * Renders standalone: `stepcodeBaseTheme` rides along so its markers are visible even without
+ * `stepcode()`. `EditorState` dedupes identical extension values by identity, so combining this
+ * with `stepcode()` still installs the theme once.
+ */
+export function breakpoints(): Extension {
+  return [breakpointField, debugGutter, stepcodeBaseTheme]
+}
+
+/** Renders standalone; see `breakpoints()` on why `stepcodeBaseTheme` is included here too. */
 export function currentLine(): Extension {
-  return [currentLineField, scrollToCurrentLine, debugGutter]
+  return [currentLineField, scrollToCurrentLine, debugGutter, stepcodeBaseTheme]
 }
 
 export function debug(): Extension {

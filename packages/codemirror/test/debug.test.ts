@@ -13,6 +13,7 @@ import {
   setBreakpoints,
   setCurrentLine,
   toggleBreakpoint,
+  toggleOnMouseDown,
 } from '../src/debug'
 import { stepcodeBaseTheme } from '../src/theme'
 
@@ -20,6 +21,11 @@ const doc = 'uno\ndos\ntres\ncuatro'
 
 const withDebug = (text = doc): EditorState =>
   EditorState.create({ doc: text, extensions: debug() })
+
+/** Flattens a (possibly nested) extension array, mirroring how `EditorState` sees it. */
+function flatten(extension: unknown): unknown[] {
+  return Array.isArray(extension) ? extension.flatMap(flatten) : [extension]
+}
 
 describe('breakpoints', () => {
   it('toggles on and off by line, reported ascending', () => {
@@ -84,6 +90,18 @@ describe('breakpoints', () => {
   it('reads as an empty list without the extension', () => {
     expect(breakpointLines(EditorState.create({ doc }))).toEqual([])
   })
+
+  it('ignores a right-button mousedown, and toggles on a left-button one', () => {
+    const view = new EditorView({ state: withDebug(), parent: document.body })
+    const line = view.lineBlockAt(0)
+    const rightButton = { button: 2 } as MouseEvent
+    expect(toggleOnMouseDown(view, line, rightButton)).toBe(false)
+    expect(breakpointLines(view.state)).toEqual([])
+    const leftButton = { button: 0 } as MouseEvent
+    expect(toggleOnMouseDown(view, line, leftButton)).toBe(true)
+    expect(breakpointLines(view.state)).toEqual([1])
+    view.destroy()
+  })
 })
 
 describe('currentLine', () => {
@@ -131,6 +149,23 @@ describe('currentLine', () => {
     expect(breakpointLines(state)).toEqual([])
     const only = EditorState.create({ doc, extensions: breakpoints() })
     expect(currentLineOf(only)).toBeNull()
+  })
+})
+
+describe('debug() without stepcode()', () => {
+  it('includes the base theme so its markers render standalone', () => {
+    expect(flatten(breakpoints())).toContain(stepcodeBaseTheme)
+    expect(flatten(currentLine())).toContain(stepcodeBaseTheme)
+
+    const view = new EditorView({
+      state: EditorState.create({ doc, extensions: debug() }),
+      parent: document.body,
+    })
+    view.dispatch({ effects: [toggleBreakpoint.of({ line: 1 }), setCurrentLine.of(1)] })
+    expect(view.dom.querySelector('.cm-stepcode-breakpoints')).not.toBeNull()
+    expect(view.dom.querySelector('.cm-stepcode-breakpoint')).not.toBeNull()
+    expect(view.dom.querySelector('.cm-stepcode-current-line')).not.toBeNull()
+    view.destroy()
   })
 })
 

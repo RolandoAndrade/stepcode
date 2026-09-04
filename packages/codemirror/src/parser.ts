@@ -66,6 +66,9 @@ const languages = new WeakMap<ResolvedProfile, Language>()
 /**
  * One `Language` per profile object, cached: `stepcodeCompletion` registers through its data
  * facet, so every extension built for a profile must see the same instance.
+ *
+ * The cache keys on object identity (a `WeakMap`), so a profile must not be mutated after it is
+ * first passed here — a later mutation would silently apply to the cached `Language` too.
  */
 export function stepcodeLanguage(profile: ResolvedProfile): Language {
   const cached = languages.get(profile)
