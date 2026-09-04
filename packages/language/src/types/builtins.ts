@@ -1,5 +1,5 @@
 import type { BuiltinKey } from '@stepcode/profiles'
-import { CHAR, INTEGER, type OperandClass, REAL, STRING, type Type, UNKNOWN } from './type'
+import { INTEGER, type OperandClass, REAL, STRING, type Type, UNKNOWN } from './type'
 
 /**
  * One row per builtin (spec §6). `params` is positional and exact — arity is `params.length`.
@@ -49,6 +49,3 @@ export function builtinResult(key: BuiltinKey, args: readonly Type[]): Type {
   if (result !== 'same') return result
   return args[0] ?? UNKNOWN
 }
-
-/** Re-exported so a consumer can name the two text scalars without importing `type.ts`. */
-export const TEXT_TYPES: readonly Type[] = Object.freeze([STRING, CHAR])

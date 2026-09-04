@@ -13,8 +13,8 @@ export interface CompileResult {
 /**
  * Parse, then check — always both, even when the parser reported errors: an editor wants the
  * two kinds of diagnostic at once, and the checker is silent on the placeholders a broken
- * parse leaves behind (§2). Parser diagnostics are concatenated first, so at the same
- * position, severity and code the parser's is the one that survives deduplication (§7.2).
+ * parse leaves behind (§2). Deduplication keys on code and span (§7.2), and no code is both a
+ * parser's and a checker's, so the two lists can only ever sort together — never collide.
  */
 export function compile(source: string, options: { profile: ResolvedProfile }): CompileResult {
   const parsed = parse(source, { profile: options.profile })

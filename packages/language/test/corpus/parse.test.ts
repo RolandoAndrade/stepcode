@@ -1,32 +1,24 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { profiles } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
 import { parse } from '../../src/parser/parse'
-import { assertTreeInvariants } from '../helpers'
+import { assertTreeInvariants, corpusIndexBaseZero, corpusPrograms } from '../helpers'
 
-const dir = fileURLToPath(new URL('./programs', import.meta.url))
-const files = readdirSync(dir)
-  .filter((name) => name.endsWith('.stepcode'))
-  .sort()
+const programs = corpusPrograms()
 
 describe('the v1 conformance corpus', () => {
   it('is not empty', () => {
-    expect(files.length).toBeGreaterThan(50)
+    expect(programs.length).toBeGreaterThan(50)
   })
 
   it('lists the index-base-0 programs it extracted', () => {
-    const listed = readFileSync(join(dir, 'index-base-0.txt'), 'utf8')
-      .split('\n')
-      .filter((line) => line.length > 0)
+    const listed = corpusIndexBaseZero()
     expect(listed.length).toBeGreaterThan(0)
+    const files = programs.map((one) => one.file)
     for (const slug of listed) expect(files).toContain(`${slug}.stepcode`)
   })
 
-  for (const file of files) {
+  for (const { file, source } of programs) {
     describe(file, () => {
-      const source = readFileSync(join(dir, file), 'utf8')
       const result = parse(source, { profile: profiles.pseint })
 
       it('parses with no errors', () => {

@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { builtinProfiles, profiles, type ResolvedProfile, resolveProfile } from '@stepcode/profiles'
 import type { Expr, Node, Program, Stmt, TokenRange, TypeRef } from '../src/ast/index'
 import { childrenOf, walk } from '../src/ast/index'
@@ -383,6 +386,49 @@ const es0 = resolveProfile(
 
 export function profileNamed(name: ProfileName): ResolvedProfile {
   return name === 'es0' ? es0 : profiles[name]
+}
+
+const corpusDir = fileURLToPath(new URL('./corpus/programs', import.meta.url))
+
+/** The corpus slugs the v1 extraction found carrying 0-based arrays, one per line. */
+export function corpusIndexBaseZero(): string[] {
+  return readFileSync(join(corpusDir, 'index-base-0.txt'), 'utf8')
+    .split('\n')
+    .filter((line) => line.length > 0)
+}
+
+export interface CorpusProgram {
+  /** The file name without its extension, which is how the corpus lists name a program. */
+  readonly slug: string
+  readonly file: string
+  readonly source: string
+  /** `es0` for the programs the v1 corpus carried with 0-based arrays, `es` for the rest. */
+  readonly profileName: ProfileName
+}
+
+let corpus: CorpusProgram[] | undefined
+
+/**
+ * Every conformance program, sorted by file name, with the profile it is checked under. Four
+ * test files walk this corpus; reading it in one place keeps them from drifting apart on
+ * which programs they cover or which profile each one wants.
+ */
+export function corpusPrograms(): readonly CorpusProgram[] {
+  if (corpus !== undefined) return corpus
+  const zeroBased = new Set(corpusIndexBaseZero())
+  corpus = readdirSync(corpusDir)
+    .filter((name) => name.endsWith('.stepcode'))
+    .sort()
+    .map((file) => {
+      const slug = file.replace('.stepcode', '')
+      return {
+        slug,
+        file,
+        source: readFileSync(join(corpusDir, file), 'utf8'),
+        profileName: zeroBased.has(slug) ? ('es0' as const) : ('es' as const),
+      }
+    })
+  return corpus
 }
 
 /** `'23-28'` — the span of the one and only occurrence of `snippet` in `source`. */

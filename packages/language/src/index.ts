@@ -46,22 +46,10 @@ export type {
   WriteStmt,
 } from './ast/index'
 export { childrenOf, walk } from './ast/index'
-export type {
-  BodyState,
-  CheckerState,
-  CheckResult,
-  Scope,
-  Symbol,
-  SymbolKind,
-} from './checker/index'
-export {
-  check,
-  createScope,
-  createSymbol,
-  declareSymbol,
-  lookup,
-  suggestName,
-} from './checker/index'
+export type { CheckResult, Scope, Symbol, SymbolKind } from './checker/index'
+// The scope mutators and the checker's own state stay inside the package (spec §2): a
+// consumer reads the tables `check` hands back, it never builds a scope of its own.
+export { check, lookup, suggestName } from './checker/index'
 export type { CompileResult } from './compile'
 export { compile } from './compile'
 export type {

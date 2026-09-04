@@ -1,22 +1,9 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { Expr, Identifier, Node } from '../../src/ast/index'
 import { walk } from '../../src/ast/index'
 import { check } from '../../src/checker/index'
 import { parse } from '../../src/parser/index'
-import { profileNamed } from '../helpers'
-
-const dir = fileURLToPath(new URL('../corpus/programs', import.meta.url))
-const zeroBased = new Set(
-  readFileSync(join(dir, 'index-base-0.txt'), 'utf8')
-    .split('\n')
-    .filter((line) => line.length > 0),
-)
-const files = readdirSync(dir)
-  .filter((name) => name.endsWith('.stepcode'))
-  .sort()
+import { corpusPrograms, profileNamed } from '../helpers'
 
 const EXPRESSION_KINDS: ReadonlySet<Node['kind']> = new Set<Node['kind']>([
   'Literal',
@@ -56,12 +43,14 @@ const isNameSlot = (node: Identifier, parent: Node | null | undefined): boolean 
 }
 
 describe('the side tables cover every corpus tree', () => {
-  for (const file of files) {
+  for (const { file, source, profileName } of corpusPrograms()) {
+    // One parse and one check per program, shared by both assertions below: checking the
+    // whole corpus twice over buys nothing.
+    const profile = profileNamed(profileName)
+    const { program } = parse(source, { profile })
+    const result = check(program, { profile })
+
     it(`${file} types every expression, resolves every name and every call`, () => {
-      const profile = profileNamed(zeroBased.has(file.replace('.stepcode', '')) ? 'es0' : 'es')
-      const source = readFileSync(join(dir, file), 'utf8')
-      const { program } = parse(source, { profile })
-      const result = check(program, { profile })
       const untypedExpressions: string[] = []
       const unresolvedNames: string[] = []
       const unresolvedCalls: string[] = []
@@ -92,10 +81,6 @@ describe('the side tables cover every corpus tree', () => {
     })
 
     it(`${file} lists every declared name once per scope`, () => {
-      const profile = profileNamed(zeroBased.has(file.replace('.stepcode', '')) ? 'es0' : 'es')
-      const source = readFileSync(join(dir, file), 'utf8')
-      const { program } = parse(source, { profile })
-      const result = check(program, { profile })
       for (const scope of result.scopes) {
         const names = scope.order.map((symbol) => symbol.name)
         expect(new Set(names).size).toBe(names.length)

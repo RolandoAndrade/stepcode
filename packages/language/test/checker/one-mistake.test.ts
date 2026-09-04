@@ -1,19 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { compile } from '../../src/compile'
-import { profileNamed } from '../helpers'
-
-const dir = fileURLToPath(new URL('../corpus/programs', import.meta.url))
-const zeroBased = new Set(
-  readFileSync(join(dir, 'index-base-0.txt'), 'utf8')
-    .split('\n')
-    .filter((line) => line.length > 0),
-)
-const files = readdirSync(dir)
-  .filter((name) => name.endsWith('.stepcode'))
-  .sort()
+import { type CorpusProgram, corpusPrograms, profileNamed } from '../helpers'
 
 interface Mutation {
   readonly name: string
@@ -120,17 +107,13 @@ const skip: ReadonlyMap<string, string> = new Map([
   ['test-multiple-statements-in-case', 'W3002: `b` is only written'],
 ])
 
-const profileFor = (slug: string) => profileNamed(zeroBased.has(slug) ? 'es0' : 'es')
-
-const sourceOf = (file: string): string => readFileSync(join(dir, file), 'utf8')
+const programs = corpusPrograms()
 
 describe('one mistake, one diagnostic', () => {
   const applied = new Map<string, number>()
-  for (const file of files) {
-    const slug = file.replace('.stepcode', '')
+  for (const { slug, file, source, profileName } of programs) {
     if (skip.has(slug)) continue
-    const profile = profileFor(slug)
-    const source = sourceOf(file)
+    const profile = profileNamed(profileName)
     for (const mutation of mutations) {
       const mutated = mutation.apply(source)
       if (mutated === undefined || mutated === source) continue
@@ -162,8 +145,10 @@ describe('one mistake, one diagnostic', () => {
 
   it('states the warning each skipped program carries', () => {
     for (const [slug, reason] of skip) {
-      expect(files, slug).toContain(`${slug}.stepcode`)
-      const before = compile(sourceOf(`${slug}.stepcode`), { profile: profileFor(slug) })
+      const program = programs.find((one) => one.slug === slug) as CorpusProgram | undefined
+      expect(program, `${slug} is not a corpus program`).toBeDefined()
+      if (program === undefined) continue
+      const before = compile(program.source, { profile: profileNamed(program.profileName) })
       const codes = before.diagnostics.map((one) => one.code)
       expect(codes.length, `${slug} no longer warns: drop it from the skip list`).toBeGreaterThan(0)
       expect(codes, reason).toContain(reason.slice(0, reason.indexOf(':')))

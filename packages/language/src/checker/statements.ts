@@ -185,16 +185,14 @@ export function resolveWriteTarget(
     return undefined
   }
   existing.writes++
-  // §5.12: an untyped result variable takes the type of its first assignment.
-  if (existing.kind === 'result' && isUnknown(existing.type) && !isUnknown(valueType)) {
-    existing.type = valueType
-    const decl = state.frame.subprogram
-    const body = decl === null ? undefined : state.bodies.get(decl)
-    if (body !== undefined) body.resultType = valueType
-  }
   if (existing.kind === 'result') {
     const decl = state.frame.subprogram
     const body = decl === null ? undefined : state.bodies.get(decl)
+    // §5.12: an untyped result variable takes the type of its first assignment.
+    if (body !== undefined && isUnknown(existing.type) && !isUnknown(valueType)) {
+      existing.type = valueType
+      body.resultType = valueType
+    }
     if (body !== undefined) body.resultWrites++
   }
   return setType(state, target, existing.type)

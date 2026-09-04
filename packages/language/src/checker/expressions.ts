@@ -345,7 +345,7 @@ export function checkUserCall(state: CheckerState, node: Call, asValue: boolean)
   if (symbol.kind !== 'subprogram' || decl === undefined) {
     // The callee resolved to a real symbol; the call is what is wrong, not the name. Counting
     // it as a read keeps the mistake to one diagnostic instead of also warning it was never
-    // read (§4.1).
+    // read (§3.2, §9).
     symbol.reads++
     report(state, 'E3006', callee.span, { name: callee.text })
     return UNKNOWN
