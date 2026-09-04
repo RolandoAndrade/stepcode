@@ -208,6 +208,72 @@ describe('Para (§5.9)', () => {
     expect(report.texts).toEqual(['x'])
   })
 
+  // §5.9: the counter must resolve to an existing *variable*. Each wrong kind gets the
+  // diagnostic that already names that kind elsewhere — a constant is E3007, a subprogram is
+  // E3005 — and the two kinds that are variables of another body's making, a parameter and a
+  // function's result, get E3026 with the `kind` hint.
+  it('refuses a constant as a counter', () => {
+    const source = main(
+      'Constante MAX <- 10;',
+      'Para MAX <- 1 Hasta 10 Hacer',
+      '  Escribir 1;',
+      'FinPara',
+    )
+    const report = checkSource(source)
+    expect(report.codes).toEqual(['E3007'])
+    expect(report.texts).toEqual(['MAX'])
+  })
+
+  it('refuses a subprogram as a counter', () => {
+    const source = [
+      'SubProceso f()',
+      'FinSubProceso',
+      'Proceso p',
+      '  Para f <- 1 Hasta 10 Hacer',
+      '    Escribir 1;',
+      '  FinPara',
+      'FinProceso',
+    ].join('\n')
+    const report = checkSource(source)
+    expect(report.codes).toEqual(['E3005'])
+    expect(report.texts).toEqual(['f'])
+  })
+
+  it('refuses a parameter as a counter, with the kind hint', () => {
+    const source = [
+      'SubProceso g(n Como Entero)',
+      '  Para n <- 1 Hasta 10 Hacer',
+      '    Escribir 1;',
+      '  FinPara',
+      'FinSubProceso',
+      'Proceso p',
+      '  g(1);',
+      'FinProceso',
+    ].join('\n')
+    const report = checkSource(source)
+    expect(report.codes).toEqual(['E3026'])
+    expect(report.texts).toEqual(['n'])
+    expect(report.result.diagnostics[0]?.data.hint).toBe('kind')
+  })
+
+  // I6: the result variable is no longer a counter, so the loop is not a write of it — and the
+  // rejected loop must not cascade into "the function never assigns its result" either.
+  it("refuses a function's result variable as a counter, and does not also warn W3004", () => {
+    const source = [
+      'Funcion r Como Entero <- f()',
+      '  Para r <- 1 Hasta 10 Hacer',
+      '    Escribir 1;',
+      '  FinPara',
+      'FinFuncion',
+      'Proceso p',
+      '  Escribir f();',
+      'FinProceso',
+    ].join('\n')
+    const report = checkSource(source)
+    expect(report.codes).toEqual(['E3026'])
+    expect(report.result.diagnostics[0]?.data.hint).toBe('kind')
+  })
+
   it('makes the counter read-only inside the loop and ordinary after it', () => {
     const inside = main(
       'Definir i Como Entero;',

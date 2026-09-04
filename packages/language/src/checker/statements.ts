@@ -110,6 +110,28 @@ function checkDefine(state: CheckerState, stmt: DefineStmt): void {
 }
 
 /**
+ * The three kinds nothing can be written into (§3.2, §5.9), each with the code that already
+ * names that kind: a subprogram, a constant, and the counter of the loop being checked. One
+ * ladder, so an assignment, a `Leer` and a `Para` counter can never disagree about them.
+ * Returns whether it reported.
+ */
+function reportUnwritableKind(state: CheckerState, id: Identifier, symbol: Symbol): boolean {
+  if (symbol.kind === 'subprogram') {
+    report(state, 'E3005', id.span, { name: id.text })
+    return true
+  }
+  if (symbol.kind === 'constant') {
+    report(state, 'E3007', id.span, { name: id.text })
+    return true
+  }
+  if (symbol.counting === true) {
+    report(state, 'E3008', id.span, { name: id.text })
+    return true
+  }
+  return false
+}
+
+/**
  * Resolves an assignment or `Leer` target and returns the type a value must fit, or
  * `undefined` when the target itself was the mistake and nothing more is to be said.
  * `valueType` is what pseint's implicit declaration takes its type from, and `allowImplicit`
@@ -153,18 +175,7 @@ export function resolveWriteTarget(
     declareRecovered(state, target)
     return fail()
   }
-  if (existing.kind === 'subprogram') {
-    report(state, 'E3005', target.span, { name: target.text })
-    return fail()
-  }
-  if (existing.kind === 'constant') {
-    report(state, 'E3007', target.span, { name: target.text })
-    return fail()
-  }
-  if (existing.counting === true) {
-    report(state, 'E3008', target.span, { name: target.text })
-    return fail()
-  }
+  if (reportUnwritableKind(state, target, existing)) return fail()
   if (isArray(existing.type)) {
     report(state, 'E3009', target.span, { name: target.text, hint: 'array' })
     setType(state, target, existing.type)
@@ -388,6 +399,33 @@ function checkIntegerBound(state: CheckerState, expr: Expr): void {
 }
 
 /**
+ * §5.9: the counter must be an existing *variable* of type `Entero`. The kinds nothing can be
+ * written into are the ladder every write shares; a parameter and a function's result are
+ * writable, but they belong to the header rather than to the body, so they are E3026 with the
+ * `kind` hint — the loop wants a variable of its own.
+ */
+function checkCounterSymbol(state: CheckerState, counter: Identifier, symbol: Symbol): void {
+  if (reportUnwritableKind(state, counter, symbol)) return
+  if (symbol.kind === 'parameter' || symbol.kind === 'result') {
+    report(state, 'E3026', counter.span, { name: counter.text, hint: 'kind' })
+    // The loop is not a write of the result variable any more, and the rejected loop must not
+    // cascade into W3004 on top of the E3026 that already says what is wrong (§9).
+    if (symbol.kind === 'result') {
+      const decl = state.frame.subprogram
+      const body = decl === null ? undefined : state.bodies.get(decl)
+      if (body !== undefined) body.resultWrites++
+    }
+    return
+  }
+  if (isUnknown(symbol.type)) return
+  if (symbol.type.kind === 'scalar' && symbol.type.name === 'integer') return
+  report(state, 'E3026', counter.span, {
+    name: counter.text,
+    found: typeToString(symbol.type, state.profile),
+  })
+}
+
+/**
  * §5.9. Strict mode wants a declared `Entero`; pseint declares a `counter` at the loop. Either
  * way the symbol is read-only for the length of the body, and an ordinary variable after it.
  *
@@ -423,15 +461,7 @@ function checkFor(state: CheckerState, stmt: ForStmt): void {
     setType(state, counter, symbol.type)
     symbol.reads++
     symbol.writes++
-    if (
-      !isUnknown(symbol.type) &&
-      !(symbol.type.kind === 'scalar' && symbol.type.name === 'integer')
-    ) {
-      report(state, 'E3026', counter.span, {
-        name: counter.text,
-        found: typeToString(symbol.type, state.profile),
-      })
-    }
+    checkCounterSymbol(state, counter, symbol)
   }
   const wasCounting = symbol?.counting
   if (symbol !== undefined) symbol.counting = true

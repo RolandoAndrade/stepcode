@@ -293,7 +293,9 @@ E3030 with `related` on the first occurrence. Comparison of `Caracter` and one-c
 
 Strict mode: the counter must resolve to an existing `variable` of type `Entero` in the
 current scope, else E3001 (unknown, hint `declare`) or E3026 (counter must be `Entero`,
-data: found). Pseint mode: an unknown counter declares a `counter` symbol of type `Entero`
+data: found). A name that resolves to something else takes the code that already names that
+kind: a subprogram is E3005, a constant E3007, and a parameter or a function's result
+variable is E3026 with the `kind` hint ("has to be a variable of this block"). Pseint mode: an unknown counter declares a `counter` symbol of type `Entero`
 at the loop; a known `Entero` variable is used as is. Inside the loop body the symbol is
 flagged as a counter, so assignment, `Leer`, and passing it `Por Referencia` are E3008; after
 the loop it is an ordinary
@@ -401,7 +403,7 @@ Errors E3001–E3039, warnings W3001–W3004. Severity is fixed per code.
 | E3023 | array size is not a positive integer constant | — |
 | E3024 | constant value is not constant | `name` |
 | E3025 | division by zero | `op` |
-| E3026 | counter must be an integer | `name`, `found` |
+| E3026 | counter must be an integer | `name`, `found`; variant `kind` |
 | E3027 | step is zero | — |
 | E3028 | selector type cannot be switched on | `found` |
 | E3029 | case label is not constant | — |

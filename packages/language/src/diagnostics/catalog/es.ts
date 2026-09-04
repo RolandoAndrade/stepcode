@@ -113,6 +113,8 @@ const variants: Record<string, string> = {
   'E3022.kind': '«{name}» no es una variable de este bloque: solo se dimensionan variables.',
   'E3022.rank':
     '«{name}» se declaró con otro número de dimensiones: usa {expected} en lugar de {found}.',
+  'E3026.kind':
+    'El contador «{name}» tiene que ser una variable de este bloque, declarada con «{kw:define}».',
   'E3035.trunc':
     'El argumento {position} de «{name}» es {found} y se espera {expected}: usa «{builtin:trunc}» o «{builtin:round}».',
   'E3035.div':

@@ -110,6 +110,7 @@ const variants: Record<string, string> = {
   'E3022.kind': '"{name}" is not a variable of this block: only variables can be dimensioned.',
   'E3022.rank':
     '"{name}" was declared with a different number of dimensions: use {expected} instead of {found}.',
+  'E3026.kind': 'Counter "{name}" has to be a variable of this block, declared with "{kw:define}".',
   'E3035.trunc':
     'Argument {position} of "{name}" is {found} and {expected} is expected: use "{builtin:trunc}" or "{builtin:round}".',
   'E3035.div':
