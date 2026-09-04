@@ -110,8 +110,15 @@ used it whole, which §4.2 does not allow.
 level (a missing `;` under `requireSemicolons`) is covered by
 `test/parser/diagnostics.test.ts`, which asserts E2001 directly.
 
-Two programs are **not** rewritten, because no rewrite keeps what they compute:
-`test-basic-mod-operation-2.stepcode` takes `MOD` of two `Real`s (E3012) and
-`test-length.stepcode` takes `Longitud` of an array (E3037). Both exercise v1 behaviour the
-v2 type system removes on purpose (§4.3, §6), so what happens to them is a corpus decision,
-not a rewrite.
+### Withdrawn
+
+Two programs were removed from this directory instead of being rewritten: no rewrite keeps
+what they compute, because each one exercises v1 behaviour the v2 type system removes on
+purpose. Their rejection is pinned in `test/checker/by-code.test.ts` instead, and the v1
+originals stay in `test/corpus/v1/` (`arrays.v1.ts` and `arithmetic-operations.v1.ts`) and in
+this repository's history.
+
+| Program | Why it is gone |
+|---|---|
+| `test-length.stepcode` | Took `Longitud` of an array. v1 answered with the array's size; v2 gives the builtin a text parameter only (§6), so the call is E3037. |
+| `test-basic-mod-operation-2.stepcode` | Took `MOD` of two `Real`s. v1 answered `1`; v2 gives `DIV` and `MOD` integer operands only (§4.3), so the operands are E3012. |

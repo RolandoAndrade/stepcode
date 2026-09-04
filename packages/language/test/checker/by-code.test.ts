@@ -345,6 +345,22 @@ const cases: Case[] = [
     clean: main('Escribir Longitud("hola");'),
   },
   {
+    // The v1 corpus took `Longitud` of an array; §6 gives the builtin a text parameter only,
+    // which is why `test-length.stepcode` was withdrawn from the strict corpus.
+    code: 'E3037',
+    source: main('Definir lista Como Entero[3];', 'Escribir Longitud(lista);'),
+    text: 'lista',
+    clean: main('Definir s Como Cadena;', 's <- "hola";', 'Escribir Longitud(s);'),
+  },
+  {
+    // The v1 corpus took `MOD` of two `Real`s; §4.3 gives `DIV` and `MOD` integer operands
+    // only, which is why `test-basic-mod-operation-2.stepcode` was withdrawn.
+    code: 'E3012',
+    source: main('Definir p, q Como Real;', 'p <- 5.5;', 'q <- 4.5;', 'Escribir p MOD q;'),
+    text: 'p',
+    clean: main('Definir n, m Como Entero;', 'n <- 5;', 'm <- 4;', 'Escribir n MOD m;'),
+  },
+  {
     code: 'W3001',
     source: main('Mientras Verdadero Hacer', '  Romper;', '  Escribir 1;', 'FinMientras'),
     text: 'Escribir 1;',

@@ -1,5 +1,0 @@
-Proceso prueba
-      Definir a Como Entero;
-      Dimension a[3];
-      Escribir Longitud(a);
-      FinProceso
