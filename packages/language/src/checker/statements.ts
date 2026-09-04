@@ -4,17 +4,32 @@ import type {
   ConstantStmt,
   DefineStmt,
   DimensionStmt,
+  Expr,
+  ForStmt,
   Identifier,
   Index,
   ReadStmt,
   ReturnStmt,
   Stmt,
+  SwitchStmt,
   WriteStmt,
 } from '../ast/index'
 import type { DiagnosticData } from '../diagnostics/index'
+import type { Span } from '../source/index'
 import { assignFailure } from '../types/assign'
 import { fold } from '../types/fold'
-import { arrayOf, constType, isArray, isUnknown, type Type, UNKNOWN } from '../types/type'
+import type { ConstValue } from '../types/type'
+import {
+  arrayOf,
+  constType,
+  INTEGER,
+  isArray,
+  isNumeric,
+  isUnknown,
+  type Type,
+  typeToString,
+  UNKNOWN,
+} from '../types/type'
 import { checkSize, typeFromRef } from './driver'
 import {
   checkBuiltinCall,
@@ -130,6 +145,10 @@ export function resolveWriteTarget(
   }
   if (existing.kind === 'constant') {
     report(state, 'E3007', target.span, { name: target.text })
+    return undefined
+  }
+  if (existing.counting === true) {
+    report(state, 'E3008', target.span, { name: target.text })
     return undefined
   }
   if (isArray(existing.type)) {
@@ -285,6 +304,126 @@ function checkCallStatement(state: CheckerState, stmt: CallStmt): void {
   setType(state, call, checkUserCall(state, call, false))
 }
 
+/** §5.7. The condition must be `Logico`; a numeric one gets the "compare explicitly" hint. */
+function checkCondition(state: CheckerState, condition: Expr): void {
+  const type = typeOf(state, condition)
+  if (isUnknown(type)) return
+  if (type.kind === 'scalar' && type.name === 'boolean') return
+  const data: DiagnosticData = {
+    found: typeToString(type, state.profile),
+    ...(isNumeric(type) ? { hint: 'compare' } : {}),
+  }
+  report(state, 'E3014', condition.span, data)
+}
+
+/** A label's identity for the duplicate check: text compares by value, so `'a'` meets `"a"`. */
+function labelKey(value: ConstValue): string {
+  if (typeof value.value === 'string') return `t:${value.value}`
+  if (typeof value.value === 'boolean') return `b:${String(value.value)}`
+  return `n:${String(value.value)}`
+}
+
+/** §5.8. */
+function checkSwitch(state: CheckerState, stmt: SwitchStmt): void {
+  const selector = typeOf(state, stmt.selector)
+  const switchable =
+    isUnknown(selector) ||
+    (selector.kind === 'scalar' &&
+      (selector.name === 'integer' || selector.name === 'char' || selector.name === 'string'))
+  if (!switchable) {
+    report(state, 'E3028', stmt.selector.span, { found: typeToString(selector, state.profile) })
+  }
+  const seen = new Map<string, Span>()
+  for (const entry of stmt.cases) {
+    for (const value of entry.values) {
+      const type = typeOf(state, value)
+      const folded = fold(value, constantLookup(state))
+      if (folded === undefined) {
+        if (!isUnknown(type)) report(state, 'E3029', value.span)
+        continue
+      }
+      if (switchable && !isUnknown(selector)) {
+        const failure = assignFailure(selector, constType(folded), value)
+        if (failure !== undefined) {
+          reportAssignFailure(state, value.span, failure)
+          continue
+        }
+      }
+      const key = labelKey(folded)
+      const first = seen.get(key)
+      if (first !== undefined) {
+        report(state, 'E3030', value.span, { value: String(folded.value) }, [{ span: first }])
+        continue
+      }
+      seen.set(key, value.span)
+    }
+    checkStatements(state, entry.body)
+  }
+  if (stmt.otherwise !== undefined) checkStatements(state, stmt.otherwise)
+}
+
+/** An `Entero` bound or step, reported the way an assignment to an `Entero` would be. */
+function checkIntegerBound(state: CheckerState, expr: Expr): void {
+  const type = typeOf(state, expr)
+  const failure = assignFailure(INTEGER, type, expr)
+  if (failure !== undefined) reportAssignFailure(state, expr.span, failure)
+}
+
+/**
+ * §5.9. Strict mode wants a declared `Entero`; pseint declares a `counter` at the loop. Either
+ * way the symbol is read-only for the length of the body, and an ordinary variable after it.
+ *
+ * Controller ruling (§9): the loop reads the counter every iteration to compare it with `to`,
+ * so a `Para` loop counts as a read of the counter as well as a write — a body that never
+ * mentions the counter must not draw W3002 for it.
+ */
+function checkFor(state: CheckerState, stmt: ForStmt): void {
+  checkIntegerBound(state, stmt.from)
+  checkIntegerBound(state, stmt.to)
+  if (stmt.step !== undefined) {
+    checkIntegerBound(state, stmt.step)
+    const step = fold(stmt.step, constantLookup(state))
+    if (step !== undefined && typeof step.value === 'number' && step.value === 0) {
+      report(state, 'E3027', stmt.step.span)
+    }
+  }
+  const counter = stmt.counter
+  let symbol = counter.missing === true ? undefined : resolveIdentifier(state, counter)
+  if (symbol === undefined && counter.missing !== true) {
+    if (state.profile.options.implicitDeclarations) {
+      // pseint declares the counter at the loop, `Entero` by construction (§5.9).
+      symbol = declareNamed(state, counter, 'counter', INTEGER, false)
+    } else {
+      reportUnknownName(state, counter, 'declare')
+      symbol = declareRecovered(state, counter)
+    }
+  }
+  if (symbol === undefined) {
+    // A `missing` counter: the parser already reported it, and it is never a symbol.
+    setType(state, counter, UNKNOWN)
+  } else {
+    setType(state, counter, symbol.type)
+    symbol.reads++
+    symbol.writes++
+    if (
+      !isUnknown(symbol.type) &&
+      !(symbol.type.kind === 'scalar' && symbol.type.name === 'integer')
+    ) {
+      report(state, 'E3026', counter.span, {
+        name: counter.text,
+        found: typeToString(symbol.type, state.profile),
+      })
+    }
+  }
+  const wasCounting = symbol?.counting
+  if (symbol !== undefined) symbol.counting = true
+  state.frame.loopDepth++
+  checkStatements(state, stmt.body)
+  state.frame.loopDepth--
+  // After the loop the counter is an ordinary variable again, holding whatever was left.
+  if (symbol !== undefined) symbol.counting = wasCounting === true
+}
+
 export function checkStatements(state: CheckerState, stmts: readonly Stmt[]): void {
   for (const stmt of stmts) checkStatement(state, stmt)
 }
@@ -331,50 +470,43 @@ export function checkStatement(state: CheckerState, stmt: Stmt): void {
       return
     }
     case 'WaitStmt': {
-      // Task 8 adds the `Entero` rule of §5.13.
-      typeOf(state, stmt.millis)
+      checkIntegerBound(state, stmt.millis)
       return
     }
     case 'BreakStmt':
-    case 'ContinueStmt':
-      // Task 8 adds E3031.
+    case 'ContinueStmt': {
+      if (state.frame.loopDepth > 0) return
+      report(state, 'E3031', stmt.span, { kw: stmt.kind === 'BreakStmt' ? 'break' : 'continue' })
       return
+    }
     case 'IfStmt': {
-      // Task 8 adds E3014 on every condition.
       for (const branch of stmt.branches) {
-        typeOf(state, branch.condition)
+        checkCondition(state, branch.condition)
         checkStatements(state, branch.body)
       }
       if (stmt.elseBody !== undefined) checkStatements(state, stmt.elseBody)
       return
     }
     case 'WhileStmt': {
-      typeOf(state, stmt.condition)
+      checkCondition(state, stmt.condition)
+      state.frame.loopDepth++
       checkStatements(state, stmt.body)
+      state.frame.loopDepth--
       return
     }
     case 'RepeatStmt': {
+      state.frame.loopDepth++
       checkStatements(state, stmt.body)
-      typeOf(state, stmt.condition)
+      state.frame.loopDepth--
+      checkCondition(state, stmt.condition)
       return
     }
     case 'SwitchStmt': {
-      // Task 8 adds §5.8.
-      typeOf(state, stmt.selector)
-      for (const entry of stmt.cases) {
-        for (const value of entry.values) typeOf(state, value)
-        checkStatements(state, entry.body)
-      }
-      if (stmt.otherwise !== undefined) checkStatements(state, stmt.otherwise)
+      checkSwitch(state, stmt)
       return
     }
     case 'ForStmt': {
-      // Task 8 adds §5.9.
-      typeOf(state, stmt.counter)
-      typeOf(state, stmt.from)
-      typeOf(state, stmt.to)
-      if (stmt.step !== undefined) typeOf(state, stmt.step)
-      checkStatements(state, stmt.body)
+      checkFor(state, stmt)
       return
     }
   }
