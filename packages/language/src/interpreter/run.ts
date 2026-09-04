@@ -131,7 +131,10 @@ class Controller implements Run {
   }
 
   step(): StepResult {
-    return this.command('step', () => 'step')
+    // §3.4: `step` stops at the very next pause point, so breakpoints add nothing to it — the
+    // pause before main's first statement included, which is why a `step` from `ready` always
+    // executes one statement.
+    return this.command('step', () => 'step', false)
   }
 
   stepOver(): StepResult {
@@ -191,13 +194,13 @@ class Controller implements Run {
     return frame
   }
 
-  private command(name: string, rule: StopRule): StepResult {
+  private command(name: string, rule: StopRule, breakpointsBeforeFirst = true): StepResult {
     if (this.state === 'done' || this.state === 'error') {
       throw new Error(`${name} is not legal in state ${this.state}`)
     }
     if (this.state === 'input') return this.reportInput()
     try {
-      return this.drive(rule)
+      return this.drive(rule, breakpointsBeforeFirst)
     } catch (error) {
       if (!(error instanceof RuntimeError)) throw error
       this.failure = {
@@ -216,15 +219,23 @@ class Controller implements Run {
    * command. A pause point is counted when it is passed: resuming past the one the run is
    * sitting on counts, so `continue({ budget: 1 })` executes exactly one statement.
    */
-  private drive(rule: StopRule): StepResult {
+  private drive(rule: StopRule, breakpointsBeforeFirst: boolean): StepResult {
     let passed = 0
     if (!this.primed) {
       // The pause before the first statement is the position `ready` stands for (§3.1); it is
-      // reached now, and passed like any other, so the first statement executes (§3.4).
+      // reached now, and passed like any other, so the first statement executes (§3.4). A
+      // breakpoint on that statement still stops the run: nothing has executed, so there is no
+      // statement being resumed from (§3.5).
       this.primed = true
       const first = this.advance()
       if (first === 'done') return this.finish()
-      this.atPause = first.kind === 'pause'
+      if (first.kind !== 'pause') {
+        throw new Error(`a run begins at the pause before its first statement, not a ${first.kind}`)
+      }
+      this.atPause = true
+      if (breakpointsBeforeFirst && this.breakpoints.has(first.line)) {
+        return this.stopped('breakpoint', first.line)
+      }
     }
     if (this.atPause) passed++
     for (;;) {
@@ -235,11 +246,7 @@ class Controller implements Run {
           const reason = this.breakpoints.has(event.line)
             ? 'breakpoint'
             : rule(this.frames.length, passed)
-          if (reason !== null) {
-            this.state = 'paused'
-            this.atPause = true
-            return { kind: 'paused', reason, line: event.line, frames: this.inspect() }
-          }
+          if (reason !== null) return this.stopped(reason, event.line)
           passed++
           break
         }
@@ -294,6 +301,12 @@ class Controller implements Run {
     const frame = frameForCall(this.ctx, event)
     this.frames.push(frame)
     this.generators.push(runFrame(this.ctx, frame))
+  }
+
+  private stopped(reason: PauseReason, line: number): StepResult {
+    this.state = 'paused'
+    this.atPause = true
+    return { kind: 'paused', reason, line, frames: this.inspect() }
   }
 
   private finish(): StepResult {

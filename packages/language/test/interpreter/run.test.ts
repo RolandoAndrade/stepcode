@@ -212,6 +212,27 @@ describe('breakpoints (§3.5)', () => {
     expect(again.run.continue()).toEqual({ kind: 'done' })
   })
 
+  it('stops continue() issued from ready on a breakpoint at main first statement', () => {
+    // Nothing has executed yet, so there is no statement being resumed from (§3.5): the pause
+    // before the first statement is a stop candidate like any other.
+    const { run, output } = startSource(counting)
+    run.setBreakpoints([2])
+    const first = paused(run.continue())
+    expect([first.reason, first.line]).toEqual(['breakpoint', 2])
+    expect(output()).toBe('')
+    expect(first.frames[0]?.variables.map((v) => v.value)).toEqual([undefined, undefined])
+    expect(run.continue()).toEqual({ kind: 'done' })
+    expect(output()).toBe('6\n')
+  })
+
+  it('never stops step() at the pause before the first statement', () => {
+    // §3.4: `step` stops at the very next pause point, so breakpoints add nothing to it.
+    const { run } = startSource(counting)
+    run.setBreakpoints([2])
+    const first = paused(run.step())
+    expect([first.reason, first.line]).toEqual(['step', 3])
+  })
+
   it('wins over the stepping reason when both hold, and stops stepOver inside a call', () => {
     const { run } = startSource(counting)
     run.setBreakpoints([3])
