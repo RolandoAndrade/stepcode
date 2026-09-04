@@ -60,6 +60,142 @@ describe('recursion through the controller', () => {
   })
 })
 
+describe('breakpoints across a call', () => {
+  const source = [
+    'Funcion r Como Entero <- doble(n Como Entero)',
+    '  r <- n * 2;',
+    'FinFuncion',
+    'Proceso p',
+    '  Definir a Como Entero;',
+    '  a <- doble(5);',
+    '  Escribir a;',
+    'FinProceso',
+  ].join('\n')
+
+  it("continue() from ready honours a breakpoint on main's first statement, but step() does not", () => {
+    const stepped = startSource(source)
+    stepped.run.setBreakpoints([5])
+    const afterStep = stepped.run.step()
+    expect(afterStep.kind).toBe('paused')
+    expect(afterStep.kind === 'paused' && afterStep.reason).toBe('step')
+    expect(afterStep.kind === 'paused' && afterStep.line).toBe(6)
+
+    const continued = startSource(source)
+    continued.run.setBreakpoints([5])
+    const afterContinue = continued.run.continue()
+    expect(afterContinue.kind).toBe('paused')
+    expect(afterContinue.kind === 'paused' && afterContinue.reason).toBe('breakpoint')
+    expect(afterContinue.kind === 'paused' && afterContinue.line).toBe(5)
+  })
+
+  it('continue() reaches the breakpoint in main, then the one inside the callee, with the callee innermost', () => {
+    const { run } = startSource(source)
+    run.setBreakpoints([2, 5])
+
+    const first = run.continue()
+    expect(first.kind).toBe('paused')
+    expect(first.kind === 'paused' && first.reason).toBe('breakpoint')
+    expect(first.kind === 'paused' && first.line).toBe(5)
+
+    const second = run.continue()
+    if (second.kind !== 'paused') throw new Error(`expected paused, got ${second.kind}`)
+    expect(second.reason).toBe('breakpoint')
+    expect(second.line).toBe(2)
+    expect(second.frames).toHaveLength(2)
+    expect(second.frames[0]?.name).toBe('doble')
+    expect(second.frames[0]?.line).toBe(2)
+    expect(second.frames[0]?.variables.find((v) => v.name === 'n')?.value).toBe(5)
+    expect(second.frames[0]?.variables.find((v) => v.name === 'r')?.value).toBeUndefined()
+    expect(second.frames[1]?.name).toBe('p')
+    expect(second.frames[1]?.line).toBe(6)
+    expect(second.frames[1]?.variables.find((v) => v.name === 'a')?.value).toBeUndefined()
+  })
+})
+
+describe('budget', () => {
+  const source = [
+    'Proceso p',
+    '  Definir i Como Entero;',
+    '  Para i <- 1 Hasta 5 Hacer',
+    '    Escribir i;',
+    '  FinPara',
+    'FinProceso',
+  ].join('\n')
+
+  it('continue({ budget }) pauses with reason "budget" after that many statements, and the loop counter matches', () => {
+    const { run } = startSource(source)
+
+    const first = run.continue({ budget: 3 })
+    if (first.kind !== 'paused') throw new Error(`expected paused, got ${first.kind}`)
+    expect(first.reason).toBe('budget')
+    expect(first.line).toBe(3)
+    expect(run.inspect()[0]?.variables.find((v) => v.name === 'i')?.value).toBe(2)
+
+    const second = run.continue({ budget: 3 })
+    if (second.kind !== 'paused') throw new Error(`expected paused, got ${second.kind}`)
+    expect(second.reason).toBe('budget')
+    expect(second.line).toBe(4)
+    expect(run.inspect()[0]?.variables.find((v) => v.name === 'i')?.value).toBe(3)
+  })
+
+  it('repeated budgeted continues reach done with the same output as an unbudgeted run', () => {
+    const budgeted = startSource(source)
+    let result = budgeted.run.continue({ budget: 3 })
+    let guard = 0
+    while (result.kind === 'paused' && guard < 100) {
+      result = budgeted.run.continue({ budget: 3 })
+      guard++
+    }
+    expect(result.kind).toBe('done')
+
+    const plain = startSource(source)
+    expect(collectRun(plain.run)).toEqual({ kind: 'done' })
+    expect(budgeted.output()).toBe(plain.output())
+    expect(budgeted.output()).toBe('1\n2\n3\n4\n5\n')
+  })
+})
+
+describe('stepOut across calls', () => {
+  const source = [
+    'Funcion r Como Entero <- g(x Como Entero)',
+    '  r <- x + 1;',
+    'FinFuncion',
+    'Funcion r Como Entero <- f(x Como Entero)',
+    '  Definir t Como Entero;',
+    '  t <- g(x);',
+    '  r <- t + 10;',
+    'FinFuncion',
+    'Proceso p',
+    '  Definir v Como Entero;',
+    '  v <- f(1);',
+    '  Escribir v;',
+    'FinProceso',
+  ].join('\n')
+
+  it('steps two levels deep (main → f → g), then steps out twice back through f to main', () => {
+    const { run, output } = startSource(source)
+
+    let atG = run.step()
+    while (atG.kind === 'paused' && atG.frames[0]?.name !== 'g') atG = run.step()
+    if (atG.kind !== 'paused') throw new Error(`expected paused, got ${atG.kind}`)
+    expect(atG.frames.map((frame) => frame.name)).toEqual(['g', 'f', 'p'])
+    expect(atG.line).toBe(2)
+
+    const backInF = run.stepOut()
+    if (backInF.kind !== 'paused') throw new Error(`expected paused, got ${backInF.kind}`)
+    expect(backInF.frames.map((frame) => frame.name)).toEqual(['f', 'p'])
+    expect(backInF.line).toBe(7)
+    expect(backInF.frames[0]?.variables.find((v) => v.name === 't')?.value).toBe(2)
+
+    const backInMain = run.stepOut()
+    if (backInMain.kind !== 'paused') throw new Error(`expected paused, got ${backInMain.kind}`)
+    expect(backInMain.frames.map((frame) => frame.name)).toEqual(['p'])
+    expect(backInMain.line).toBe(12)
+    expect(backInMain.frames[0]?.variables.find((v) => v.name === 'v')?.value).toBe(12)
+    expect(output()).toBe('')
+  })
+})
+
 describe('input rejection through runProgram', () => {
   it('re-asks until the text parses, for every rejectable type', async () => {
     const source = [

@@ -56,36 +56,73 @@ interface Candidate {
   readonly run: SidecarRun
 }
 
-const candidates: Candidate[] = []
-for (const program of corpusPrograms()) {
-  const sidecar = readSidecar(corpusDirs.programs, program.slug)
-  for (const run of sidecar?.runs ?? []) {
-    candidates.push({
-      title: `${program.file} · ${run.name ?? 'run'}`,
-      slug: program.slug,
-      source: program.source,
-      profile: profileNamed(program.profileName),
-      run,
-    })
-  }
-}
-for (const file of readdirSync(corpusDirs.guides)
-  .filter((name) => name.endsWith('.stepcode'))
-  .sort()) {
-  const slug = file.replace('.stepcode', '')
-  const sidecar = readSidecar(corpusDirs.guides, slug)
-  for (const run of sidecar?.runs ?? []) {
-    candidates.push({
-      title: `guides/${file} · ${run.name ?? 'run'}`,
-      slug,
-      source: readFileSync(join(corpusDirs.guides, file), 'utf8'),
-      profile: profileNamed('es'),
-      run,
-    })
-  }
+/**
+ * Every step-equivalence candidate for one program or guide's sidecar: one per recorded run.
+ * A program without a sidecar is not skipped — the corpus is complete or it is not (§8.1) — so
+ * the caller gets `undefined` and reports a failing test itself, exactly as
+ * `test/corpus/run.test.ts` does for the sidecars themselves.
+ */
+function candidatesFor(
+  title: string,
+  slug: string,
+  source: string,
+  profile: ResolvedProfile,
+  sidecar: ReturnType<typeof readSidecar>,
+): Candidate[] {
+  if (sidecar === undefined) return []
+  return sidecar.runs.map((run) => ({
+    title: `${title} · ${run.name ?? 'run'}`,
+    slug,
+    source,
+    profile,
+    run,
+  }))
 }
 
 describe('stepping to the end equals runProgram (§8)', () => {
+  const candidates: Candidate[] = []
+
+  for (const program of corpusPrograms()) {
+    const sidecar = readSidecar(corpusDirs.programs, program.slug)
+    if (sidecar === undefined) {
+      it(`${program.file} has a run sidecar`, () => {
+        throw new Error(`${program.slug}.run.json is missing: the corpus is complete or it is not`)
+      })
+      continue
+    }
+    candidates.push(
+      ...candidatesFor(
+        program.file,
+        program.slug,
+        program.source,
+        profileNamed(program.profileName),
+        sidecar,
+      ),
+    )
+  }
+
+  for (const file of readdirSync(corpusDirs.guides)
+    .filter((name) => name.endsWith('.stepcode'))
+    .sort()) {
+    const slug = file.replace('.stepcode', '')
+    const sidecar = readSidecar(corpusDirs.guides, slug)
+    if (sidecar === undefined) {
+      it(`guides/${file} has a run sidecar`, () => {
+        throw new Error(`${slug}.run.json is missing: the corpus is complete or it is not`)
+      })
+      continue
+    }
+    candidates.push(
+      ...candidatesFor(
+        `guides/${file}`,
+        slug,
+        readFileSync(join(corpusDirs.guides, file), 'utf8'),
+        profileNamed('es'),
+        sidecar,
+      ),
+    )
+  }
+
   it('covers the whole corpus', () => {
     expect(candidates.length).toBeGreaterThan(150)
   })
