@@ -47,6 +47,24 @@ export type {
 } from './ast/index'
 export { childrenOf, walk } from './ast/index'
 export type {
+  BodyState,
+  CheckerState,
+  CheckResult,
+  Scope,
+  Symbol,
+  SymbolKind,
+} from './checker/index'
+export {
+  check,
+  createScope,
+  createSymbol,
+  declareSymbol,
+  lookup,
+  suggestName,
+} from './checker/index'
+export type { CompileResult } from './compile'
+export { compile } from './compile'
+export type {
   Catalog,
   Diagnostic,
   DiagnosticCode,
@@ -60,6 +78,7 @@ export {
   DIAGNOSTIC_SEVERITY,
   formatDiagnostic,
   registerCatalog,
+  sortDiagnostics,
 } from './diagnostics/index'
 export type { Token, TokenizeResult, TokenKind } from './lexer/index'
 export { isTrivia, tokenize } from './lexer/index'
@@ -67,3 +86,48 @@ export type { ParseResult } from './parser/index'
 export { parse } from './parser/index'
 export type { Position, Span } from './source/index'
 export { LineMap } from './source/index'
+export type { AssignFailure, AssignHint } from './types/assign'
+export { assignable, assignFailure } from './types/assign'
+export type { BuiltinSignature } from './types/builtins'
+export { BUILTIN_SIGNATURES, builtinResult } from './types/builtins'
+export type { ConstantLookup } from './types/fold'
+export { fold } from './types/fold'
+export type { BinaryRule, OperandError, OperatorCheck } from './types/operators'
+export {
+  accepts,
+  BINARY_TABLE,
+  checkBinary,
+  checkUnary,
+  comparable,
+  operatorSpelling,
+  UNARY_TABLE,
+} from './types/operators'
+export type {
+  ArrayType,
+  ConstValue,
+  Expected,
+  OperandClass,
+  ScalarType,
+  Type,
+  UnknownType,
+} from './types/type'
+export {
+  arrayOf,
+  BOOLEAN,
+  CHAR,
+  classToString,
+  constType,
+  expectedToString,
+  INTEGER,
+  isArray,
+  isNumeric,
+  isScalar,
+  isText,
+  isUnknown,
+  REAL,
+  STRING,
+  sameType,
+  scalar,
+  typeToString,
+  UNKNOWN,
+} from './types/type'
