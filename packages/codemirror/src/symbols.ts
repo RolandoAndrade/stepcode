@@ -48,16 +48,25 @@ export function symbolAt(
   return symbol === undefined ? null : { leaf, symbol }
 }
 
-/** The body scope whose owner contains `pos`, else the program scope. Bodies never nest. */
+/**
+ * The innermost body scope whose owner contains `pos`, else the program scope. Bodies do nest:
+ * a subprogram written inside another one (E2015) keeps its place in the source, so its span
+ * lies inside the enclosing body's. `scopes` is build order, not nesting order, so the
+ * narrowest containing owner wins rather than the first one listed.
+ */
 export function scopeAt(result: CompileResult, pos: number): Scope {
   const program = result.scopes[0]
   if (program === undefined) throw new Error('a compile result always has a program scope')
+  let innermost: Scope = program
+  let width = Number.POSITIVE_INFINITY
   for (const scope of result.scopes) {
     if (scope.kind !== 'body') continue
     const { span } = scope.owner
-    if (span.start <= pos && pos <= span.end) return scope
+    if (span.start > pos || pos > span.end || span.end - span.start >= width) continue
+    innermost = scope
+    width = span.end - span.start
   }
-  return program
+  return innermost
 }
 
 /**
