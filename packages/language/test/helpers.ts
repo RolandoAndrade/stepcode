@@ -1,6 +1,9 @@
 import { builtinProfiles, profiles, type ResolvedProfile, resolveProfile } from '@stepcode/profiles'
 import type { Expr, Node, Stmt, TokenRange, TypeRef } from '../src/ast/index'
 import { childrenOf, walk } from '../src/ast/index'
+import { typeOf } from '../src/checker/expressions'
+import { createState } from '../src/checker/result'
+import { createScope, createSymbol, declareSymbol } from '../src/checker/scope'
 import type { Diagnostic, DiagnosticCode } from '../src/diagnostics/index'
 import { formatDiagnostic } from '../src/diagnostics/index'
 import type { Token } from '../src/lexer/index'
@@ -10,6 +13,7 @@ import { parseExpression } from '../src/parser/expression'
 import { type ParseResult, parse } from '../src/parser/parse'
 import { sealRanges } from '../src/parser/ranges'
 import { LineMap, type Span } from '../src/source/index'
+import { type Type, typeToString } from '../src/types/type'
 
 /**
  * A token stream as `kind:value` strings, the compact form the lexer tests assert against.
@@ -387,4 +391,55 @@ export function spanOf(source: string, snippet: string): string {
     throw new Error(`"${snippet}" appears more than once; give a longer snippet`)
   }
   return `${start}-${start + snippet.length}`
+}
+
+export interface ExprCaseOptions {
+  /** The variables the expression may use, with their types. */
+  readonly vars?: Readonly<Record<string, Type>>
+  /** Variables declared *below* the expression, for the used-before-declared rule (§3.2). */
+  readonly declaredAfter?: Readonly<Record<string, Type>>
+  readonly profileName?: ProfileName
+}
+
+export interface ExprCaseReport {
+  /** The expression's type, rendered with `typeToString`. */
+  readonly type: string
+  readonly codes: DiagnosticCode[]
+  readonly diagnostics: string[]
+}
+
+/**
+ * One expression, checked in a body scope holding exactly the variables the case declares.
+ * The statement layer is not involved — the parser's own `parseExpr` harness, one level up.
+ */
+export function checkExprIn(source: string, options: ExprCaseOptions = {}): ExprCaseReport {
+  const profile = profileNamed(options.profileName ?? 'es')
+  const parsed = parseExprResult(source, profile)
+  const parseErrors = parsed.diagnostics.filter((one) => one.severity === 'error')
+  if (parseErrors.length > 0) {
+    throw new Error(`the expression does not parse: ${parseErrors.map((o) => o.code).join(', ')}`)
+  }
+  const program = parse('Proceso p\nFinProceso', { profile }).program
+  const main = program.main
+  if (main === null) throw new Error('the harness program has no main block')
+  const state = createState(program, profile)
+  const scope = createScope('body', main, state.programScope)
+  state.scopes.push(scope)
+  state.frame = { scope, subprogram: null, loopDepth: 0 }
+  // Declared at offset 0: before the expression, whatever the expression's own offsets are.
+  for (const [name, type] of Object.entries(options.vars ?? {})) {
+    declareSymbol(scope, createSymbol({ name, kind: 'variable', type, declaredAt: main, scope }))
+  }
+  // Declared far below: `declaredAt` sits past every offset the expression can occupy, which
+  // is exactly the source-order relation E3003 is about.
+  const late = parseExpr(`${' '.repeat(1000)}z`)
+  for (const [name, type] of Object.entries(options.declaredAfter ?? {})) {
+    declareSymbol(scope, createSymbol({ name, kind: 'variable', type, declaredAt: late, scope }))
+  }
+  const type = typeOf(state, parsed.expr)
+  return {
+    type: typeToString(type, profile),
+    codes: state.diagnostics.map((one) => one.code),
+    diagnostics: state.diagnostics.map((one) => `${one.code}@${one.span.start}-${one.span.end}`),
+  }
 }
