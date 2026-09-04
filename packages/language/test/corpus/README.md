@@ -5,4 +5,7 @@
 meant to run; they are the source material for the v2 conformance corpus, which the language
 sub-projects build up here as `(program, inputs, profile) → outputs / diagnostics` cases.
 
+The per-program rewrites — both the extractor's and the checker's — are listed in
+`programs/README.md`.
+
 Do not edit `v1/`. Delete it once every program it contains has a v2 equivalent.

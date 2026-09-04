@@ -1,5 +1,6 @@
 Proceso prueba
-      Definir a, b, c Como Entero;
+      Definir a, b Como Entero;
+      Definir c Como Logico;
       a <- 10;
       b <- 5;
       c <- a >= b;

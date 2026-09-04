@@ -1,4 +1,4 @@
-Funcion max(a, b): Entero
+Funcion max(a Como Entero, b Como Entero): Entero
         Si a > b Entonces
           Retornar a;
         Sino

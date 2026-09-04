@@ -3,7 +3,7 @@ Proceso prueba
         a <- 0;
         Mientras a < 10 Hacer
           a <- a + 1;
-          Si a MOD 2 Entonces
+          Si a MOD 2 <> 0 Entonces
             Continuar;
           FinSi
           Escribir a;

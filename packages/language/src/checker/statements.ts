@@ -233,8 +233,11 @@ function checkDimension(state: CheckerState, stmt: DimensionStmt): void {
     if (id.missing === true) continue
     const symbol = lookupLocal(state.frame.scope, id.name)
     if (symbol === undefined) {
-      // pseint declares on assignment, never here (§5.2).
+      // pseint declares on assignment, never here (§5.2). The recovery symbol of §3.2 stands
+      // in for the missing declaration all the same, so the uses below it say nothing more:
+      // one missing `Definir`, one diagnostic.
       report(state, 'E3021', id.span, { name: id.text })
+      declareRecovered(state, id)
       continue
     }
     state.symbols.set(id, symbol)

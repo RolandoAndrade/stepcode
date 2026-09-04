@@ -1,5 +1,5 @@
 Proceso prueba
-      Definir a, b, c Como Entero
+      Definir a, b, c Como Entero;
       a <- 10;
       b <- 20;
       c <- a + b;

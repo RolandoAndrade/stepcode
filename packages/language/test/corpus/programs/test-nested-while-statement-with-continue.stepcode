@@ -5,7 +5,7 @@ Proceso prueba
             b <- 1;
             Mientras b <= 5 Hacer
               b <- b + 1;
-              Si b MOD 2 Entonces
+              Si b MOD 2 <> 0 Entonces
                 Continuar;
               FinSi
               Escribir a, ' * ', b - 1, ' = ', a * (b - 1);

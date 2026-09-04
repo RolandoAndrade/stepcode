@@ -1,5 +1,6 @@
 Proceso prueba
     Definir a, aux Como Entero;
+    Definir i, j Como Entero;
     Dimension a[5];
     Para i ← 1 Hasta 5 Con Paso 1 Hacer
         Leer a[i];
@@ -13,5 +14,7 @@ Proceso prueba
             FinSi
         FinPara
     FinPara
-    Escribir a;
+    Para i ← 1 Hasta 5 Con Paso 1 Hacer
+        Escribir a[i];
+    FinPara
     FinProceso

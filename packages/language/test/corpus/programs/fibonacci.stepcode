@@ -1,5 +1,6 @@
 Proceso Fibonacci
     Definir n, a, b, c Como Entero;
+    Definir i Como Entero;
     Escribir "Ingrese el numero de elementos de la serie";
     Leer n;
     a ← 0;

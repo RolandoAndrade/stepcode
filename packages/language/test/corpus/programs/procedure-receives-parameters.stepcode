@@ -1,4 +1,4 @@
-SubProceso suma(a, b)
+SubProceso suma(a Como Entero, b Como Entero)
         Escribir a + b;
       FinSubProceso
       Proceso prueba

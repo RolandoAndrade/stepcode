@@ -1,5 +1,6 @@
 Proceso prueba
     Definir a Como Cadena;
+    Definir i Como Entero;
     Leer a;
     Para i ← 1 Hasta Longitud(a) Con Paso 1 Hacer
         Escribir a[i];

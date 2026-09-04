@@ -4,7 +4,8 @@ Procedimiento CambioDeVariables(a como Entero por Referencia, b como Entero por 
       a ← b;
       b ← aux;
     FinProcedimiento
-    Procedimiento Insertar(arreglo, elemento como Entero, posicion como Entero, cantidad como Entero por Referencia)
+    Procedimiento Insertar(arreglo como Entero[], elemento como Entero, posicion como Entero, cantidad como Entero por Referencia)
+      Definir i Como Entero;
       Para i ← posicion Hasta cantidad Hacer
         CambioDeVariables(elemento, arreglo[i]);
       FinPara
@@ -16,12 +17,14 @@ Procedimiento CambioDeVariables(a como Entero por Referencia, b como Entero por 
     Proceso ProgramaInsertar
       Definir arreglo, cantidad Como Entero;
       Dimension arreglo[10];
-      Definir elemento, posicion Como Entero;
+      Definir elemento, posicion, i Como Entero;
       Escribir "Introduce elemento a insertar: ";
       Leer elemento;
       Escribir "Introduce posicion a insertar: ";
       Leer posicion;
       Insertar(arreglo, elemento, posicion, cantidad);
-      Escribir arreglo;
+      Para i ← 1 Hasta 10 Con Paso 1 Hacer
+        Escribir arreglo[i];
+      FinPara
     FinProceso
     

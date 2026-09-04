@@ -1,6 +1,7 @@
 Proceso MayusculasMinusculas
     Definir palabra Como Cadena;
     Definir letra Como Caracter;
+    Definir i Como Entero;
     Escribir 'Introduce palabra';
     Leer palabra;
     Para i ← 1 Hasta Longitud(palabra) Con Paso 1 Hacer

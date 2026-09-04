@@ -1,5 +1,4 @@
-Funcion valor <- prueba(a, b)
-        Definir valor Como Entero;
+Funcion valor <- prueba(a Como Entero, b Como Entero)
         Escribir 'hola';
         valor <- a + b;
       FinFuncion

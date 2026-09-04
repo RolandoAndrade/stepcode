@@ -1,4 +1,4 @@
-SubProceso swap(a por valor, b por referencia)
+SubProceso swap(a por valor Como Entero, b por referencia Como Entero)
         Definir temp Como Entero;
         temp <- a;
         a <- b;

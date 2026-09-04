@@ -1,5 +1,4 @@
 Funcion valor <- prueba()
-        Definir valor Como Entero;
         Escribir 'hola';
         valor <- 0;
       FinFuncion

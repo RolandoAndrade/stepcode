@@ -2,7 +2,7 @@ Proceso prueba
         Definir a Como Entero;
         a <- 0;
         Repetir
-          Si a MOD 2 Entonces
+          Si a MOD 2 <> 0 Entonces
             a <- a + 1;
             Continuar;
           FinSi
