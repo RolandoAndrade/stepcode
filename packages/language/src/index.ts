@@ -68,6 +68,28 @@ export {
   registerCatalog,
   sortDiagnostics,
 } from './diagnostics/index'
+export type {
+  ArrayValue,
+  Frame,
+  FrameVariable,
+  InputRequest,
+  PauseReason,
+  Run,
+  RunOptions,
+  RunOutcome,
+  RunProgramOptions,
+  RunState,
+  RuntimeValue,
+  Scalar,
+  StepResult,
+} from './interpreter/index'
+export {
+  DEFAULT_BUDGET,
+  DEFAULT_STACK_DEPTH,
+  renderValue,
+  runProgram,
+  start,
+} from './interpreter/index'
 export type { Token, TokenizeResult, TokenKind } from './lexer/index'
 export { isTrivia, tokenize } from './lexer/index'
 export type { ParseResult } from './parser/index'

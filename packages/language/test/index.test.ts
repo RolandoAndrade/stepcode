@@ -1,6 +1,7 @@
 import { profiles } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
 import {
+  BOOLEAN,
   BUILTIN_SIGNATURES,
   check,
   compile,
@@ -11,6 +12,9 @@ import {
   packageName,
   parse,
   registerCatalog,
+  renderValue,
+  runProgram,
+  start,
   tokenize,
   typeToString,
   walk,
@@ -87,5 +91,32 @@ describe('stepcode', () => {
     // ("Entero"), so only the surrounding template text varies by the formatting locale.
     expect(formatDiagnostic(first!, 'es', profiles.es)).toContain('Entero')
     expect(formatDiagnostic(first!, 'en', profiles.en)).toContain('cannot be stored')
+  })
+
+  it('exports the interpreter', () => {
+    expect(typeof start).toBe('function')
+    expect(typeof runProgram).toBe('function')
+    expect(typeof renderValue).toBe('function')
+    expect(renderValue(true, BOOLEAN, profiles.es)).toBe('Verdadero')
+  })
+
+  it('runs a program end to end through compile and runProgram with a stub io', async () => {
+    const source = [
+      'Proceso saluda',
+      '  Definir nombre Como Cadena;',
+      '  Escribir "Nombre:";',
+      '  Leer nombre;',
+      '  Escribir "Hola, ", nombre;',
+      'FinProceso',
+    ].join('\n')
+    const program = compile(source, { profile: profiles.es })
+    const writes: string[] = []
+    const outcome = await runProgram(program, {
+      profile: profiles.es,
+      io: { write: (text) => void writes.push(text), read: () => Promise.resolve('Ada') },
+      sleep: () => Promise.resolve(),
+    })
+    expect(outcome).toEqual({ kind: 'done' })
+    expect(writes.join('')).toBe('Nombre:\nHola, Ada\n')
   })
 })
