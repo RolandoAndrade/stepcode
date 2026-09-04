@@ -27,6 +27,21 @@
       "recommended": true
     }
   },
+  "overrides": [
+    {
+      "includes": [
+        "packages/codemirror/src/snippets.ts",
+        "packages/codemirror/test/snippets.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noTemplateCurlyInString": "off"
+          }
+        }
+      }
+    }
+  ],
   "assist": {
     "actions": {
       "source": {
