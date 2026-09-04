@@ -4861,7 +4861,7 @@ In the `## API` table, append after the `fold(expr, constants)` row:
 
 ```markdown
 | `start(program, { profile, io, random?, limits? })` | a `Run`: `step`, `stepOver`, `stepOut`, `continue({ budget })`, `input`, `setBreakpoints`, `inspect` |
-| `runProgram(program, { profile, io, signal?, sleep?, budget? })` | `Promise<{ kind: 'done' | 'error' | 'aborted' }>` — the controller driven to the end |
+| `runProgram(program, { profile, io, signal?, sleep?, budget? })` | `Promise<{ kind: 'done' \| 'error' \| 'aborted' }>` — the controller driven to the end |
 | `renderValue(value, type, profile)` | `Escribir`'s rendering of one value: `2`, `2.5`, `Verdadero`, `hola` |
 ```
 
