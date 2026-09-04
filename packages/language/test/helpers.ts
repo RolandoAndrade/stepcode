@@ -1,7 +1,9 @@
 import { builtinProfiles, profiles, type ResolvedProfile, resolveProfile } from '@stepcode/profiles'
-import type { Expr, Node, Stmt, TokenRange, TypeRef } from '../src/ast/index'
+import type { Expr, Node, Program, Stmt, TokenRange, TypeRef } from '../src/ast/index'
 import { childrenOf, walk } from '../src/ast/index'
+import { check } from '../src/checker/driver'
 import { typeOf } from '../src/checker/expressions'
+import type { CheckResult } from '../src/checker/result'
 import { createState } from '../src/checker/result'
 import { createScope, createSymbol, declareSymbol } from '../src/checker/scope'
 import type { Diagnostic, DiagnosticCode } from '../src/diagnostics/index'
@@ -442,4 +444,72 @@ export function checkExprIn(source: string, options: ExprCaseOptions = {}): Expr
     codes: state.diagnostics.map((one) => one.code),
     diagnostics: state.diagnostics.map((one) => `${one.code}@${one.span.start}-${one.span.end}`),
   }
+}
+
+export interface CheckReport {
+  /** `['E3010@23-28']`: the code, then the diagnostic's span as `start-end`. */
+  readonly diagnostics: string[]
+  /** The codes alone, in the same order. */
+  readonly codes: DiagnosticCode[]
+  /** The source text each diagnostic covers, in the same order. */
+  readonly texts: string[]
+  readonly result: CheckResult
+  readonly program: Program
+  readonly profile: ResolvedProfile
+}
+
+/**
+ * Parse, then check. The parse must be clean: a checker test asserting a checker diagnostic
+ * must not be reading a broken tree, so a parser error fails loudly here instead of quietly
+ * changing what the checker saw. `compile` is the API that tolerates both (Task 10).
+ */
+export function checkSource(source: string, profileName: ProfileName = 'es'): CheckReport {
+  const profile = profileNamed(profileName)
+  const parsed = parse(source, { profile })
+  const parseErrors = parsed.diagnostics.filter((one) => one.severity === 'error')
+  if (parseErrors.length > 0) {
+    throw new Error(
+      `the source does not parse: ${parseErrors.map((one) => one.code).join(', ')}\n${source}`,
+    )
+  }
+  const result = check(parsed.program, { profile })
+  return {
+    diagnostics: result.diagnostics.map((one) => `${one.code}@${one.span.start}-${one.span.end}`),
+    codes: result.diagnostics.map((one) => one.code),
+    texts: result.diagnostics.map((one) => source.slice(one.span.start, one.span.end)),
+    result,
+    program: parsed.program,
+    profile,
+  }
+}
+
+/** The codes one source produces, in order. The shape most rule tests assert against. */
+export function checkCodes(source: string, profileName: ProfileName = 'es'): DiagnosticCode[] {
+  return checkSource(source, profileName).codes
+}
+
+/**
+ * The checker's type for the expression whose source text is exactly `snippet`, rendered with
+ * `typeToString`. The snippet must name one typed node and no other.
+ */
+export function typeOfExpr(
+  source: string,
+  snippet: string,
+  profileName: ProfileName = 'es',
+): string {
+  const report = checkSource(source, profileName)
+  const found: Type[] = []
+  walk(report.program, {
+    enter: (node) => {
+      const type = report.result.types.get(node as Expr)
+      if (type !== undefined && source.slice(node.span.start, node.span.end) === snippet) {
+        found.push(type)
+      }
+      return true
+    },
+  })
+  if (found.length !== 1) {
+    throw new Error(`"${snippet}" matches ${found.length} typed expressions, expected exactly 1`)
+  }
+  return typeToString(found[0] as Type, report.profile)
 }

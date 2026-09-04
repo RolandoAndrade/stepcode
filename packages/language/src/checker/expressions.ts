@@ -1,6 +1,17 @@
-import type { Binary, BinaryOp, BuiltinCall, Expr, Identifier, Index, UnaryOp } from '../ast/index'
+import type {
+  Binary,
+  BinaryOp,
+  BuiltinCall,
+  Call,
+  Expr,
+  Identifier,
+  Index,
+  SubprogramDecl,
+  UnaryOp,
+} from '../ast/index'
 import type { DiagnosticData } from '../diagnostics/index'
 import type { Span } from '../source/index'
+import { assignFailure } from '../types/assign'
 import { BUILTIN_SIGNATURES, builtinResult } from '../types/builtins'
 import { type ConstantLookup, fold } from '../types/fold'
 import {
@@ -21,7 +32,8 @@ import {
   typeToString,
   UNKNOWN,
 } from '../types/type'
-import { type CheckerState, report, setType } from './result'
+import { ensureChecked } from './driver'
+import { type BodyState, type CheckerState, report, reportAssignFailure, setType } from './result'
 // biome-ignore lint/suspicious/noShadowRestrictedNames: `Symbol` is the checker's own type, per the checker spec (§3.1); it never appears with the global.
 import { createSymbol, declareSymbol, lookup, type Symbol } from './scope'
 import { suggestName } from './suggest'
@@ -216,13 +228,8 @@ export function typeOf(state: CheckerState, expr: Expr): Type {
     }
     case 'Index':
       return setType(state, expr, typeOfIndex(state, expr))
-    case 'Call': {
-      // A user call needs the signature table and the on-demand body check of §5.12: Task 6
-      // replaces this case with `checkUserCall`. Until then the arguments are ordinary
-      // expressions and are typed as such, and the call is `unknown`, which absorbs.
-      for (const arg of expr.args) typeOf(state, arg)
-      return setType(state, expr, UNKNOWN)
-    }
+    case 'Call':
+      return setType(state, expr, checkUserCall(state, expr, true))
     case 'BuiltinCall':
       return setType(state, expr, checkBuiltinCall(state, expr))
     case 'Unary': {
@@ -292,4 +299,80 @@ export function isPassableByRef(state: CheckerState, expr: Expr): boolean {
     symbol.kind === 'result' ||
     symbol.kind === 'counter'
   )
+}
+
+/**
+ * §5.11. The arguments are typed first, because the callee's untyped parameters are fixed
+ * from them (§5.12) and because an unresolvable callee must not silence its arguments.
+ * `asValue` is false for a call written as a statement, which discards a function's result.
+ */
+export function checkUserCall(state: CheckerState, node: Call, asValue: boolean): Type {
+  const argTypes = node.args.map((arg) => typeOf(state, arg))
+  const callee = node.callee
+  if (callee.missing === true) return UNKNOWN
+  const symbol = lookup(state.frame.scope, callee.name)
+  if (symbol === undefined) {
+    reportUnknownName(state, callee)
+    declareRecovered(state, callee)
+    return UNKNOWN
+  }
+  state.symbols.set(callee, symbol)
+  const decl = symbol.decl
+  if (symbol.kind !== 'subprogram' || decl === undefined) {
+    report(state, 'E3006', callee.span, { name: callee.text })
+    return UNKNOWN
+  }
+  state.calls.set(node, decl)
+  const body = ensureChecked(state, decl, argTypes, node.span)
+  if (body === undefined) return UNKNOWN
+  checkArguments(state, node, decl, body, argTypes)
+  if (!asValue) return UNKNOWN
+  if (decl.form !== 'function') {
+    report(state, 'E3020', callee.span, { name: callee.text })
+    return UNKNOWN
+  }
+  if (isUnknown(body.resultType) && body.status === 'checking') {
+    // A recursive call used as a value, in a function whose result type is not known yet:
+    // there is nothing to infer it from (§5.12).
+    report(state, 'E3015', callee.span, { name: callee.text, hint: 'result' })
+  }
+  return body.resultType
+}
+
+function checkArguments(
+  state: CheckerState,
+  node: Call,
+  decl: SubprogramDecl,
+  body: BodyState,
+  argTypes: readonly Type[],
+): void {
+  if (decl.params.length !== node.args.length) {
+    report(state, 'E3034', node.span, {
+      name: decl.name.text,
+      expected: decl.params.length,
+      found: node.args.length,
+    })
+  }
+  // The call that fixed the parameters is worth pointing at — unless it is this one.
+  const fixedBy = body.fixedBy
+  const related =
+    fixedBy !== undefined && fixedBy.start !== node.span.start ? [{ span: fixedBy }] : undefined
+  const count = Math.min(body.params.length, node.args.length)
+  for (let position = 0; position < count; position++) {
+    const param = body.params[position]
+    const arg = node.args[position]
+    if (param === undefined || arg === undefined) continue
+    const failure = assignFailure(param.type, argTypes[position] ?? UNKNOWN, arg)
+    if (failure !== undefined) {
+      reportAssignFailure(state, arg.span, failure, {
+        code: 'E3035',
+        data: { name: decl.name.text, position: position + 1 },
+        ...(related === undefined ? {} : { related }),
+      })
+    }
+    if (param.byRef !== true) continue
+    if (isActiveCounter(state, arg)) report(state, 'E3008', arg.span, { name: argText(arg) })
+    else if (isPassableByRef(state, arg)) markWritten(state, arg)
+    else report(state, 'E3032', arg.span, { param: param.name })
+  }
 }
