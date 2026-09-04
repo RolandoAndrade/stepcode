@@ -9,6 +9,7 @@ import type {
   SubprogramDecl,
   TypeRef,
 } from '../ast/index'
+import type { DiagnosticData } from '../diagnostics/index'
 import type { Span } from '../source/index'
 import { finishBlock, openBlock, parseSection } from './blocks'
 import { nodeRange, type ParserContext, placeholderRange, report } from './context'
@@ -22,7 +23,13 @@ export function expectIdentifier(ctx: ParserContext): Identifier {
   const start = ctx.cursor.at()
   const token = ctx.cursor.peek()
   if (token.kind !== 'identifier') {
-    report(ctx, 'E2002', token.span, { found: token.text })
+    // A builtin name in a declaration position is a name clash, not random garbage: the
+    // lexer reserved the word, so the fix is to rename, and the message says so.
+    const data: DiagnosticData =
+      token.kind === 'builtin'
+        ? { found: token.text, hint: 'builtin', builtin: String(token.value ?? token.text) }
+        : { found: token.text }
+    report(ctx, 'E2002', token.span, data)
     return {
       kind: 'Identifier',
       name: '',

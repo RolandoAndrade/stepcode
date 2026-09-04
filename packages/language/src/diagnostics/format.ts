@@ -73,10 +73,10 @@ function templateFor(
   return undefined
 }
 
-/** The four sections a `{kw:…}`-style slot can name. */
-type Section = 'kw' | 'type' | 'op' | 'fn'
+/** The sections a `{kw:…}`-style slot can name. `fn` and `builtin` are the same table. */
+type Section = 'kw' | 'type' | 'op' | 'fn' | 'builtin'
 
-const SECTIONS: ReadonlySet<string> = new Set<Section>(['kw', 'type', 'op', 'fn'])
+const SECTIONS: ReadonlySet<string> = new Set<Section>(['kw', 'type', 'op', 'fn', 'builtin'])
 
 /** The profile's first spelling of a construct, or the key itself when it has none. */
 function spellingOf(profile: ResolvedProfile, section: Section, key: string): string {
@@ -91,7 +91,7 @@ function spellingOf(profile: ResolvedProfile, section: Section, key: string): st
   return spellings?.[0] ?? key
 }
 
-const SLOT = /\{(kw|type|op|fn):(\$?[A-Za-z][A-Za-z0-9]*)\}|\{([A-Za-z][A-Za-z0-9]*)\}/g
+const SLOT = /\{(kw|type|op|fn|builtin):(\$?[A-Za-z][A-Za-z0-9]*)\}|\{([A-Za-z][A-Za-z0-9]*)\}/g
 
 /**
  * Renders one diagnostic. Never throws: an unknown code returns the code, a missing data slot

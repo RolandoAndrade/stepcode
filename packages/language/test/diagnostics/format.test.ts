@@ -11,7 +11,7 @@ import {
 } from '../../src/diagnostics/index'
 
 describe('codes and severities', () => {
-  it('lists every code of the spec, lexer first then parser', () => {
+  it('lists every code of the spec, lexer first then parser then checker', () => {
     expect(DIAGNOSTIC_CODES).toEqual([
       'E1001',
       'E1002',
@@ -37,6 +37,45 @@ describe('codes and severities', () => {
       'E2031',
       'E2032',
       'W2001',
+      'E3001',
+      'E3002',
+      'E3003',
+      'E3004',
+      'E3005',
+      'E3006',
+      'E3007',
+      'E3008',
+      'E3009',
+      'E3010',
+      'E3011',
+      'E3012',
+      'E3013',
+      'E3014',
+      'E3015',
+      'E3016',
+      'E3017',
+      'E3020',
+      'E3021',
+      'E3022',
+      'E3023',
+      'E3024',
+      'E3025',
+      'E3026',
+      'E3027',
+      'E3028',
+      'E3029',
+      'E3030',
+      'E3031',
+      'E3032',
+      'E3033',
+      'E3034',
+      'E3035',
+      'E3036',
+      'E3037',
+      'W3001',
+      'W3002',
+      'W3003',
+      'W3004',
     ])
   })
 
@@ -75,33 +114,71 @@ describe('catalogs', () => {
     }
   })
 
+  const SLOT_BAG = {
+    text: 'x',
+    found: 'Entero',
+    name: 'x',
+    bracket: ')',
+    openerLine: 3,
+    opener: 'if',
+    closer: 'endIf',
+    expected: 'Real',
+    modifier: 'byRef',
+    form: 'procedure',
+    limit: 500,
+    first: '<',
+    second: '<=',
+    suggestion: 'total',
+    length: 3,
+    op: '+',
+    side: 'right',
+    position: 2,
+    value: '7',
+    param: 'n',
+    builtin: 'length',
+    kw: 'break',
+  }
+
   it('leaves no unresolved slot in any template under the es profile', () => {
     for (const code of DIAGNOSTIC_CODES) {
       const message = formatDiagnostic(
-        createDiagnostic(
-          code,
-          { start: 0, end: 1 },
-          {
-            text: 'x',
-            found: 'x',
-            name: 'x',
-            bracket: ')',
-            openerLine: 3,
-            opener: 'if',
-            closer: 'endIf',
-            expected: 'then',
-            modifier: 'byRef',
-            form: 'procedure',
-            limit: 500,
-            first: '<',
-            second: '<=',
-          },
-        ),
+        createDiagnostic(code, { start: 0, end: 1 }, SLOT_BAG),
         'es',
         profiles.es,
       )
       expect(message, `${code} left a slot unresolved`).not.toMatch(/\{[a-zA-Z$:]+\}/)
     }
+  })
+
+  it('leaves no unresolved slot in any variant of either catalog', () => {
+    for (const catalog of [es, en] as const) {
+      for (const key of Object.keys(catalog.variants ?? {})) {
+        const [code, hint] = key.split('.') as [string, string]
+        const message = formatDiagnostic(
+          createDiagnostic(
+            code as (typeof DIAGNOSTIC_CODES)[number],
+            { start: 0, end: 1 },
+            {
+              ...SLOT_BAG,
+              hint,
+            },
+          ),
+          catalog === es ? 'es' : 'en',
+          catalog === es ? profiles.es : profiles.en,
+        )
+        expect(message, `${key} left a slot unresolved`).not.toMatch(/\{[a-zA-Z$:]+\}/)
+      }
+    }
+  })
+
+  it('spells the same variants in es and en', () => {
+    expect(Object.keys(es.variants ?? {}).sort()).toEqual(Object.keys(en.variants ?? {}).sort())
+  })
+
+  it('resolves the builtin slot through the profile builtin spellings', () => {
+    const diagnostic = createDiagnostic('E3013', { start: 0, end: 1 }, {})
+    expect(formatDiagnostic(diagnostic, 'es', profiles.es)).toContain('Subcadena')
+    expect(formatDiagnostic(diagnostic, 'en', profiles.en)).toContain('Substring')
   })
 })
 

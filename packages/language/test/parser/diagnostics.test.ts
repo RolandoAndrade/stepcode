@@ -67,6 +67,14 @@ const cases: {
     en: ')',
   },
   {
+    code: 'E2002',
+    source: 'Proceso p\n  Definir Longitud Como Entero;\nFinProceso',
+    line: 2,
+    column: 11,
+    es: 'Longitud',
+    en: 'Length',
+  },
+  {
     code: 'E2003',
     source: 'Proceso p\n  Si a Entonces\n  Escribir 1;\nFinProceso',
     line: 2,
@@ -214,11 +222,15 @@ const cases: {
   },
 ]
 
+// The checker's E3xxx/W3xxx codes are out of scope for the parser: they get their own
+// "every code has a case" coverage in the checker's test suite.
+const parserCodes = DIAGNOSTIC_CODES.filter(
+  (code) => !code.startsWith('E3') && !code.startsWith('W3'),
+)
+
 describe('every diagnostic code has a case', () => {
   it('covers the whole catalogue', () => {
-    expect([...new Set(cases.map((entry) => entry.code))].sort()).toEqual(
-      [...DIAGNOSTIC_CODES].sort(),
-    )
+    expect([...new Set(cases.map((entry) => entry.code))].sort()).toEqual([...parserCodes].sort())
   })
 
   for (const entry of cases) {
@@ -236,6 +248,21 @@ describe('every diagnostic code has a case', () => {
       expect(first!.en).not.toMatch(/\{[a-zA-Z$:]+\}/)
     })
   }
+})
+
+describe('E2002 in a declaration position', () => {
+  it('names the builtin that stole the name, in each profile spelling', () => {
+    const report = diagnosticReport('Proceso p\n  Definir Longitud Como Entero;\nFinProceso')
+    const first = report.find((item) => item.code === 'E2002')
+    expect(first?.es).toContain('Longitud')
+    expect(first?.en).toContain('Length')
+  })
+
+  it('keeps the plain variant for a token that is not a builtin', () => {
+    const report = diagnosticReport('Proceso p\n  Definir 4 Como Entero;\nFinProceso')
+    const first = report.find((item) => item.code === 'E2002')
+    expect(first?.es).not.toContain('función del lenguaje')
+  })
 })
 
 describe('E2003 carries the opener line and a related span', () => {

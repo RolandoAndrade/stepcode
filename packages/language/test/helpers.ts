@@ -1,4 +1,4 @@
-import { profiles, type ResolvedProfile } from '@stepcode/profiles'
+import { builtinProfiles, profiles, type ResolvedProfile, resolveProfile } from '@stepcode/profiles'
 import type { Expr, Node, Stmt, TokenRange, TypeRef } from '../src/ast/index'
 import { childrenOf, walk } from '../src/ast/index'
 import type { Diagnostic, DiagnosticCode } from '../src/diagnostics/index'
@@ -361,4 +361,30 @@ export function assertTreeInvariants(result: ParseResult): void {
   if (failures.length > 0) {
     throw new Error(`tree invariants broken:\n${[...new Set(failures)].join('\n')}`)
   }
+}
+
+/** `es` is the default profile; `pseint` is the lenient one; `es0` is `es` with 0-based arrays. */
+export type ProfileName = 'es' | 'en' | 'pseint' | 'es0'
+
+/**
+ * `es` with `indexBase: 0`, for the corpus programs that carried the v1 `$ arrays@stepcode`
+ * directive. Resolved once: `resolveProfile` builds sealed lookup tables and is not free.
+ */
+const es0 = resolveProfile(
+  { id: 'es-index-0', extends: 'es', options: { indexBase: 0 } },
+  builtinProfiles,
+)
+
+export function profileNamed(name: ProfileName): ResolvedProfile {
+  return name === 'es0' ? es0 : profiles[name]
+}
+
+/** `'23-28'` — the span of the one and only occurrence of `snippet` in `source`. */
+export function spanOf(source: string, snippet: string): string {
+  const start = source.indexOf(snippet)
+  if (start < 0) throw new Error(`"${snippet}" is not in the source`)
+  if (source.indexOf(snippet, start + 1) >= 0) {
+    throw new Error(`"${snippet}" appears more than once; give a longer snippet`)
+  }
+  return `${start}-${start + snippet.length}`
 }

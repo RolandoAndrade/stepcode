@@ -3,7 +3,7 @@ export type Severity = 'error' | 'warning'
 /**
  * Every diagnostic this package can produce. Ranges (spec §7.1): E1xxx lexer;
  * E2001–E2019 statements; E2020–E2029 declarations and headers; E2030–E2039 expressions;
- * W2xxx parser warnings. Later sub-specs use E3xxx (checker) and E4xxx (runtime).
+ * W2xxx parser warnings; E3xxx/W3xxx checker. A later sub-spec uses E4xxx (runtime).
  */
 export const DIAGNOSTIC_CODES = [
   'E1001', // unexpected character(s)
@@ -30,6 +30,45 @@ export const DIAGNOSTIC_CODES = [
   'E2031', // expected an expression
   'E2032', // nesting too deep
   'W2001', // empty statement
+  'E3001', // name not declared
+  'E3002', // already declared
+  'E3003', // used before its declaration
+  'E3004', // variable named like a subprogram
+  'E3005', // subprogram used as a variable
+  'E3006', // not a subprogram
+  'E3007', // constant is read-only
+  'E3008', // counter is read-only inside its loop
+  'E3009', // array where a scalar is needed, or scalar indexed
+  'E3010', // cannot assign
+  'E3011', // literal too long for a character
+  'E3012', // operator operand mismatch
+  'E3013', // cannot assign into a text by index
+  'E3014', // condition is not logical
+  'E3015', // cannot infer the type
+  'E3016', // index count mismatch
+  'E3017', // index is not an integer
+  'E3020', // procedure used as a value
+  'E3021', // dimension of an undeclared name
+  'E3022', // cannot dimension
+  'E3023', // array size is not a positive integer constant
+  'E3024', // constant value is not constant
+  'E3025', // division by zero
+  'E3026', // counter must be an integer
+  'E3027', // step is zero
+  'E3028', // selector type cannot be switched on
+  'E3029', // case label is not constant
+  'E3030', // duplicate case label
+  'E3031', // break or continue outside a loop
+  'E3032', // by-reference argument must be a variable
+  'E3033', // return value outside a function
+  'E3034', // wrong number of arguments
+  'E3035', // argument type mismatch
+  'E3036', // wrong number of arguments to a builtin
+  'E3037', // builtin argument type mismatch
+  'W3001', // unreachable code
+  'W3002', // declared but never read
+  'W3003', // read but never assigned
+  'W3004', // function result never assigned
 ] as const
 
 export type DiagnosticCode = (typeof DIAGNOSTIC_CODES)[number]
@@ -60,4 +99,43 @@ export const DIAGNOSTIC_SEVERITY: Readonly<Record<DiagnosticCode, Severity>> = O
   E2031: 'error',
   E2032: 'error',
   W2001: 'warning',
+  E3001: 'error',
+  E3002: 'error',
+  E3003: 'error',
+  E3004: 'error',
+  E3005: 'error',
+  E3006: 'error',
+  E3007: 'error',
+  E3008: 'error',
+  E3009: 'error',
+  E3010: 'error',
+  E3011: 'error',
+  E3012: 'error',
+  E3013: 'error',
+  E3014: 'error',
+  E3015: 'error',
+  E3016: 'error',
+  E3017: 'error',
+  E3020: 'error',
+  E3021: 'error',
+  E3022: 'error',
+  E3023: 'error',
+  E3024: 'error',
+  E3025: 'error',
+  E3026: 'error',
+  E3027: 'error',
+  E3028: 'error',
+  E3029: 'error',
+  E3030: 'error',
+  E3031: 'error',
+  E3032: 'error',
+  E3033: 'error',
+  E3034: 'error',
+  E3035: 'error',
+  E3036: 'error',
+  E3037: 'error',
+  W3001: 'warning',
+  W3002: 'warning',
+  W3003: 'warning',
+  W3004: 'warning',
 })
