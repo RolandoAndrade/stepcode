@@ -417,11 +417,11 @@ stock background so keyword pairs read as pairs).
 
 `src/strings.ts`: `Record<locale, Strings>` for `es` and `en`, `stringsFor(locale)` with
 fallback to `en` by primary subtag (`pt-BR` → `en` until someone adds `pt`). Keys: symbol kinds
-(`variable`, `constant`, `parameter`, `procedure`, `function`), `byReference`, `declaredAt`
-(takes a line), `replaceWith` (takes a name), operand classes (`numeric`, `text`, `any`,
-`integer`, `string`, `boolean`, `real`, `char`), `same` (for a builtin whose result type is
+(one per `SymbolKind` of the checker), `byReference`, `declaredAt`
+(takes a line), `replaceWith` (takes a name), operand classes (`numeric`, `text`, `boolean`, `integer`,
+`scalar`, matching `OperandClass` in the language package), `same` (for a builtin whose result type is
 its argument's), snippet placeholders (`condition`, `value`, `name`, `parameters`, `result`,
-`counter`, `limit`).
+`counter`, `start`, `limit`, `case`).
 
 ## 10. Testing
 
@@ -440,8 +440,8 @@ happy-dom with `// @vitest-environment happy-dom` at the top of the file.
   `(text, tag class)` pairs with `classHighlighter`.
 - `lint.test.ts`: each guide program with an expected code yields one CodeMirror diagnostic
   with that `source`, a non-empty range, the formatted message; zero-width widening at line
-  end and document end; the replace action applies. Runs the linter source directly against an
-  `EditorState`, no view.
+  end and document end; the replace action applies. Runs `stepcodeDiagnostics(state)` for the mapping cases; the
+  replace action needs an `EditorView`, so the file runs under happy-dom.
 - `fold.test.ts`: `foldable(state, from, to)` ranges for each block kind, single-line block
   returns null, a `SwitchCase` with an empty body returns null.
 - `indent.test.ts`: `getIndentation` after `Si x Entonces`, on a `Sino` line, on a `FinSi`
