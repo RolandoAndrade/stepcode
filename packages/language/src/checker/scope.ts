@@ -89,11 +89,17 @@ export function createSymbol(init: SymbolInit): Symbol {
 
 /**
  * Adds the symbol. Clashes are the caller's business: E3002 wants the *first* declaration as
- * its `related` span, so the caller looks the name up before declaring and decides.
+ * its `related` span, so the caller looks the name up before declaring and decides. The one
+ * caller that declares over a name this scope already holds is the real declaration
+ * replacing the recovery symbol of §3.2 — it takes that symbol's place in `order` instead of
+ * standing beside it, so one name is one entry however it came to be declared.
  */
 export function declareSymbol(scope: Scope, symbol: Symbol): Symbol {
+  const replaced = scope.symbols.get(symbol.name)
   scope.symbols.set(symbol.name, symbol)
-  scope.order.push(symbol)
+  const at = replaced === undefined ? -1 : scope.order.indexOf(replaced)
+  if (at < 0) scope.order.push(symbol)
+  else scope.order[at] = symbol
   return symbol
 }
 

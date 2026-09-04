@@ -9,6 +9,10 @@ SubProceso cambio(a Como Entero[])
         a[3] <- 40;
         cambio(a);
         Para i <- 1 Hasta 3 Con Paso 1 Hacer
-          Escribir a[i];
+          Si i > 1 Entonces
+            Escribir Sin Saltar ',';
+          FinSi
+          Escribir Sin Saltar a[i];
         FinPara
+        Escribir '';
       FinProceso

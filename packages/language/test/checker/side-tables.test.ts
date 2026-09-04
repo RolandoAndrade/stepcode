@@ -104,3 +104,28 @@ describe('the side tables cover every corpus tree', () => {
     })
   }
 })
+
+describe('a recovery symbol that a real declaration replaces', () => {
+  it('is listed once in the scope, not beside the declaration that replaced it', () => {
+    // `Dimension` above the `Definir` is E3021, which leaves the recovery symbol of §3.2
+    // behind; the `Definir` below it then replaces that symbol rather than adding a second
+    // entry under the same name. No corpus program takes this path, so it is pinned here.
+    const source = [
+      'Proceso p',
+      '  Dimension x[5];',
+      '  Definir x Como Entero;',
+      '  Escribir x;',
+      'FinProceso',
+    ].join('\n')
+    const profile = profileNamed('es')
+    const { program } = parse(source, { profile })
+    const result = check(program, { profile })
+    for (const scope of result.scopes) {
+      const names = scope.order.map((symbol) => symbol.name)
+      expect(new Set(names).size).toBe(names.length)
+      expect(scope.symbols.size).toBe(names.length)
+    }
+    const body = result.scopes[1]
+    expect(body?.order.map((symbol) => symbol.name)).toEqual(['x'])
+  })
+})

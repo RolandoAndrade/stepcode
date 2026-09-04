@@ -51,14 +51,15 @@ missing `;`; 3 declare a `Para` counter the program never declared; 4 compare ex
 header already declares; 6 fix a `/` assigned to an `Entero`. Three more were needed and are
 numbered on from there: 7 give a variable the type of the value it is given (rule 6's
 "widen it" for a value that is not a `/`); 8 truncate explicitly where an `Entero` variable
-is given a `Real` the program means as a whole number; 9 index the array where the program
-used it whole, which §4.2 does not allow.
+is given a `Real` the program means as a whole number; 9 print the array element by element
+with `Escribir Sin Saltar`, producing the same comma-joined line v1 printed, because §4.2
+does not let the program write the array whole.
 
 | Program | Rewrite | Why |
 |---|---|---|
 | `addition.stepcode` | `Ordenar`'s and `InvertirCadena`'s parameters get `Como Cadena`; the `Definir strInvertida` goes; the two sums of `ConvertirANumero` are wrapped in `Truncar` | rules 1, 5 and 8: the bodies already treat all three as text, the function header declares `strInvertida`, and `ConvertirANumero` is `Real` while `suma` counts digits |
 | `array-operations.stepcode` | the seven `arreglo` parameters get `como Entero[]`; five bodies declare their `Para` counter; three statements get their `;` | rules 1, 2 and 3 |
-| `bubble-sort.stepcode` | `i` and `j` are declared; `Escribir a` becomes a `Para` over `a[i]` | rules 3 and 9: a whole array is never a value (§4.2) |
+| `bubble-sort.stepcode` | `i` and `j` are declared; `Escribir a` becomes a `Para` that writes `Escribir Sin Saltar ','` before every element but the first and `Escribir Sin Saltar a[i]` for each, then `Escribir ''` to end the line | rules 3 and 9: a whole array is never a value (§4.2), and the loop prints the same `1,12,15,16,42` line v1 printed |
 | `equality-between-constant-and-variable.stepcode` | `c` moves out of the `Definir … Como Entero` into its own `Definir c Como Logico` | rule 7: `c` is only ever given the result of a comparison, which is `Logico` |
 | `equality-between-variable-and-constant.stepcode` | `c` moves out of the `Definir … Como Entero` into its own `Definir c Como Logico` | rule 7: `c` is only ever given the result of a comparison, which is `Logico` |
 | `fibonacci.stepcode` | `i` is declared | rule 3 |
@@ -68,14 +69,13 @@ used it whole, which §4.2 does not allow.
 | `greater-than-or-equal-between-variable-and-constant.stepcode` | `c` moves out of the `Definir … Como Entero` into its own `Definir c Como Logico` | rule 7: `c` is only ever given the result of a comparison, which is `Logico` |
 | `inequality-between-constant-and-variable.stepcode` | `c` moves out of the `Definir … Como Entero` into its own `Definir c Como Logico` | rule 7: `c` is only ever given the result of a comparison, which is `Logico` |
 | `inequality-between-variable-and-constant.stepcode` | `c` moves out of the `Definir … Como Entero` into its own `Definir c Como Logico` | rule 7: `c` is only ever given the result of a comparison, which is `Logico` |
-| `insert-into-array-procedure.stepcode` | `Insertar`'s `arreglo` gets `como Entero[]`; `Insertar` and the main block declare `i`; `Escribir arreglo` becomes a `Para` over `arreglo[i]` | rules 1, 3 and 9 |
 | `less-than-between-constant-and-variable.stepcode` | `c` moves out of the `Definir … Como Entero` into its own `Definir c Como Logico` | rule 7: `c` is only ever given the result of a comparison, which is `Logico` |
 | `less-than-between-variable-and-constant.stepcode` | `c` moves out of the `Definir … Como Entero` into its own `Definir c Como Logico` | rule 7: `c` is only ever given the result of a comparison, which is `Logico` |
 | `less-than-or-equal-between-constant-and-variable.stepcode` | `c` moves out of the `Definir … Como Entero` into its own `Definir c Como Logico` | rule 7: `c` is only ever given the result of a comparison, which is `Logico` |
 | `less-than-or-equal-between-variable-and-constant.stepcode` | `c` moves out of the `Definir … Como Entero` into its own `Definir c Como Logico` | rule 7: `c` is only ever given the result of a comparison, which is `Logico` |
 | `print-characters-of-a-string.stepcode` | `i` is declared | rule 3 |
 | `procedure-receives-parameters.stepcode` | `suma`'s parameters get `Como Entero` | rule 1: the only call passes two integers |
-| `procedure-test-array-by-parameter.stepcode` | `cambio`'s `a` gets `Como Entero[]`; the main block declares `i`; `Escribir a` becomes a `Para` over `a[i]` | rules 1, 3 and 9 |
+| `procedure-test-array-by-parameter.stepcode` | `cambio`'s `a` gets `Como Entero[]`; the main block declares `i`; `Escribir a` becomes the same comma-joined `Para` as in `bubble-sort` | rules 1, 3 and 9: the loop prints the same `10,30,40` line v1 printed |
 | `procedure-test-by-reference.stepcode` | `swap`'s parameters get `Como Entero` | rule 1 |
 | `procedure-test-by-value-and-reference.stepcode` | `swap`'s parameters get `Como Entero` | rule 1 |
 | `test-assignation-function-with-parameters.stepcode` | `prueba`'s parameters get `Como Entero`; the `Definir valor` goes | rules 1 and 5 |
@@ -112,13 +112,14 @@ level (a missing `;` under `requireSemicolons`) is covered by
 
 ### Withdrawn
 
-Two programs were removed from this directory instead of being rewritten: no rewrite keeps
-what they compute, because each one exercises v1 behaviour the v2 type system removes on
-purpose. Their rejection is pinned in `test/checker/by-code.test.ts` instead, and the v1
-originals stay in `test/corpus/v1/` (`arrays.v1.ts` and `arithmetic-operations.v1.ts`) and in
-this repository's history.
+Three programs were removed from this directory instead of being rewritten: no rewrite keeps
+what they compute, because each one leans on v1 behaviour v2 does not have. What the checker
+says about each is pinned in `test/checker/by-code.test.ts` instead, and the v1 originals stay
+in `test/corpus/v1/` (`arrays.v1.ts`, `arithmetic-operations.v1.ts` and `subprograms.v1.ts`)
+and in this repository's history.
 
 | Program | Why it is gone |
 |---|---|
 | `test-length.stepcode` | Took `Longitud` of an array. v1 answered with the array's size; v2 gives the builtin a text parameter only (§6), so the call is E3037. |
 | `test-basic-mod-operation-2.stepcode` | Took `MOD` of two `Real`s. v1 answered `1`; v2 gives `DIV` and `MOD` integer operands only (§4.3), so the operands are E3012. |
+| `insert-into-array-procedure.stepcode` | Wrote a ten-slot array with one slot ever assigned. §5.6 makes writing an array whole E3009, and the element-by-element loop the other two programs use cannot reproduce v1's `1,,,,,,,,,`: that output depends on a v1 runtime printing an unassigned slot as empty, which v2 has not decided. E3009 is pinned by `by-code.test.ts`. |

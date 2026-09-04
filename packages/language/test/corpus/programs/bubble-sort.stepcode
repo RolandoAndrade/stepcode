@@ -15,6 +15,10 @@ Proceso prueba
         FinPara
     FinPara
     Para i ← 1 Hasta 5 Con Paso 1 Hacer
-        Escribir a[i];
+        Si i > 1 Entonces
+            Escribir Sin Saltar ',';
+        FinSi
+        Escribir Sin Saltar a[i];
     FinPara
+    Escribir '';
     FinProceso
