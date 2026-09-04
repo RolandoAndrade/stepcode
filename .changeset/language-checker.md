@@ -9,5 +9,5 @@ W3001–W3004 in Spanish and English, and `check` returns the type, symbol, call
 tables the interpreter and the editor read.
 
 The test corpus grows too: `test/corpus/guides/` adds 52 clean programs written from the
-course guides plus 32 one-mistake error programs, and two v1 corpus programs are withdrawn
+course guides plus 32 one-mistake error programs, and three v1 corpus programs are withdrawn
 (see `test/corpus/programs/README.md`).
