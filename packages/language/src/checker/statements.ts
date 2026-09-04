@@ -1,20 +1,25 @@
 import type {
   AssignStmt,
   CallStmt,
+  ConstantStmt,
   DefineStmt,
+  DimensionStmt,
   Identifier,
   Index,
+  ReadStmt,
   ReturnStmt,
   Stmt,
   WriteStmt,
 } from '../ast/index'
 import type { DiagnosticData } from '../diagnostics/index'
 import { assignFailure } from '../types/assign'
-import { isArray, isUnknown, type Type } from '../types/type'
-import { typeFromRef } from './driver'
+import { fold } from '../types/fold'
+import { arrayOf, constType, isArray, isUnknown, type Type, UNKNOWN } from '../types/type'
+import { checkSize, typeFromRef } from './driver'
 import {
   checkBuiltinCall,
   checkUserCall,
+  constantLookup,
   declareRecovered,
   markWritten,
   nameOf,
@@ -25,20 +30,21 @@ import {
 } from './expressions'
 import { type CheckerState, report, reportAssignFailure, setType } from './result'
 // biome-ignore lint/suspicious/noShadowRestrictedNames: `Symbol` is the checker's own type, per the checker spec (§3.1); it never appears with the global.
-import { createSymbol, declareSymbol, lookupLocal, type Symbol } from './scope'
+import { createSymbol, declareSymbol, lookupLocal, type Symbol, type SymbolKind } from './scope'
 
 /**
- * Declares one variable in the current body scope, with the clash rules of §3.2: a name
- * already in this scope is E3002 (with the `result` and `parameter` variants), a name that is
- * a subprogram is E3004. Both keep the first symbol and carry on.
+ * Declares one name in the current body scope, with the clash rules of §3.2: a name already
+ * in this scope is E3002 (with the `result` and `parameter` variants), a name that is also a
+ * subprogram is E3004. Both keep the first symbol and carry on.
  *
  * A `recovered` symbol is not a declaration: it is what an unresolved read left behind so a
  * second read would not report E3001 again. The real declaration replaces it silently — one
  * mistake, one diagnostic (§3.2).
  */
-export function declareVariable(
+export function declareNamed(
   state: CheckerState,
   id: Identifier,
+  kind: SymbolKind,
   type: Type,
   dimensioned: boolean,
 ): Symbol | undefined {
@@ -60,11 +66,20 @@ export function declareVariable(
   if (clash !== undefined) {
     report(state, 'E3004', id.span, { name: id.text }, [{ span: clash.declaredAt.span }])
   }
-  const symbol = createSymbol({ name: id.name, kind: 'variable', type, declaredAt: id, scope })
+  const symbol = createSymbol({ name: id.name, kind, type, declaredAt: id, scope })
   if (dimensioned) symbol.dimensioned = true
   declareSymbol(scope, symbol)
   state.symbols.set(id, symbol)
   return symbol
+}
+
+export function declareVariable(
+  state: CheckerState,
+  id: Identifier,
+  type: Type,
+  dimensioned: boolean,
+): Symbol | undefined {
+  return declareNamed(state, id, 'variable', type, dimensioned)
 }
 
 function checkDefine(state: CheckerState, stmt: DefineStmt): void {
@@ -111,6 +126,10 @@ export function resolveWriteTarget(
   }
   if (existing.kind === 'subprogram') {
     report(state, 'E3005', target.span, { name: target.text })
+    return undefined
+  }
+  if (existing.kind === 'constant') {
+    report(state, 'E3007', target.span, { name: target.text })
     return undefined
   }
   if (isArray(existing.type)) {
@@ -175,6 +194,87 @@ function checkReturn(state: CheckerState, stmt: ReturnStmt): void {
   if (failure !== undefined) reportAssignFailure(state, stmt.value.span, failure)
 }
 
+/**
+ * §5.2. `Dimension` turns a declared scalar, or an unsized array of the same rank, into a
+ * sized array — once. Everything else is E3022 with the variant that says why.
+ */
+function checkDimension(state: CheckerState, stmt: DimensionStmt): void {
+  for (const item of stmt.items) {
+    for (const size of item.sizes) checkSize(state, size)
+    const id = item.name
+    if (id.missing === true) continue
+    const symbol = lookupLocal(state.frame.scope, id.name)
+    if (symbol === undefined) {
+      // pseint declares on assignment, never here (§5.2).
+      report(state, 'E3021', id.span, { name: id.text })
+      continue
+    }
+    state.symbols.set(id, symbol)
+    if (symbol.kind !== 'variable') {
+      report(state, 'E3022', id.span, { name: id.text, hint: 'kind' })
+      continue
+    }
+    if (symbol.dimensioned === true) {
+      report(state, 'E3022', id.span, { name: id.text, hint: 'again' })
+      continue
+    }
+    const rank = item.sizes.length
+    const current = symbol.type
+    if (isArray(current) && current.rank !== rank) {
+      report(state, 'E3022', id.span, {
+        name: id.text,
+        hint: 'rank',
+        expected: current.rank,
+        found: rank,
+      })
+      continue
+    }
+    const element = isArray(current)
+      ? current.element
+      : current.kind === 'scalar'
+        ? current.name
+        : undefined
+    // An `unknown` variable stays unknown: something was already reported about it.
+    if (element === undefined) continue
+    symbol.type = arrayOf(element, rank)
+    symbol.dimensioned = true
+  }
+}
+
+/**
+ * §5.3. The value is folded *before* the name is declared, so `Constante A <- A` resolves `A`
+ * against what exists at that point and is E3001, not a self-reference.
+ */
+function checkConstant(state: CheckerState, stmt: ConstantStmt): void {
+  const valueType = typeOf(state, stmt.value)
+  const folded = fold(stmt.value, constantLookup(state))
+  const declared = stmt.type === undefined ? undefined : typeFromRef(state, stmt.type).type
+  const id = stmt.name
+  if (id.missing === true) return
+  if (folded === undefined && !isUnknown(valueType)) {
+    report(state, 'E3024', stmt.value.span, { name: id.text })
+  }
+  if (declared !== undefined && folded !== undefined) {
+    const failure = assignFailure(declared, constType(folded), stmt.value)
+    if (failure !== undefined) {
+      reportAssignFailure(state, stmt.value.span, failure, { data: { name: id.text } })
+    }
+  }
+  const type = declared ?? (folded === undefined ? UNKNOWN : constType(folded))
+  const symbol = declareNamed(state, id, 'constant', type, false)
+  if (symbol !== undefined && symbol.kind === 'constant' && folded !== undefined) {
+    symbol.constValue = folded
+  }
+}
+
+/**
+ * §5.5. Every target is a write, so the target rules of §5.4 apply — but `Leer` never
+ * declares, not even in pseint mode, so the implicit-declaration door is shut.
+ */
+function checkRead(state: CheckerState, stmt: ReadStmt): void {
+  for (const target of stmt.targets) resolveWriteTarget(state, target, UNKNOWN, false)
+}
+
 function checkCallStatement(state: CheckerState, stmt: CallStmt): void {
   const call = stmt.call
   if (call.kind === 'BuiltinCall') {
@@ -219,18 +319,15 @@ export function checkStatement(state: CheckerState, stmt: Stmt): void {
       return
     }
     case 'DimensionStmt': {
-      // Task 7 adds §5.2. The sizes are expressions and are typed here either way.
-      for (const item of stmt.items) for (const size of item.sizes) typeOf(state, size)
+      checkDimension(state, stmt)
       return
     }
     case 'ConstantStmt': {
-      // Task 7 adds §5.3.
-      typeOf(state, stmt.value)
+      checkConstant(state, stmt)
       return
     }
     case 'ReadStmt': {
-      // Task 7 adds §5.5.
-      for (const target of stmt.targets) typeOf(state, target)
+      checkRead(state, stmt)
       return
     }
     case 'WaitStmt': {

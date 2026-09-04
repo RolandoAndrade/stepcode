@@ -22,7 +22,7 @@ import { checkStatements } from './statements'
  * expression is already `unknown`, in which case something else was reported and this stays
  * silent.
  */
-function checkSize(state: CheckerState, size: Expr): void {
+export function checkSize(state: CheckerState, size: Expr): void {
   const type = typeOf(state, size)
   if (isUnknown(type)) return
   const value = fold(size, constantLookup(state))

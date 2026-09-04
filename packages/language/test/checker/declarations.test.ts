@@ -160,3 +160,150 @@ describe('Escribir (§5.6)', () => {
     expect(report.texts).toEqual(['lista'])
   })
 })
+
+describe('Dimension (§5.2)', () => {
+  it('turns a declared scalar into an array of that rank', () => {
+    const source = main('Definir lista Como Entero;', 'Dimension lista[5];', 'lista[1] <- 2;')
+    expect(checkCodes(source)).toEqual([])
+    expect(typeOfExpr(source, 'lista[1]')).toBe('Entero')
+  })
+
+  it('sizes an unsized array of the same rank', () => {
+    const source = main(
+      'Definir tabla Como Real[,];',
+      'Dimension tabla[3,4];',
+      'tabla[1,1] <- 0.5;',
+    )
+    expect(checkCodes(source)).toEqual([])
+  })
+
+  it('reports a name that was never declared', () => {
+    const source = main('Dimension lista[5];')
+    const report = checkSource(source)
+    expect(report.codes).toEqual(['E3021'])
+    expect(report.texts).toEqual(['lista'])
+  })
+
+  it('does not declare in pseint mode either', () => {
+    const source = ['Proceso p', '  Dimension lista[5]', 'FinProceso'].join('\n')
+    expect(checkCodes(source, 'pseint')).toEqual(['E3021'])
+  })
+
+  it('refuses a second dimensioning', () => {
+    const twice = main('Definir lista Como Entero;', 'Dimension lista[5];', 'Dimension lista[5];')
+    expect(checkSource(twice).result.diagnostics[0]?.data.hint).toBe('again')
+    const sized = main('Definir lista Como Entero[5];', 'Dimension lista[5];')
+    expect(checkSource(sized).result.diagnostics[0]?.data.hint).toBe('again')
+  })
+
+  it('refuses anything that is not a variable of this body', () => {
+    const parameter = [
+      'SubProceso f(n Como Entero)',
+      '  Dimension n[5];',
+      'FinSubProceso',
+      'Proceso p',
+      '  f(1);',
+      'FinProceso',
+    ].join('\n')
+    expect(checkSource(parameter).result.diagnostics[0]?.data.hint).toBe('kind')
+  })
+
+  it('refuses a rank the declaration does not have', () => {
+    const source = main('Definir tabla Como Real[,];', 'Dimension tabla[3];')
+    const report = checkSource(source)
+    expect(report.codes).toEqual(['E3022'])
+    expect(report.result.diagnostics[0]?.data).toEqual({
+      name: 'tabla',
+      hint: 'rank',
+      expected: 2,
+      found: 1,
+    })
+  })
+
+  it('checks its sizes the way Definir does', () => {
+    expect(checkCodes(main('Definir lista Como Entero;', 'Dimension lista[0];'))).toEqual(['E3023'])
+  })
+})
+
+describe('Constante (§5.3)', () => {
+  it('takes the folded value type when no type is written', () => {
+    const source = main('Constante MAX <- 10;', 'Escribir MAX + 1;')
+    expect(checkCodes(source)).toEqual([])
+    expect(typeOfExpr(source, 'MAX + 1')).toBe('Entero')
+  })
+
+  it('takes the written type, and checks the value against it', () => {
+    expect(checkCodes(main('Constante MAX Como Real <- 10;', 'Escribir MAX;'))).toEqual([])
+    const bad = main('Constante MAX Como Entero <- 2.5;', 'Escribir MAX;')
+    expect(checkCodes(bad)).toEqual(['E3010'])
+  })
+
+  it('refuses a value that does not fold', () => {
+    const source = main('Definir n Como Entero;', 'n <- 1;', 'Constante MAX <- n;', 'Escribir MAX;')
+    const report = checkSource(source)
+    expect(report.codes).toEqual(['E3024'])
+    expect(report.texts).toEqual(['n'])
+  })
+
+  it('folds the value before the name exists', () => {
+    const source = main('Constante A <- A;', 'Escribir A;')
+    expect(checkCodes(source)).toEqual(['E3001'])
+  })
+
+  it('is read-only: assignment and Leer are both refused', () => {
+    expect(checkCodes(main('Constante MAX <- 10;', 'MAX <- 11;'))).toEqual(['E3007'])
+    expect(checkCodes(main('Constante MAX <- 10;', 'Leer MAX;'))).toEqual(['E3007'])
+  })
+
+  it('refuses a constant by reference', () => {
+    const source = [
+      'SubProceso f(n Por Referencia Como Entero)',
+      '  n <- 1;',
+      'FinSubProceso',
+      'Proceso p',
+      '  Constante MAX <- 10;',
+      '  f(MAX);',
+      'FinProceso',
+    ].join('\n')
+    expect(checkCodes(source)).toEqual(['E3032'])
+  })
+
+  it('clashes with a variable of the same name like any other declaration', () => {
+    expect(
+      checkCodes(main('Definir MAX Como Entero;', 'Constante MAX <- 10;', 'Escribir MAX;')),
+    ).toEqual(['E3002'])
+  })
+})
+
+describe('Leer (§5.5)', () => {
+  it('reads into a variable, a parameter and an array element', () => {
+    expect(checkCodes(main('Definir n Como Entero;', 'Leer n;', 'Escribir n;'))).toEqual([])
+    expect(
+      checkCodes(main('Definir lista Como Entero[3];', 'Leer lista[1];', 'Escribir lista[1];')),
+    ).toEqual([])
+  })
+
+  it('reads any scalar type', () => {
+    expect(
+      checkCodes(
+        main('Definir c Como Caracter;', 'Definir b Como Logico;', 'Leer c, b;', 'Escribir c, b;'),
+      ),
+    ).toEqual([])
+  })
+
+  it('refuses a whole array and a letter of a text', () => {
+    expect(checkCodes(main('Definir lista Como Entero[3];', 'Leer lista;'))).toEqual(['E3009'])
+    const text = main('Definir s Como Cadena;', 's <- "ab";', 'Leer s[1];')
+    expect(checkCodes(text)).toEqual(['E3013'])
+  })
+
+  it('never declares, not even in pseint mode', () => {
+    expect(checkCodes(main('Leer total;'))).toEqual(['E3001'])
+    const lenient = ['Proceso p', '  Leer total', 'FinProceso'].join('\n')
+    expect(checkCodes(lenient, 'pseint')).toEqual(['E3001'])
+  })
+
+  it('counts as giving the variable a value', () => {
+    expect(checkCodes(main('Definir n Como Entero;', 'Leer n;', 'Escribir n;'))).toEqual([])
+  })
+})
