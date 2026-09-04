@@ -18,7 +18,8 @@ interface Mutation {
    * The fewest corpus programs this mutation must reach. `apply` returns `undefined` on a
    * regex miss and the harness moves on, so a corpus reformat could quietly retire a whole
    * family of mistakes; the floor is what says out loud how many programs each family
-   * currently mutates. Today's counts, in the order below: 72, 84, 70, 7, 29.
+   * currently mutates. Today's counts, in the order below: 72, 84, 69, 7, 29 — the third
+   * dropped from 70 when the two withdrawn `a[-1]` programs (§8.2) left the corpus.
    */
   readonly atLeast: number
   /** The mutated program, or `undefined` when this program has nothing to mutate. */
@@ -58,7 +59,7 @@ const mutations: Mutation[] = [
   },
   {
     name: 'swap one literal for a text',
-    atLeast: 70,
+    atLeast: 69,
     apply: (source) => {
       // The first integer assigned to a variable becomes the same digits in quotes, so the
       // value no longer fits where it is stored.

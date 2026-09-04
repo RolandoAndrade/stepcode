@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic integer division operation",
+      "inputs": [],
+      "output": "2\n"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test upper lower case",
+      "inputs": ["Rolando Andrade"],
+      "output": "Introduce palabra\nRoLaNdO AnDrAdE\n"
+    }
+  ]
+}

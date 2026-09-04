@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test abs",
+      "inputs": ["-1", "1"],
+      "output": "1\n"
+    }
+  ]
+}

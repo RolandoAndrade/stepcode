@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic uppercase",
+      "inputs": [],
+      "output": "HOLA\n"
+    }
+  ]
+}

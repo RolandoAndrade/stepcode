@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "sum and sub have the same priority",
+      "inputs": [],
+      "output": "4\n0\n"
+    }
+  ]
+}

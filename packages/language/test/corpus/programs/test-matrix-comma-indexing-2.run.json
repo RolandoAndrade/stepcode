@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test matrix comma indexing 2",
+      "inputs": [],
+      "output": "2\n"
+    }
+  ]
+}

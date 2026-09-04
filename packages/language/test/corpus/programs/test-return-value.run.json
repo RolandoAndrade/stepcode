@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test return value",
+      "inputs": [],
+      "output": "20\n"
+    }
+  ]
+}

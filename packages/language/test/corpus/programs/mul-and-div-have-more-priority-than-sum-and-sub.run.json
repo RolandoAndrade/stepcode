@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "mul and div have more priority than sum and sub",
+      "inputs": [],
+      "output": "17\n11\n"
+    }
+  ]
+}

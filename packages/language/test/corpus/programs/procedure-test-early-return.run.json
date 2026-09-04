@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "procedure test early return",
+      "inputs": [],
+      "output": "hola\n"
+    }
+  ]
+}

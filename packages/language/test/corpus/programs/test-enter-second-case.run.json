@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test enter second case",
+      "inputs": [],
+      "output": "a=2\n"
+    }
+  ]
+}

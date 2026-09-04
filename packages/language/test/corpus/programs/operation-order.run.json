@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "operation order",
+      "inputs": [],
+      "output": "16\n23\n203\n46\n"
+    }
+  ]
+}

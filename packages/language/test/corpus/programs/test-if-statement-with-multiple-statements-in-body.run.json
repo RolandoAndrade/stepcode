@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test if statement with multiple statements in body",
+      "inputs": [],
+      "output": "a=1\nb=2\n"
+    }
+  ]
+}

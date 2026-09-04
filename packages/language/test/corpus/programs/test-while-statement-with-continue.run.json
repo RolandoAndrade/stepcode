@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test while statement with continue",
+      "inputs": [],
+      "output": "2\n4\n6\n8\n10\n"
+    }
+  ]
+}

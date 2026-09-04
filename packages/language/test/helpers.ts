@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { builtinProfiles, profiles, type ResolvedProfile, resolveProfile } from '@stepcode/profiles'
@@ -12,6 +12,7 @@ import { createScope, createSymbol, declareSymbol } from '../src/checker/scope'
 import { type CompileResult, compile } from '../src/compile'
 import type { Diagnostic, DiagnosticCode } from '../src/diagnostics/index'
 import { formatDiagnostic } from '../src/diagnostics/index'
+import { type RunOutcome, runProgram } from '../src/interpreter/program'
 import { type Run, type StepResult, start } from '../src/interpreter/run'
 import type { Token } from '../src/lexer/index'
 import { isTrivia, tokenize } from '../src/lexer/index'
@@ -390,7 +391,13 @@ export function profileNamed(name: ProfileName): ResolvedProfile {
   return name === 'es0' ? es0 : profiles[name]
 }
 
-const corpusDir = fileURLToPath(new URL('./corpus/programs', import.meta.url))
+/** Where the two corpora live; every sidecar sits beside its program. */
+export const corpusDirs = {
+  programs: fileURLToPath(new URL('./corpus/programs', import.meta.url)),
+  guides: fileURLToPath(new URL('./corpus/guides', import.meta.url)),
+} as const
+
+const corpusDir = corpusDirs.programs
 
 /** The corpus slugs the v1 extraction found carrying 0-based arrays, one per line. */
 export function corpusIndexBaseZero(): string[] {
@@ -662,4 +669,82 @@ export function collectRun(run: Run, inputs: readonly string[] = []): StepResult
         throw new Error(`continue() without breakpoints or budget paused (${result.reason})`)
     }
   }
+}
+
+/** One entry of a `<slug>.run.json` (interpreter spec §8.1). */
+export interface SidecarRun {
+  readonly name?: string
+  /** The answers to the input requests, in order; `Esperar Tecla` consumes one like any other. */
+  readonly inputs: readonly string[]
+  /** The exact concatenation of every `io.write`. */
+  readonly output: string
+  /** Required when the program calls `Azar` or `Aleatorio`: the mulberry32 seed. */
+  readonly seed?: number
+}
+
+export interface Sidecar {
+  readonly runs: readonly SidecarRun[]
+}
+
+export function sidecarPath(dir: string, slug: string): string {
+  return join(dir, `${slug}.run.json`)
+}
+
+/** The sidecar of one program, or `undefined` when it has none. A malformed one throws. */
+export function readSidecar(dir: string, slug: string): Sidecar | undefined {
+  const path = sidecarPath(dir, slug)
+  if (!existsSync(path)) return undefined
+  const parsed: unknown = JSON.parse(readFileSync(path, 'utf8'))
+  if (typeof parsed !== 'object' || parsed === null || !Array.isArray((parsed as Sidecar).runs)) {
+    throw new Error(`${path} is not a { runs: [...] } sidecar`)
+  }
+  for (const run of (parsed as Sidecar).runs) {
+    if (!Array.isArray(run.inputs) || typeof run.output !== 'string') {
+      throw new Error(`${path}: every run needs inputs: string[] and output: string`)
+    }
+  }
+  return parsed as Sidecar
+}
+
+/**
+ * One sidecar run through `runProgram`: a no-op sleep, an `io` that appends to a buffer and
+ * answers `read` from `inputs`. A request past the end of `inputs` and a rejected request both
+ * throw, because a sidecar that does not answer its program is wrong (§8.1).
+ */
+export async function runSidecar(
+  source: string,
+  profile: ResolvedProfile,
+  run: SidecarRun,
+): Promise<{ outcome: RunOutcome; output: string }> {
+  const program = compile(source, { profile })
+  let output = ''
+  let next = 0
+  const outcome = await runProgram(program, {
+    profile,
+    io: {
+      write: (text) => {
+        output += text
+      },
+      read: (request) => {
+        if (request.rejected !== undefined) {
+          return Promise.reject(
+            new Error(`input ${next} was rejected for ${request.target?.name ?? 'key'} (E4004)`),
+          )
+        }
+        const text = run.inputs[next]
+        next++
+        if (text === undefined) {
+          return Promise.reject(
+            new Error(
+              `the program asked for input ${next} but the sidecar has ${run.inputs.length}`,
+            ),
+          )
+        }
+        return Promise.resolve(text)
+      },
+    },
+    sleep: () => Promise.resolve(),
+    ...(run.seed === undefined ? {} : { random: seeded(run.seed) }),
+  })
+  return { outcome, output }
 }

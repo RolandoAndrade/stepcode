@@ -34,6 +34,38 @@ const cases: Case[] = [
     ),
   },
   {
+    // v1's `arrays.v1.ts` "test reverse indexing" read `a[-1]` of an array and got its last
+    // cell; under §5.4 a negative index is simply out of range, so the program left the
+    // corpus (§8.2) and lives here.
+    code: 'E4001',
+    source: main(
+      'Definir a, b Como Entero;',
+      'Dimension a[3];',
+      'a[1] <- 1;',
+      'a[2] <- 2;',
+      'a[3] <- 3;',
+      'b <- a[-1];',
+      'Escribir b;',
+    ),
+    text: '-1',
+    clean: main(
+      'Definir a, b Como Entero;',
+      'Dimension a[3];',
+      'a[1] <- 1;',
+      'a[2] <- 2;',
+      'a[3] <- 3;',
+      'b <- a[3];',
+      'Escribir b;',
+    ),
+  },
+  {
+    // The same for `strings.v1.ts`: `"Hola"[-1]` was `a` in v1.
+    code: 'E4001',
+    source: main('Definir a, b Como Cadena;', 'a <- "Hola";', 'b <- a[-1];', 'Escribir b;'),
+    text: '-1',
+    clean: main('Definir a, b Como Cadena;', 'a <- "Hola";', 'b <- a[4];', 'Escribir b;'),
+  },
+  {
     code: 'E4002',
     source: main('Definir n Como Entero;', 'Leer n;', 'Escribir 10 / n;'),
     inputs: ['0'],

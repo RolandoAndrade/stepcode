@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic mod operation",
+      "inputs": [],
+      "output": "1\n"
+    }
+  ]
+}

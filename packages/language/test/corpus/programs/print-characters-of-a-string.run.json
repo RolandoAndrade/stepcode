@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test print characters of a string",
+      "inputs": ["Hola"],
+      "output": "H\no\nl\na\n"
+    }
+  ]
+}

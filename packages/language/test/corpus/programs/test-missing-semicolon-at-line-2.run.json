@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test missing semicolon at line 2",
+      "inputs": [],
+      "output": "30\n"
+    }
+  ]
+}

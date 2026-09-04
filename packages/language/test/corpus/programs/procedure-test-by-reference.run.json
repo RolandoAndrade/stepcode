@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "procedure test by reference",
+      "inputs": [],
+      "output": "a=20\nb=10\n"
+    }
+  ]
+}

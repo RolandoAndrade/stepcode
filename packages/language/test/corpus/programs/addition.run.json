@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test addition",
+      "inputs": ["993", "7"],
+      "output": "n1\nn2\n1000\n"
+    }
+  ]
+}
