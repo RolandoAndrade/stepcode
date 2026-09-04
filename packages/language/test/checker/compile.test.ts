@@ -83,3 +83,30 @@ describe('sortDiagnostics', () => {
     expect(sorted.map((one) => one.span.start)).toEqual([2, 9])
   })
 })
+
+describe('compile carries the checker tables and the source', () => {
+  it('hands back types, symbols, calls, scopes and the source it compiled', () => {
+    const source = [
+      'Proceso p',
+      '  Definir n Como Entero;',
+      '  n <- 1;',
+      '  Escribir n;',
+      'FinProceso',
+    ].join('\n')
+    const result = compile(source, { profile: profiles.es })
+    expect(result.source).toBe(source)
+    expect(result.scopes.length).toBe(2)
+    expect(result.types).toBeInstanceOf(WeakMap)
+    expect(result.symbols).toBeInstanceOf(WeakMap)
+    expect(result.calls).toBeInstanceOf(WeakMap)
+    const main = result.ast.main
+    expect(main).not.toBeNull()
+    const write = main?.body[2]
+    expect(write?.kind).toBe('WriteStmt')
+    if (write?.kind !== 'WriteStmt') return
+    const arg = write.args[0]
+    expect(arg).toBeDefined()
+    if (arg === undefined) return
+    expect(result.types.get(arg)).toEqual({ kind: 'scalar', name: 'integer' })
+  })
+})

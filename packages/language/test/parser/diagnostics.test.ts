@@ -222,10 +222,10 @@ const cases: {
   },
 ]
 
-// The checker's E3xxx/W3xxx codes are out of scope for the parser: they get their own
-// "every code has a case" coverage in the checker's test suite.
+// The checker's E3xxx/W3xxx codes and the runtime's E4xxx codes are out of scope for the
+// parser: they get their own "every code has a case" coverage elsewhere.
 const parserCodes = DIAGNOSTIC_CODES.filter(
-  (code) => !code.startsWith('E3') && !code.startsWith('W3'),
+  (code) => !code.startsWith('E3') && !code.startsWith('W3') && !code.startsWith('E4'),
 )
 
 describe('every diagnostic code has a case', () => {

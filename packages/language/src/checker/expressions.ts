@@ -197,7 +197,10 @@ export function typeOfIndex(state: CheckerState, node: Index): Type {
     checkIndexTypes(state, node, indices)
     return CHAR
   }
-  report(state, 'E3009', node.target.span, { name: nameOf(node.target), hint: 'scalar' })
+  report(state, 'E3009', node.target.span, {
+    name: nameOf(node.target, state.profile),
+    hint: 'scalar',
+  })
   return UNKNOWN
 }
 

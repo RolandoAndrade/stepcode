@@ -3,7 +3,7 @@ export type Severity = 'error' | 'warning'
 /**
  * Every diagnostic this package can produce. Ranges (spec §7.1): E1xxx lexer;
  * E2001–E2019 statements; E2020–E2029 declarations and headers; E2030–E2039 expressions;
- * W2xxx parser warnings; E3xxx/W3xxx checker. A later sub-spec uses E4xxx (runtime).
+ * W2xxx parser warnings; E3xxx/W3xxx checker. E4xxx runtime.
  */
 export const DIAGNOSTIC_CODES = [
   'E1001', // unexpected character(s)
@@ -69,6 +69,14 @@ export const DIAGNOSTIC_CODES = [
   'W3002', // declared but never read
   'W3003', // read but never assigned
   'W3004', // function result never assigned
+  'E4001', // index out of range
+  'E4002', // division by zero
+  'E4003', // unassigned value read
+  'E4004', // input rejected
+  'E4005', // stack depth exceeded
+  'E4006', // function ended without a result
+  'E4007', // invalid builtin argument
+  'E4008', // Para step is zero
 ] as const
 
 export type DiagnosticCode = (typeof DIAGNOSTIC_CODES)[number]
@@ -138,4 +146,12 @@ export const DIAGNOSTIC_SEVERITY: Readonly<Record<DiagnosticCode, Severity>> = O
   W3002: 'warning',
   W3003: 'warning',
   W3004: 'warning',
+  E4001: 'error',
+  E4002: 'error',
+  E4003: 'error',
+  E4004: 'error',
+  E4005: 'error',
+  E4006: 'error',
+  E4007: 'error',
+  E4008: 'error',
 })

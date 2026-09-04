@@ -71,6 +71,16 @@ const templates: Record<DiagnosticCode, string> = {
   W3002: '«{name}» se declara pero nunca se lee.',
   W3003: '«{name}» se lee pero nunca recibe un valor.',
   W3004: '«{name}» nunca recibe un valor: la función no devuelve nada.',
+  E4001: 'El índice {index} se sale de «{name}»: sus posiciones van del {low} al {high}.',
+  E4002: 'Esto divide entre cero: «{op}» recibió un divisor igual a 0.',
+  E4003: '«{name}» todavía no tiene valor: asígnale uno antes de usarla.',
+  E4004: 'La entrada «{text}» no sirve para «{name}», que es {type}.',
+  E4005:
+    'Demasiadas llamadas anidadas: «{name}» llegó a {depth} llamadas sin terminar. Revisa la condición de parada.',
+  E4006:
+    'La función «{name}» terminó sin devolver un valor: asigna el resultado o usa «{kw:return}».',
+  E4007: '«{builtin:$builtin}» no acepta este valor.',
+  E4008: 'El paso del bucle de «{name}» es 0: el bucle nunca terminaría.',
 }
 
 const variants: Record<string, string> = {
@@ -129,6 +139,20 @@ const variants: Record<string, string> = {
     'El argumento {position} de «{name}» es {found} y se espera {expected}: no coincide el número de dimensiones.',
   'E3035.element':
     'El argumento {position} de «{name}» es {found} y se espera {expected}: no coincide el tipo de sus elementos.',
+  'E4001.size': '«{name}» no puede tener tamaño {size}: un arreglo necesita al menos una posición.',
+  'E4003.cell': '«{name}[{index}]» todavía no tiene valor: asígnale uno antes de usarlo.',
+  'E4004.integer':
+    'La entrada «{text}» no es un {type:integer}: escribe solo dígitos, con signo opcional, como «-12».',
+  'E4004.real':
+    'La entrada «{text}» no es un {type:real}: escribe un número con punto decimal opcional, como «3.5».',
+  'E4004.boolean':
+    'La entrada «{text}» no es un {type:boolean}: escribe «{kw:true}» o «{kw:false}».',
+  'E4004.char': 'La entrada «{text}» no cabe en un {type:char}: escribe exactamente una letra.',
+  'E4007.negative': '«{builtin:$builtin}» no acepta un número negativo.',
+  'E4007.nonPositive': '«{builtin:$builtin}» necesita un número mayor que 0.',
+  'E4007.domain': '«{builtin:$builtin}» solo acepta valores entre -1 y 1.',
+  'E4007.range': '«{builtin:$builtin}» necesita que el primer valor no sea mayor que el segundo.',
+  'E4007.number': '«{builtin:$builtin}» no pudo leer «{text}» como número.',
 }
 
 export const es: Catalog = { templates, variants }

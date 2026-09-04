@@ -1,6 +1,5 @@
 import { profiles } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
-import { es } from '../../src/diagnostics/catalog/es'
 import { DIAGNOSTIC_CODES, formatDiagnostic } from '../../src/diagnostics/index'
 import { checkSource, type ProfileName } from '../helpers'
 
@@ -562,9 +561,9 @@ describe('E3009 names the array itself', () => {
     expect(named(source)).toEqual(['«b» es un arreglo completo, y aquí hace falta un valor.'])
   })
 
-  // A value with no name of its own: there is no «x» to print, so the nameless base template
-  // stands in for the `array` variant rather than rendering an empty pair of quotes.
-  it('falls back to the nameless wording when the value has no name', () => {
+  // §7.2 of the interpreter spec: a call renders as its callee, so the array `f()` returned
+  // is named after `f` instead of falling back to the nameless base template.
+  it('names the function whose call returned the array', () => {
     const source = [
       'Funcion r Como Entero[3] <- f()',
       '  Definir b Como Entero[3];',
@@ -577,11 +576,12 @@ describe('E3009 names the array itself', () => {
       '  Escribir i;',
       'FinProceso',
     ].join('\n')
-    const rendered = named(source)
-    expect(rendered).toHaveLength(1)
-    expect(rendered[0]).not.toContain('«»')
-    expect(rendered[0]).not.toMatch(/\{[a-zA-Z$:]+\}/)
-    expect(rendered[0]).toBe(es.templates.E3009)
+    expect(named(source)).toEqual(['«f» es un arreglo completo, y aquí hace falta un valor.'])
+  })
+
+  it('names the builtin whose result was indexed', () => {
+    const source = main('Definir s Como Cadena;', 's <- "hola";', 'Escribir Longitud(s)[1];')
+    expect(named(source)).toEqual(['«Longitud» no es un arreglo: no se puede indexar.'])
   })
 
   it('names the argument, not the callee', () => {

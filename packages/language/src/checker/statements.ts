@@ -213,7 +213,7 @@ function checkWrite(state: CheckerState, stmt: WriteStmt): void {
   for (const arg of stmt.args) {
     const type = typeOf(state, arg)
     if (!isArray(type)) continue
-    report(state, 'E3009', arg.span, { name: nameOf(arg), hint: 'array' })
+    report(state, 'E3009', arg.span, { name: nameOf(arg, state.profile), hint: 'array' })
   }
 }
 

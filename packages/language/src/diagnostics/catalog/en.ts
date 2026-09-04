@@ -68,6 +68,15 @@ const templates: Record<DiagnosticCode, string> = {
   W3002: '"{name}" is declared but never read.',
   W3003: '"{name}" is read but never given a value.',
   W3004: '"{name}" is never given a value: the function returns nothing.',
+  E4001: 'Index {index} is outside "{name}": its positions run from {low} to {high}.',
+  E4002: 'This divides by zero: "{op}" received a divisor equal to 0.',
+  E4003: '"{name}" has no value yet: give it one before using it.',
+  E4004: 'The input "{text}" does not fit "{name}", which is {type}.',
+  E4005:
+    'Too many nested calls: "{name}" reached {depth} calls without returning. Check the stopping condition.',
+  E4006: 'Function "{name}" ended without a result: assign its result or use "{kw:return}".',
+  E4007: '"{builtin:$builtin}" does not accept this value.',
+  E4008: 'The step of the loop over "{name}" is 0: the loop would never end.',
 }
 
 const variants: Record<string, string> = {
@@ -125,6 +134,19 @@ const variants: Record<string, string> = {
     'Argument {position} of "{name}" is {found} and {expected} is expected: the number of dimensions differs.',
   'E3035.element':
     'Argument {position} of "{name}" is {found} and {expected} is expected: the element type differs.',
+  'E4001.size': '"{name}" cannot have size {size}: an array needs at least one position.',
+  'E4003.cell': '"{name}[{index}]" has no value yet: give it one before using it.',
+  'E4004.integer':
+    'The input "{text}" is not an {type:integer}: type digits only, with an optional sign, like "-12".',
+  'E4004.real':
+    'The input "{text}" is not a {type:real}: type a number with an optional decimal point, like "3.5".',
+  'E4004.boolean': 'The input "{text}" is not a {type:boolean}: type "{kw:true}" or "{kw:false}".',
+  'E4004.char': 'The input "{text}" does not fit a {type:char}: type exactly one character.',
+  'E4007.negative': '"{builtin:$builtin}" does not accept a negative number.',
+  'E4007.nonPositive': '"{builtin:$builtin}" needs a number greater than 0.',
+  'E4007.domain': '"{builtin:$builtin}" only accepts values between -1 and 1.',
+  'E4007.range': '"{builtin:$builtin}" needs its first value to be no greater than its second.',
+  'E4007.number': '"{builtin:$builtin}" could not read "{text}" as a number.',
 }
 
 export const en: Catalog = { templates, variants }

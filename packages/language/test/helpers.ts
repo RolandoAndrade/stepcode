@@ -9,6 +9,7 @@ import { typeOf } from '../src/checker/expressions'
 import type { CheckResult } from '../src/checker/result'
 import { createState } from '../src/checker/result'
 import { createScope, createSymbol, declareSymbol } from '../src/checker/scope'
+import { type CompileResult, compile } from '../src/compile'
 import type { Diagnostic, DiagnosticCode } from '../src/diagnostics/index'
 import { formatDiagnostic } from '../src/diagnostics/index'
 import type { Token } from '../src/lexer/index'
@@ -576,4 +577,37 @@ export function typeOfExpr(
     throw new Error(`"${snippet}" matches ${found.length} typed expressions, expected exactly 1`)
   }
   return typeToString(found[0] as Type, report.profile)
+}
+
+/**
+ * mulberry32: a 32-bit seeded PRNG in `[0, 1)`, the `random` option every corpus run with
+ * `Azar` or `Aleatorio` passes so its output is reproducible (interpreter spec §8.1).
+ */
+export function seeded(seed: number): () => number {
+  let state = seed >>> 0
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0
+    let t = state
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/**
+ * Compile, and refuse anything with an error: an interpreter test must run a program the
+ * checker accepted, so a static mistake fails loudly here instead of surfacing as a runtime
+ * surprise. Warnings are allowed, as `start` allows them.
+ */
+export function compileEs(source: string, profileName: ProfileName = 'es'): CompileResult {
+  const result = compile(source, { profile: profileNamed(profileName) })
+  const errors = result.diagnostics.filter((one) => one.severity === 'error')
+  if (errors.length > 0) {
+    throw new Error(
+      `the program does not compile: ${errors
+        .map((one) => `${one.code}@${source.slice(one.span.start, one.span.end)}`)
+        .join(', ')}\n${source}`,
+    )
+  }
+  return result
 }

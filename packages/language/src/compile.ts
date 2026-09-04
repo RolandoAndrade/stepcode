@@ -1,13 +1,17 @@
 import type { ResolvedProfile } from '@stepcode/profiles'
 import type { Program } from './ast/index'
-import { check } from './checker/index'
-import type { Diagnostic } from './diagnostics/index'
+import { type CheckResult, check } from './checker/index'
 import { sortDiagnostics } from './diagnostics/sort'
 import { parse } from './parser/index'
 
-export interface CompileResult {
+/**
+ * What `compile` hands back: the checker's tables unchanged, the merged diagnostics, the tree
+ * and the source it came from. The interpreter reads `types`, `symbols` and `calls` from here
+ * and builds its line map from `source` (interpreter spec §7.1); nobody re-runs `check`.
+ */
+export interface CompileResult extends CheckResult {
   readonly ast: Program
-  readonly diagnostics: readonly Diagnostic[]
+  readonly source: string
 }
 
 /**
@@ -20,7 +24,9 @@ export function compile(source: string, options: { profile: ResolvedProfile }): 
   const parsed = parse(source, { profile: options.profile })
   const checked = check(parsed.program, { profile: options.profile })
   return {
-    ast: parsed.program,
+    ...checked,
     diagnostics: sortDiagnostics([...parsed.diagnostics, ...checked.diagnostics]),
+    ast: parsed.program,
+    source,
   }
 }

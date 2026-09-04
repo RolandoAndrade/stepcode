@@ -11,7 +11,7 @@ import {
 } from '../../src/diagnostics/index'
 
 describe('codes and severities', () => {
-  it('lists every code of the spec, lexer first then parser then checker', () => {
+  it('lists every code of the spec, lexer first then parser, checker and runtime', () => {
     expect(DIAGNOSTIC_CODES).toEqual([
       'E1001',
       'E1002',
@@ -76,6 +76,14 @@ describe('codes and severities', () => {
       'W3002',
       'W3003',
       'W3004',
+      'E4001',
+      'E4002',
+      'E4003',
+      'E4004',
+      'E4005',
+      'E4006',
+      'E4007',
+      'E4008',
     ])
   })
 
@@ -137,6 +145,12 @@ describe('catalogs', () => {
     param: 'n',
     builtin: 'length',
     kw: 'break',
+    index: 4,
+    low: 1,
+    high: 3,
+    size: 0,
+    depth: 1000,
+    type: 'Entero',
   }
 
   it('leaves no unresolved slot in any template under the es profile', () => {

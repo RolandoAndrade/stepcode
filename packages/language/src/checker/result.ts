@@ -119,10 +119,18 @@ export interface AssignContext {
   readonly related?: readonly RelatedSpan[]
 }
 
-/** The name a diagnostic can print for an expression; empty when it has no name of its own. */
-export function nameOf(expr: Expr): string {
+/**
+ * The name a diagnostic can print for an expression; empty when it has no name of its own. A
+ * call is named after its callee and a builtin call after the profile's first spelling of the
+ * builtin, the same "first spelling" rule `typeToString` and `formatDiagnostic` use, so
+ * `Escribir f(x)` says «f» and `Longitud(s)[1]` says «Longitud». The interpreter reuses this
+ * for E4001 and E4003 (interpreter spec §6.1).
+ */
+export function nameOf(expr: Expr, profile: ResolvedProfile): string {
   if (expr.kind === 'Identifier') return expr.text
-  if (expr.kind === 'Index') return nameOf(expr.target)
+  if (expr.kind === 'Index') return nameOf(expr.target, profile)
+  if (expr.kind === 'Call') return expr.callee.text
+  if (expr.kind === 'BuiltinCall') return profile.builtins[expr.key]?.[0] ?? expr.key
   return ''
 }
 
@@ -145,7 +153,8 @@ export function reportAssignFailure(
   // E3009 and E3011 are about the value, so `{name}` is the value's own name and the caller's
   // never stands in for it. A value that has no name — a call returning an array — drops the
   // variant with it, and the base template says the same thing without naming anything.
-  const own = failure.code === 'E3009' || failure.code === 'E3011' ? nameOf(source) : undefined
+  const own =
+    failure.code === 'E3009' || failure.code === 'E3011' ? nameOf(source, state.profile) : undefined
   const data: Record<string, string | number> = {
     expected: typeToString(failure.expected, state.profile),
     found: typeToString(failure.found, state.profile),
