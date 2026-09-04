@@ -40,6 +40,10 @@ const DEDENT: Readonly<Record<BlockName, readonly KeywordKey[]>> = {
   SwitchStmt: ['endSwitch'],
   SwitchCase: ['otherwise', 'endSwitch'],
   WhileStmt: ['endWhile'],
+  // `while` closes a `Repetir` (`Repetir … Mientras Que`) and so appears in `CLOSERS`, but not
+  // here: a line starting with `Mientras` is far more often an ordinary loop opening inside the
+  // repeat body, and dedenting every one of those would be wrong. `Repetir … Mientras Que`
+  // therefore folds but does not dedent.
   RepeatStmt: ['until'],
   ForStmt: ['endFor'],
   SubprogramDecl: ['endProcedure', 'endFunction'],
@@ -162,14 +166,53 @@ function unclosedOpenerBefore(context: TreeIndentContext, block: SyntaxNode): Sy
   return closerOf(previous) === null ? previous : null
 }
 
+/**
+ * The indentation of a line that follows `block`'s body without being part of `block` in the tree:
+ * its own column for a line that closes it (or, under a case, opens the next one), one unit past
+ * that column otherwise.
+ */
+function indentAfterBlock(
+  context: TreeIndentContext,
+  profile: ResolvedProfile,
+  block: SyntaxNode,
+): number {
+  const column = context.lineIndent(block.from)
+  const name = block.name as BlockName
+  if (startsWithKeyword(profile, context.textAfter, DEDENT[name])) return column
+  if (name === 'SwitchCase' && CASE_LINE.test(context.textAfter)) return column
+  return column + context.unit
+}
+
 function indentBlock(context: TreeIndentContext, profile: ResolvedProfile): number | null {
   const name = context.node.name as BlockName
   if (name === 'SwitchStmt') return indentSwitch(context, profile)
   if (name === 'SwitchCase') return indentCase(context, profile)
   if (startsWithKeyword(profile, context.textAfter, DEDENT[name])) return context.baseIndent
   const opener = unclosedOpenerBefore(context, context.node)
-  if (opener !== null) return context.lineIndent(opener.from) + context.unit
+  if (opener !== null) return indentAfterBlock(context, profile, opener)
   return context.baseIndent + context.unit
+}
+
+/** The innermost block still waiting for its closer at the last non-blank text before `context.pos`. */
+function openBlockBefore(context: TreeIndentContext): SyntaxNode | null {
+  const end = lastTextBefore(context, context.lineAt(context.pos, -1).from)
+  if (end === null) return null
+  let node: SyntaxNode | null = syntaxTree(context.state).resolveInner(end, -1)
+  while (node !== null) {
+    if (BLOCK_NAME_SET.has(node.name) && closerOf(node) === null) return node
+    node = node.parent
+  }
+  return null
+}
+
+/**
+ * `Program` always covers the position, so this rule catches the line being typed under a block
+ * whose closer does not exist yet: the tree stops at the last text, leaving no block node over the
+ * new line. Indent it as the open block above it would (spec §5.4).
+ */
+function indentProgram(context: TreeIndentContext, profile: ResolvedProfile): number | null {
+  const block = openBlockBefore(context)
+  return block === null ? 0 : indentAfterBlock(context, profile, block)
 }
 
 /** The fold and indent props for every block node, bound to one profile's spellings. */
@@ -180,6 +223,7 @@ export function blockProps(profile: ResolvedProfile): NodePropSource[] {
     fold[name] = foldBlock
     indent[name] = (context) => indentBlock(context, profile)
   }
+  indent.Program = (context) => indentProgram(context, profile)
   return [foldNodeProp.add(fold), indentNodeProp.add(indent)]
 }
 
@@ -194,5 +238,7 @@ export function indentOnInputPatterns(profile: ResolvedProfile): RegExp[] {
     .sort((a, b) => b.length - a.length)
     .map(escapeRegExp)
   const flags = profile.options.caseSensitive ? '' : 'i'
-  return [new RegExp(`^\\s*(?:${spellings.join('|')})$`, flags), /^\s*[^:\s][^:]*:$/]
+  // `(?:)` would match every line start, so a profile that spells no dedent keyword gets `(?!)`.
+  const alternation = spellings.length === 0 ? '(?!)' : `(?:${spellings.join('|')})`
+  return [new RegExp(`^\\s*${alternation}$`, flags), /^\s*[^:\s][^:]*:$/]
 }

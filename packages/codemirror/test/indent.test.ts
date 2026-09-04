@@ -104,3 +104,69 @@ describe('indentOnInputPatterns', () => {
     expect(state.languageDataAt<RegExp>('indentOnInput', 0)).toHaveLength(2)
   })
 })
+
+/** The indentation of the empty line being typed at the end of `source`. */
+function indentAtEnd(source: string, profile: ResolvedProfile = es): number | null {
+  const state = stateFor(source, [], profile)
+  return getIndentation(state, state.doc.length)
+}
+
+describe('indentation of the line being typed', () => {
+  it('indents the body of a block whose closer is not typed yet', () => {
+    expect(indentAtEnd('Proceso p\n')).toBe(2)
+    expect(indentAtEnd('Proceso p\n  Si 1 < 2 Entonces\n')).toBe(4)
+    expect(indentAtEnd('Proceso p\n  Mientras 1 < 2 Hacer\n')).toBe(4)
+  })
+
+  it('keeps a statement typed after another one in the same block', () => {
+    expect(indentAtEnd('Proceso p\n  Si 1 < 2 Entonces\n    Escribir 1;\n')).toBe(4)
+  })
+
+  it('nests', () => {
+    expect(indentAtEnd('Proceso p\n  Mientras 1 < 2 Hacer\n    Si 1 < 2 Entonces\n')).toBe(6)
+  })
+
+  it('Segun: a case line at the switch body column, a case body one unit past its case', () => {
+    expect(indentAtEnd('Proceso p\nSegun x Hacer\n')).toBe(2)
+    expect(indentAtEnd('Proceso p\nSegun x Hacer\n  1:\n')).toBe(4)
+  })
+
+  it('returns to the enclosing block after a closer typed at the end of the document', () => {
+    expect(indentAtEnd('Proceso p\n  Si 1 < 2 Entonces\n    Escribir 1;\nFinSi')).toBe(2)
+  })
+
+  it('has nothing to indent to outside a block', () => {
+    expect(indentAtEnd('// nota\n')).toBe(0)
+  })
+})
+
+describe('a block error recovery cut short', () => {
+  const cut = (rest: string): string =>
+    `Proceso p\n  Repetir\n    Escribir 1;\n@\n${rest}\nFinProceso`
+
+  it('keeps its closer at the opener column', () => {
+    expect(indentAt(cut('Hasta Que 1 < 2'), 'Hasta Que')).toBe(2)
+  })
+
+  it('indents a following statement one unit past the opener', () => {
+    expect(indentAt(cut('Escribir 2;'), 'Escribir 2;')).toBe(4)
+  })
+})
+
+describe('a line under an opener recovery cut short', () => {
+  // `Segun x Hacer` with no case yet: recovery ends the SwitchStmt at `Hacer`, so the line below
+  // it is a MainBlock child and only the opener above it says where that line belongs.
+  const cut = (indent: string): string =>
+    `Proceso p\n${indent}Segun x Hacer\n@\n  FinSegun\nFinProceso`
+
+  it('indents one unit past the opener, not past the block that contains it', () => {
+    expect(indentAt(cut('      '), '@')).toBe(8)
+    expect(indentAt(cut('  '), '@')).toBe(4)
+  })
+
+  it('still dedents a closer of the containing block to that block', () => {
+    expect(
+      indentAt('Proceso p\n  Mientras 1 < 2 Hacer\n    Escribir 1;\nFinProceso', 'FinProceso'),
+    ).toBe(0)
+  })
+})
