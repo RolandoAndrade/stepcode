@@ -297,12 +297,17 @@ function checkDimension(state: CheckerState, stmt: DimensionStmt): void {
  * against what exists at that point and is E3001, not a self-reference.
  */
 function checkConstant(state: CheckerState, stmt: ConstantStmt): void {
+  const before = state.diagnostics.length
   const valueType = typeOf(state, stmt.value)
+  // Whether typing the value already said something about it. `1 / 0` does not fold *because*
+  // it divides by zero, which E3025 has just reported: E3024 on top of it would be the same
+  // mistake told twice (§7.2).
+  const quiet = state.diagnostics.length === before
   const folded = fold(stmt.value, constantLookup(state))
   const declared = stmt.type === undefined ? undefined : typeFromRef(state, stmt.type).type
   const id = stmt.name
   if (id.missing === true) return
-  if (folded === undefined && !isUnknown(valueType)) {
+  if (folded === undefined && !isUnknown(valueType) && quiet) {
     report(state, 'E3024', stmt.value.span, { name: id.text })
   }
   if (declared !== undefined && folded !== undefined) {

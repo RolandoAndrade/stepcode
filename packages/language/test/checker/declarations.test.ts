@@ -296,6 +296,12 @@ describe('Constante (§5.3)', () => {
     expect(report.texts).toEqual(['n'])
   })
 
+  // I3: the value did not fold because dividing by zero was already reported. Saying "this
+  // has to be computable before running" on top of it is the same mistake, told twice.
+  it('says nothing more when the value already failed on its own', () => {
+    expect(checkCodes(main('Constante MAX <- 1 / 0;', 'Escribir MAX;'))).toEqual(['E3025'])
+  })
+
   it('folds the value before the name exists', () => {
     const source = main('Constante A <- A;', 'Escribir A;')
     expect(checkCodes(source)).toEqual(['E3001'])
