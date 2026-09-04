@@ -1,7 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ensureSyntaxTree } from '@codemirror/language'
+import { EditorState, type Extension } from '@codemirror/state'
+import type { SyntaxNode, Tree } from '@lezer/common'
 import { builtinProfiles, profiles, type ResolvedProfile, resolveProfile } from '@stepcode/profiles'
+import { compile } from 'stepcode'
+import { stepcodeLanguage } from '../src/parser'
+import { buildTree } from '../src/tree'
 
 export const es: ResolvedProfile = profiles.es
 export const en: ResolvedProfile = profiles.en
@@ -55,4 +61,47 @@ export function corpusSources(): readonly CorpusSource[] {
     ...programsIn(join(corpusRoot, 'guides', 'runtime'), () => es),
   ]
   return corpus
+}
+
+/** The tree for a source, built directly — no editor state involved. */
+export function treeFor(source: string, profile: ResolvedProfile = es): Tree {
+  return buildTree(compile(source, { profile }))
+}
+
+export interface Leaf {
+  readonly name: string
+  readonly from: number
+  readonly to: number
+}
+
+/** Every childless node, in document order. */
+export function leaves(tree: Tree): Leaf[] {
+  const out: Leaf[] = []
+  const visit = (node: SyntaxNode): void => {
+    let child = node.firstChild
+    if (child === null) {
+      out.push({ name: node.name, from: node.from, to: node.to })
+      return
+    }
+    while (child !== null) {
+      visit(child)
+      child = child.nextSibling
+    }
+  }
+  visit(tree.topNode)
+  return out
+}
+
+/** An editor state with the language installed and the whole document parsed. */
+export function stateFor(
+  source: string,
+  extensions: Extension = [],
+  profile: ResolvedProfile = es,
+): EditorState {
+  const state = EditorState.create({
+    doc: source,
+    extensions: [stepcodeLanguage(profile), extensions],
+  })
+  ensureSyntaxTree(state, state.doc.length, 1e9)
+  return state
 }
