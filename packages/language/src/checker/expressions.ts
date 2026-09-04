@@ -124,7 +124,18 @@ export function declareRecovered(state: CheckerState, id: Identifier): Symbol {
   return symbol
 }
 
-export function resolveOrRecover(state: CheckerState, id: Identifier, hint?: 'declare'): Symbol {
+/**
+ * The name's symbol, or a recovery symbol under it once E3001 has been reported — and
+ * `undefined` for a `missing` identifier, which is a parser placeholder: never declared,
+ * never resolved, never reported on (§3.2). The guard lives here rather than at each call
+ * site so no future caller can report on a placeholder by forgetting it.
+ */
+export function resolveOrRecover(
+  state: CheckerState,
+  id: Identifier,
+  hint?: 'declare',
+): Symbol | undefined {
+  if (id.missing === true) return undefined
   const found = resolveIdentifier(state, id)
   if (found !== undefined) return found
   reportUnknownName(state, id, hint)
@@ -229,8 +240,9 @@ export function typeOf(state: CheckerState, expr: Expr): Type {
     case 'Literal':
       return setType(state, expr, scalar(expr.type))
     case 'Identifier': {
-      if (expr.missing === true) return setType(state, expr, UNKNOWN)
       const symbol = resolveOrRecover(state, expr)
+      // A `missing` identifier: the parser already reported it, and it is never a symbol.
+      if (symbol === undefined) return setType(state, expr, UNKNOWN)
       if (symbol.kind === 'subprogram') {
         report(state, 'E3005', expr.span, { name: expr.text })
         return setType(state, expr, UNKNOWN)

@@ -42,9 +42,21 @@ describe('compile', () => {
   })
 
   it('says nothing about the placeholders of a broken tree', () => {
-    const source = ['Proceso p', '  Definir Como Entero;', 'FinProceso'].join('\n')
-    const codes = codesOf(source)
-    expect(codes.every((code) => code.startsWith('E2'))).toBe(true)
+    // M9: a `missing` identifier is never resolved and never reported (§3.2). The guard lives
+    // in the resolver itself, so every one of these leaves the checker silent.
+    const sources = [
+      ['Proceso p', '  Definir Como Entero;', 'FinProceso'],
+      ['Proceso p', '  Dimension [3];', 'FinProceso'],
+      ['Proceso p', '  Para <- 1 Hasta 3 Hacer', '  FinPara', 'FinProceso'],
+    ]
+    for (const lines of sources) {
+      const codes = codesOf(lines.join('\n'))
+      expect(codes, lines.join(' ')).not.toContain('E3001')
+      expect(
+        codes.every((code) => code.startsWith('E2')),
+        lines.join(' '),
+      ).toBe(true)
+    }
   })
 })
 

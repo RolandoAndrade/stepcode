@@ -252,7 +252,9 @@ function checkDimension(state: CheckerState, stmt: DimensionStmt): void {
     const id = item.name
     if (id.missing === true) continue
     const symbol = lookupLocal(state.frame.scope, id.name)
-    if (symbol === undefined) {
+    // A recovery symbol is not a declaration (§3.2): dimensioning it is still dimensioning a
+    // name nothing declares.
+    if (symbol === undefined || symbol.recovered === true) {
       // pseint declares on assignment, never here (§5.2). The recovery symbol of §3.2 stands
       // in for the missing declaration all the same, so the uses below it say nothing more:
       // one missing `Definir`, one diagnostic.
@@ -318,7 +320,10 @@ function checkConstant(state: CheckerState, stmt: ConstantStmt): void {
   }
   const type = declared ?? (folded === undefined ? UNKNOWN : constType(folded))
   const symbol = declareNamed(state, id, 'constant', type, false)
-  if (symbol !== undefined && symbol.kind === 'constant' && folded !== undefined) {
+  // `declareNamed` hands back the *first* symbol when the name is already declared (E3002),
+  // and that one keeps the value it was declared with: a fresh symbol is the one declared
+  // here, at this identifier.
+  if (symbol?.declaredAt === id && symbol.kind === 'constant' && folded !== undefined) {
     symbol.constValue = folded
   }
 }

@@ -224,6 +224,15 @@ describe('Dimension (§5.2)', () => {
     expect(report.texts).toEqual(['lista'])
   })
 
+  // M8: the recovery symbol an unresolved read plants is not a declaration (§3.2), so
+  // dimensioning it is still dimensioning a name nothing declares.
+  it('reports a name that only a recovery symbol stands for', () => {
+    const source = main('Escribir lista[1];', 'Dimension lista[5];')
+    const report = checkSource(source)
+    expect(report.codes).toEqual(['E3001', 'E3021'])
+    expect(report.texts).toEqual(['lista', 'lista'])
+  })
+
   it('does not declare in pseint mode either', () => {
     const source = ['Proceso p', '  Dimension lista[5]', 'FinProceso'].join('\n')
     expect(checkCodes(source, 'pseint')).toEqual(['E3021'])
@@ -305,6 +314,24 @@ describe('Constante (§5.3)', () => {
   it('folds the value before the name exists', () => {
     const source = main('Constante A <- A;', 'Escribir A;')
     expect(checkCodes(source)).toEqual(['E3001'])
+  })
+
+  // M7: the second `Constante` is E3002 and keeps the first symbol — so it must keep the
+  // first symbol's value too. `A` folding to 1 is what makes the second label a duplicate.
+  it('keeps the first value when the name is declared twice', () => {
+    const source = main(
+      'Constante A <- 1;',
+      'Constante A <- 2;',
+      'Definir n Como Entero;',
+      'n <- 1;',
+      'Segun n Hacer',
+      '  1:',
+      '    Escribir 1;',
+      '  A:',
+      '    Escribir 2;',
+      'FinSegun',
+    )
+    expect(checkCodes(source)).toEqual(['E3002', 'E3030'])
   })
 
   it('is read-only: assignment and Leer are both refused', () => {

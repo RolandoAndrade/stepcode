@@ -36,7 +36,7 @@ const templates: Record<DiagnosticCode, string> = {
   E3006: '"{name}" is not a subprogram: it cannot be called.',
   E3007: '"{name}" is a constant: its value cannot change.',
   E3008: '"{name}" is this loop\'s counter: it cannot change inside the loop.',
-  E3009: '"{name}" is a whole array, and a single value is needed here.',
+  E3009: '"{name}" does not fit here: a single value is needed.',
   E3010: 'A {found} cannot be stored where a {expected} is expected.',
   E3011: 'A {type:char} holds one single letter, and this text has {length}.',
   E3012: '"{op}" cannot work with {found}: it expects {expected} here.',

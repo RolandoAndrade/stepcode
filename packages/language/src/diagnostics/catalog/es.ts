@@ -37,7 +37,7 @@ const templates: Record<DiagnosticCode, string> = {
   E3006: '«{name}» no es un subprograma: no se puede llamar.',
   E3007: '«{name}» es una constante: su valor no se puede cambiar.',
   E3008: '«{name}» es el contador de este bucle: no se puede cambiar dentro del bucle.',
-  E3009: '«{name}» es un arreglo completo, y aquí hace falta un valor.',
+  E3009: '«{name}» no encaja aquí: hace falta un valor suelto.',
   E3010: 'No se puede guardar un {found} donde se espera un {expected}.',
   E3011: 'Un {type:char} guarda una sola letra, y este texto tiene {length}.',
   E3012: '«{op}» no puede operar con {found}: aquí espera {expected}.',
