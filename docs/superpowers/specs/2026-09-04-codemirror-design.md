@@ -110,8 +110,11 @@ Props on the types:
 - `styleTags` (§5.1).
 - `NodeProp.closedBy` / `openedBy` on keyword leaves: `if`↔`endIf`, `switch`↔`endSwitch`,
   `while`↔`endWhile`, `for`↔`endFor`, `repeat`↔`until`, `procedure`↔`endProcedure`,
-  `function`↔`endFunction`, `program`↔`endProgram`. The stock bracket matcher scans siblings,
-  which is why openers and closers must be direct children of their statement node.
+  `function`↔`endFunction`, `program`↔`endProgram`, and on the punctuation leaves
+  `OpenParen`↔`CloseParen`, `OpenBracket`↔`CloseBracket`. The stock bracket matcher scans
+  siblings, which is why openers and closers must be direct children of their statement node.
+  Parentheses need the props too: the matcher's text fallback only pairs characters whose
+  tree nodes share one type, and ours are distinct types by design.
 - `foldNodeProp` and `indentNodeProp` on the block nodes (§5.3, §5.4).
 
 ### 4.3 Building
@@ -237,8 +240,9 @@ every spelling of every dedent keyword, joined, anchored at line start.
 
 ### 5.5 Block matching
 
-`stepcodeBlockMatching()` is `bracketMatching({ brackets: '()[]' })`. Keyword pairs come from
-the tree props (§4.2); parentheses and brackets from text. `matchingBracket` and
+`stepcodeBlockMatching()` is `bracketMatching({ brackets: '()[]' })`. Keyword, parenthesis, and
+bracket pairs all come from the tree props (§4.2); the `brackets` text config stays as the
+fallback for text the tree does not type. `matchingBracket` and
 `nonmatchingBracket` classes are the stock ones; the base theme (§8) styles them.
 
 ### 5.6 Completion
