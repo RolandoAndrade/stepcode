@@ -46,6 +46,12 @@ export const stepcodeKeymap: readonly KeyBinding[]
 
 // What every feature reads. `null` before the first parse finishes.
 export function compileResultAt(state: EditorState): CompileResult | null
+// The same, with the offset maps the features use (§4.3); for hosts that build their own
+// panels on the checker's tables.
+export function treeDataAt(state: EditorState): TreeData | null
+export type { TreeData }
+// The lint mapping without the linter, for a host's Problems panel.
+export function stepcodeDiagnostics(state: EditorState, options: StepcodeOptions): readonly Diagnostic[]
 export interface StepcodeOptions { profile: ResolvedProfile; locale: string }
 
 // Debugging, independent of the language support and of the runtime.
@@ -57,6 +63,7 @@ export const toggleBreakpoint: StateEffectType<{ line: number }>
 export const setBreakpoints: StateEffectType<readonly number[]>
 export const setCurrentLine: StateEffectType<number | null>
 export const currentLineOf: (state: EditorState) => number | null
+export function breakpointsChanged(update: ViewUpdate): boolean
 ```
 
 `locale` defaults to `profile.locale`. Strings are resolved with the language package's
@@ -489,7 +496,7 @@ TDD throughout; each task starts with its failing test.
 - Round-trip strings live in this package, not in `stepcode`: the language package's
   catalogs are diagnostics only.
 
-## 12. Amendments from planning
+## 12. Amendments from planning and implementation
 
 Decided while writing `plans/2026-09-04-codemirror.md`; the plan's "Deviations" section has
 the reasoning.
@@ -506,3 +513,6 @@ the reasoning.
   `RangeSet.map`, which would move a marker onto the next line when its own line is deleted.
 - `stepcodeLanguage(profile)` is memoized per profile object, and the node set is extended per
   language with the profile-dependent props; names and ids in §4.2 are unchanged.
+- The barrel exports the §3 list and nothing else; `treeDataAt`, `TreeData`, `stepcodeDiagnostics`,
+  and `breakpointsChanged` were added to §3 because hosts need them. Node-set, block, snippet,
+  symbol, hover, and signature helpers stay internal.
