@@ -8,7 +8,9 @@ describe('Definir (§5.1)', () => {
   it('declares every name of the statement with the written type', () => {
     const source = main('Definir a, b Como Entero;', 'a <- 1;', 'b <- a;')
     expect(checkCodes(source)).toEqual([])
-    expect(typeOfExpr(source, 'a')).toBe('Entero')
+    // `b` names one typed node: the assignment target. `a` names two — the target of the
+    // first assignment and the value of the second.
+    expect(typeOfExpr(source, 'b')).toBe('Entero')
   })
 
   it('declares an unsized array of the written rank', () => {
@@ -69,11 +71,22 @@ describe('Definir (§5.1)', () => {
     expect(checkCodes(source)).toEqual(['E3004'])
   })
 
-  it('says nothing about a name the recovery of an unknown read had already planted', () => {
-    // §3.2, one mistake one diagnostic: the recovery symbol only silences repeats of E3001,
-    // so the real declaration replaces it instead of colliding with it.
-    const source = main('Escribir z;', 'Definir z Como Entero;', 'z <- 1;')
-    expect(checkCodes(source)).toEqual(['E3001'])
+  it('reports a use above the declaration once, and never as a redeclaration', () => {
+    // §3.2: names are declared in source order, so `z` does not exist yet at the `Escribir` —
+    // but its `Definir` does, and that is E3003, not E3001. The recovery symbol the report
+    // plants only silences repeats; the real declaration replaces it silently.
+    const source = main('Escribir z;', 'Escribir z;', 'Definir z Como Entero;', 'z <- 1;')
+    const report = checkSource(source)
+    expect(report.codes).toEqual(['E3003'])
+    expect(report.result.diagnostics[0]?.related?.[0]?.span.start).toBe(
+      source.indexOf('z Como Entero'),
+    )
+  })
+
+  it('keeps E3001 for a name no declaration below ever provides', () => {
+    expect(checkCodes(main('Escribir noExiste;', 'Definir z Como Entero;', 'z <- 1;'))).toEqual([
+      'E3001',
+    ])
   })
 })
 

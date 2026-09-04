@@ -33,7 +33,11 @@ export interface CheckResult {
 export interface BodyState {
   status: 'unchecked' | 'checking' | 'checked'
   readonly scope: Scope
-  readonly params: Symbol[]
+  /**
+   * One entry per written parameter, in source order. A parameter whose name the parser could
+   * not read is `null`, so an argument is always paired with the parameter at its position.
+   */
+  readonly params: (Symbol | null)[]
   /**
    * The result *variable* — the one the header names in `r <- f(…)`, which lives in the body
    * scope. `null` for a procedure and for a `f(): T` function, which returns only through
@@ -57,6 +61,12 @@ export interface Frame {
   readonly subprogram: SubprogramDecl | null
   /** Loops of *this* body only: a loop in a caller does not make `Romper` legal here (§5.10). */
   loopDepth: number
+  /**
+   * The names this body declares *below* the point being checked, gathered before it is
+   * checked: names are declared in source order, so a use above its `Definir` finds nothing
+   * and would read as E3001 without this. §3.2 wants E3003 there, pointing at the declaration.
+   */
+  readonly pending?: ReadonlyMap<string, Identifier>
 }
 
 export interface CheckerState {

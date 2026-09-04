@@ -1,5 +1,14 @@
 import type { ResolvedProfile } from '@stepcode/profiles'
-import type { Expr, MainBlock, Param, Program, SubprogramDecl, TypeRef } from '../ast/index'
+import type {
+  Expr,
+  Identifier,
+  MainBlock,
+  Param,
+  Program,
+  Stmt,
+  SubprogramDecl,
+  TypeRef,
+} from '../ast/index'
 import { sortDiagnostics } from '../diagnostics/sort'
 import type { Span } from '../source/index'
 import { fold } from '../types/fold'
@@ -51,6 +60,8 @@ export function typeFromRef(
 
 function declareParam(state: CheckerState, scope: Scope, param: Param): Symbol | null {
   const name = param.name
+  // No name to declare, but the position still counts: `null` keeps `params` aligned with the
+  // arguments a call writes (§5.11).
   if (name.missing === true) return null
   const existing = lookupLocal(scope, name.name)
   if (existing !== undefined) {
@@ -104,11 +115,8 @@ function collectSignatures(state: CheckerState, program: Program): void {
     // scope they belong to, not in the program scope.
     const previous = state.frame
     state.frame = { scope, subprogram: decl, loopDepth: 0 }
-    const params: Symbol[] = []
-    for (const param of decl.params) {
-      const symbol = declareParam(state, scope, param)
-      if (symbol !== null) params.push(symbol)
-    }
+    const params: (Symbol | null)[] = []
+    for (const param of decl.params) params.push(declareParam(state, scope, param))
     const declared =
       decl.returnType === undefined ? UNKNOWN : typeFromRef(state, decl.returnType).type
     let result: Symbol | null = null
@@ -136,11 +144,58 @@ function collectSignatures(state: CheckerState, program: Program): void {
   }
 }
 
+/** The statement lists one statement holds. A nested subprogram owns its own body scope. */
+function innerBodies(stmt: Stmt): readonly (readonly Stmt[])[] {
+  switch (stmt.kind) {
+    case 'IfStmt':
+      return [
+        ...stmt.branches.map((branch) => branch.body),
+        ...(stmt.elseBody === undefined ? [] : [stmt.elseBody]),
+      ]
+    case 'SwitchStmt':
+      return [
+        ...stmt.cases.map((entry) => entry.body),
+        ...(stmt.otherwise === undefined ? [] : [stmt.otherwise]),
+      ]
+    case 'WhileStmt':
+    case 'RepeatStmt':
+    case 'ForStmt':
+      return [stmt.body]
+    default:
+      return []
+  }
+}
+
+/**
+ * §3.2: the names a body declares, wherever in it they are written — a body scope has no
+ * blocks, so a `Definir` inside a loop declares for the whole body. Only the first writing of
+ * a name is kept: it is the one a use above it was reaching for. A nested subprogram is a
+ * scope of its own and is not descended into.
+ */
+function pendingNames(
+  stmts: readonly Stmt[],
+  into = new Map<string, Identifier>(),
+): Map<string, Identifier> {
+  for (const stmt of stmts) {
+    if (stmt.kind === 'DefineStmt') {
+      for (const name of stmt.names) {
+        if (name.missing !== true && !into.has(name.name)) into.set(name.name, name)
+      }
+    } else if (stmt.kind === 'ConstantStmt') {
+      const name = stmt.name
+      if (name.missing !== true && !into.has(name.name)) into.set(name.name, name)
+    }
+    if (stmt.kind === 'SubprogramDecl') continue
+    for (const body of innerBodies(stmt)) pendingNames(body, into)
+  }
+  return into
+}
+
 function checkMain(state: CheckerState, block: MainBlock): void {
   const scope = createScope('body', block, state.programScope)
   state.scopes.push(scope)
   const previous = state.frame
-  state.frame = { scope, subprogram: null, loopDepth: 0 }
+  state.frame = { scope, subprogram: null, loopDepth: 0, pending: pendingNames(block.body) }
   checkStatements(state, block.body)
   state.frame = previous
 }
@@ -164,7 +219,7 @@ export function ensureChecked(
     if (argTypes !== undefined && !body.inferReported) {
       body.inferReported = true
       for (const param of body.params) {
-        if (!isUnknown(param.type)) continue
+        if (param === null || !isUnknown(param.type)) continue
         report(state, 'E3015', param.declaredAt.span, { name: param.name, hint: 'parameter' })
       }
     }
@@ -175,14 +230,20 @@ export function ensureChecked(
     let fixed = false
     body.params.forEach((param, index) => {
       const argument = argTypes[index]
-      if (argument === undefined || isUnknown(argument) || !isUnknown(param.type)) return
+      if (param === null || argument === undefined || isUnknown(argument)) return
+      if (!isUnknown(param.type)) return
       param.type = argument
       fixed = true
     })
     if (fixed && site !== undefined) body.fixedBy = site
   }
   const previous = state.frame
-  state.frame = { scope: body.scope, subprogram: decl, loopDepth: 0 }
+  state.frame = {
+    scope: body.scope,
+    subprogram: decl,
+    loopDepth: 0,
+    pending: pendingNames(decl.body),
+  }
   checkStatements(state, decl.body)
   state.frame = previous
   body.status = 'checked'

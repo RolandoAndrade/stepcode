@@ -82,7 +82,19 @@ export function resolveIdentifier(state: CheckerState, id: Identifier): Symbol |
   return found
 }
 
+/**
+ * E3001, or E3003 when the name is one this body declares further down (§3.2): names are
+ * declared in source order, so the symbol does not exist yet — but the declaration does, and
+ * it is what the reader meant. No suggestion is offered for a name that is simply too early.
+ */
 export function reportUnknownName(state: CheckerState, id: Identifier, hint?: 'declare'): void {
+  const declaredBelow = state.frame.pending?.get(id.name)
+  // Strictly below: `Constante A <- A` declares `A` at that very statement, and the value is
+  // read against what exists before it — E3001, not a use of the name being declared (§5.3).
+  if (declaredBelow !== undefined && declaredBelow.span.start > id.span.start) {
+    report(state, 'E3003', id.span, { name: id.text }, [{ span: declaredBelow.span }])
+    return
+  }
   const suggestion = suggestName(id.name, visibleNames(state), state.profile.normalize)
   if (suggestion !== undefined) {
     report(state, 'E3001', id.span, { name: id.text, hint: 'suggest', suggestion })
@@ -326,7 +338,9 @@ export function checkUserCall(state: CheckerState, node: Call, asValue: boolean)
   const body = ensureChecked(state, decl, argTypes, node.span)
   if (body === undefined) return UNKNOWN
   checkArguments(state, node, decl, body, argTypes)
-  if (!asValue) return UNKNOWN
+  // A function called as a statement discards its result, but the node still carries the type
+  // the call has (§5.11); `CallStmt` is the one that ignores it.
+  if (!asValue) return body.resultType
   if (decl.form !== 'function') {
     report(state, 'E3020', callee.span, { name: callee.text })
     return UNKNOWN
@@ -361,7 +375,8 @@ function checkArguments(
   for (let position = 0; position < count; position++) {
     const param = body.params[position]
     const arg = node.args[position]
-    if (param === undefined || arg === undefined) continue
+    // `null` is a parameter the parser could not name: the position exists, the rules do not.
+    if (param === undefined || param === null || arg === undefined) continue
     const failure = assignFailure(param.type, argTypes[position] ?? UNKNOWN, arg)
     if (failure !== undefined) {
       reportAssignFailure(state, arg.span, failure, {

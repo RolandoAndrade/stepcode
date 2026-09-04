@@ -103,8 +103,36 @@ describe('phase two: bodies are checked once', () => {
   })
 
   it('checks the extra main blocks too', () => {
-    const source = ['Proceso a', 'FinProceso'].join('\n')
-    expect(checkCodes(source)).toEqual([])
+    // A second `Proceso` is E2011 from the parser and an `extraMains` entry here; the checker
+    // still owes it a body scope and a check, so a mistake inside it is reported.
+    const source = [
+      'Proceso uno',
+      '  Escribir 1;',
+      'FinProceso',
+      'Proceso dos',
+      '  Escribir noExiste;',
+      'FinProceso',
+    ].join('\n')
+    const report = checkSource(source, 'es', { allowParseErrors: true })
+    expect(report.codes).toEqual(['E3001'])
+    expect(report.texts).toEqual(['noExiste'])
+    expect(report.result.scopes.length).toBe(3)
+  })
+
+  it('checks a subprogram written inside main exactly once', () => {
+    // E2015 from the parser: the declaration stays a statement of main *and* is collected in
+    // `Program.subprograms`. Phase one owns it; the statement arm skips it, so one diagnostic.
+    const source = [
+      'Proceso p',
+      '  SubProceso f()',
+      '    Escribir noExiste;',
+      '  FinSubProceso',
+      '  f();',
+      'FinProceso',
+    ].join('\n')
+    const report = checkSource(source, 'es', { allowParseErrors: true })
+    expect(report.codes).toEqual(['E3001'])
+    expect(report.texts).toEqual(['noExiste'])
   })
 })
 
@@ -324,6 +352,35 @@ describe('user calls (§5.11)', () => {
   it('reports a call to a name that does not exist at all', () => {
     const source = ['Proceso p', '  noExiste(1);', 'FinProceso'].join('\n')
     expect(checkCodes(source)).toEqual(['E3001'])
+  })
+
+  it('keeps the argument positions of a parameter the parser could not name', () => {
+    // `Como Entero` with no name in front: the first parameter has no symbol, but it still
+    // holds position one, so `"hola"` must be checked against `n` and not against nothing.
+    const source = [
+      'SubProceso f(Como Entero, n Como Entero)',
+      '  Escribir n;',
+      'FinSubProceso',
+      'Proceso p',
+      '  f(1, "hola");',
+      'FinProceso',
+    ].join('\n')
+    const report = checkSource(source, 'es', { allowParseErrors: true })
+    expect(report.codes).toEqual(['E3035'])
+    expect(report.texts).toEqual(['"hola"'])
+  })
+
+  it('gives a function call written as a statement its own type', () => {
+    const source = [
+      'Funcion r Como Entero <- f()',
+      '  r <- 1;',
+      'FinFuncion',
+      'Proceso p',
+      '  f();',
+      'FinProceso',
+    ].join('\n')
+    expect(checkCodes(source)).toEqual([])
+    expect(typeOfExpr(source, 'f()')).toBe('Entero')
   })
 
   it('passes an array to an array parameter and refuses a scalar', () => {

@@ -125,34 +125,42 @@ export function resolveWriteTarget(
     markWritten(state, target)
     return isUnknown(element) ? undefined : element
   }
+  // The target is an expression node like any other, so it is typed even when it is the
+  // mistake: `unknown` absorbs, and every node the tree holds has an entry (§4.5).
+  const fail = (): undefined => {
+    setType(state, target, UNKNOWN)
+    return undefined
+  }
   const existing = resolveIdentifier(state, target)
   if (existing === undefined) {
-    if (target.missing === true) return undefined
+    if (target.missing === true) return fail()
     if (allowImplicit && state.profile.options.implicitDeclarations) {
       // §3.2: the first assignment declares, with the value's type — `unknown` included, which
       // simply gives an `unknown` variable and no further diagnostic.
       const symbol = declareVariable(state, target, valueType, false)
       if (symbol !== undefined) symbol.writes++
+      setType(state, target, symbol?.type ?? UNKNOWN)
       return undefined
     }
     reportUnknownName(state, target, 'declare')
     declareRecovered(state, target)
-    return undefined
+    return fail()
   }
   if (existing.kind === 'subprogram') {
     report(state, 'E3005', target.span, { name: target.text })
-    return undefined
+    return fail()
   }
   if (existing.kind === 'constant') {
     report(state, 'E3007', target.span, { name: target.text })
-    return undefined
+    return fail()
   }
   if (existing.counting === true) {
     report(state, 'E3008', target.span, { name: target.text })
-    return undefined
+    return fail()
   }
   if (isArray(existing.type)) {
     report(state, 'E3009', target.span, { name: target.text, hint: 'array' })
+    setType(state, target, existing.type)
     return undefined
   }
   existing.writes++
@@ -168,7 +176,7 @@ export function resolveWriteTarget(
     const body = decl === null ? undefined : state.bodies.get(decl)
     if (body !== undefined) body.resultWrites++
   }
-  return existing.type
+  return setType(state, target, existing.type)
 }
 
 function checkAssign(state: CheckerState, stmt: AssignStmt): void {

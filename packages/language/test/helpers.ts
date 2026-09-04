@@ -458,16 +458,30 @@ export interface CheckReport {
   readonly profile: ResolvedProfile
 }
 
+export interface CheckSourceOptions {
+  /**
+   * Check a source the parser complained about. Only the few rules whose subject *is* a
+   * parser error need it — a second `Proceso` block, a subprogram written inside one. The
+   * report still holds the checker's diagnostics alone: the parser's never enter it.
+   */
+  readonly allowParseErrors?: boolean
+}
+
 /**
- * Parse, then check. The parse must be clean: a checker test asserting a checker diagnostic
- * must not be reading a broken tree, so a parser error fails loudly here instead of quietly
- * changing what the checker saw. `compile` is the API that tolerates both (Task 10).
+ * Parse, then check. The parse must be clean unless the case opts out: a checker test
+ * asserting a checker diagnostic must not be reading a broken tree, so a parser error fails
+ * loudly here instead of quietly changing what the checker saw. `compile` is the API that
+ * tolerates both (Task 10).
  */
-export function checkSource(source: string, profileName: ProfileName = 'es'): CheckReport {
+export function checkSource(
+  source: string,
+  profileName: ProfileName = 'es',
+  options: CheckSourceOptions = {},
+): CheckReport {
   const profile = profileNamed(profileName)
   const parsed = parse(source, { profile })
   const parseErrors = parsed.diagnostics.filter((one) => one.severity === 'error')
-  if (parseErrors.length > 0) {
+  if (parseErrors.length > 0 && options.allowParseErrors !== true) {
     throw new Error(
       `the source does not parse: ${parseErrors.map((one) => one.code).join(', ')}\n${source}`,
     )
@@ -484,8 +498,12 @@ export function checkSource(source: string, profileName: ProfileName = 'es'): Ch
 }
 
 /** The codes one source produces, in order. The shape most rule tests assert against. */
-export function checkCodes(source: string, profileName: ProfileName = 'es'): DiagnosticCode[] {
-  return checkSource(source, profileName).codes
+export function checkCodes(
+  source: string,
+  profileName: ProfileName = 'es',
+  options: CheckSourceOptions = {},
+): DiagnosticCode[] {
+  return checkSource(source, profileName, options).codes
 }
 
 /**
