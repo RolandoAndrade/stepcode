@@ -107,6 +107,19 @@ describe('Definir (§5.1)', () => {
     expect(checkCodes(main('Leer x;', 'Definir x Como Entero;', 'Escribir x;'))).toEqual(['E3003'])
   })
 
+  // M10: a body scope has no blocks, so a `Definir` inside an `Si` declares for the whole
+  // body — and a use above it is still a use above the declaration (§3.2).
+  it('sees a Definir nested in an Si as a declaration below the use', () => {
+    const source = main(
+      'Escribir z;',
+      'Si Verdadero Entonces',
+      '  Definir z Como Entero;',
+      '  z <- 1;',
+      'FinSi',
+    )
+    expect(checkCodes(source)).toEqual(['E3003'])
+  })
+
   it('keeps E3001 for a name no declaration below ever provides', () => {
     expect(
       checkCodes(main('Escribir noExiste;', 'Definir z Como Entero;', 'z <- 1;', 'Escribir z;')),
@@ -383,6 +396,20 @@ describe('Leer (§5.5)', () => {
     ).toEqual(['E3009'])
     const text = main('Definir s Como Cadena;', 's <- "ab";', 'Leer s[1];')
     expect(checkCodes(text)).toEqual(['E3013'])
+  })
+
+  // M10: the result variable is written like any other name, `Leer` included, and that write
+  // is what keeps W3004 quiet (§9).
+  it("reads into a function's result variable, and counts it as a write", () => {
+    const source = [
+      'Funcion r Como Entero <- f()',
+      '  Leer r;',
+      'FinFuncion',
+      'Proceso p',
+      '  Escribir f();',
+      'FinProceso',
+    ].join('\n')
+    expect(checkCodes(source)).toEqual([])
   })
 
   it('never declares, not even in pseint mode', () => {

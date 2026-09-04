@@ -212,6 +212,25 @@ describe('untyped parameters (§5.12)', () => {
 })
 
 describe('untyped results (§5.12)', () => {
+  // M10: the `result` variant of E3015 — a recursive call in value position inside a function
+  // whose result type nothing has fixed yet. There is nothing to infer it from (§5.12).
+  it('says so on the result when a recursive call is the only thing to infer from', () => {
+    const source = [
+      'Funcion f(n Como Entero)',
+      '  Escribir f(n);',
+      'FinFuncion',
+      'Proceso p',
+      '  f(1);',
+      'FinProceso',
+    ].join('\n')
+    const report = checkSource(source)
+    // W3004 too, and honestly so: this function never assigns a result to anything.
+    expect(report.codes).toEqual(['W3004', 'E3015'])
+    const infer = report.result.diagnostics[1]
+    expect(source.slice(infer?.span.start, infer?.span.end)).toBe('f')
+    expect(infer?.data.hint).toBe('result')
+  })
+
   it('infers a function result from its first assignment', () => {
     const source = [
       'Funcion r <- doble(n)',

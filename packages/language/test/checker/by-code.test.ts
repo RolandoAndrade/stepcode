@@ -487,9 +487,17 @@ describe('every checker code has a case', () => {
         expect(english).not.toBe(spanish)
       })
 
-      it('is absent from the neighbouring program', () => {
+      // M11: the neighbour is the program that gets the same thing *right*, so it must be
+      // clean of errors altogether — not merely free of this one code. A warning would be
+      // allowed here, with a comment saying why; today none of them draws one.
+      it('leaves the neighbouring program with no error at all', () => {
         const report = checkSource(entry.clean, entry.profile ?? 'es')
         expect(report.codes, report.diagnostics.join(', ')).not.toContain(entry.code)
+        const errors = report.result.diagnostics.filter((one) => one.severity === 'error')
+        expect(
+          errors.map((one) => one.code),
+          report.diagnostics.join(', '),
+        ).toEqual([])
       })
 
       // C1: a slot no call site filled renders as a literal `{name}` in front of the reader.
