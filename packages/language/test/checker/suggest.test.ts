@@ -37,9 +37,13 @@ describe('suggestName', () => {
   })
 
   it('ignores accents and case, because the profile normalizer folds both', () => {
-    expect(suggestName('anio', ['año'], normalize)).toBeUndefined()
+    expect(suggestName('anio', ['año'], normalize)).toBe('año')
     expect(suggestName('AÑO', ['año'], normalize)).toBe('año')
     expect(suggestName('Total', ['total'], normalize)).toBe('total')
+  })
+
+  it('rejects a candidate past the cutoff', () => {
+    expect(suggestName('anios', ['año'], normalize)).toBeUndefined()
   })
 
   it('prefers the nearest candidate, and the first one at equal distance', () => {
