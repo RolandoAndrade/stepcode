@@ -172,7 +172,10 @@ export function resolveWriteTarget(
       return undefined
     }
     reportUnknownName(state, target, 'declare')
-    declareRecovered(state, target)
+    // The recovery symbol stands for the name from here on, and this statement writes it: a
+    // write above the declaration is still a write, or the real declaration inherits a zero
+    // and W3003 piles onto the E3001/E3003 already reported (§3.2, §9).
+    declareRecovered(state, target).writes++
     return fail()
   }
   if (reportUnwritableKind(state, target, existing)) return fail()

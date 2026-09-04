@@ -99,6 +99,14 @@ describe('Definir (§5.1)', () => {
     )
   })
 
+  // I2: the recovery symbol stands for the name at every use since the mistake was reported,
+  // so a *write* above the declaration has to count as a write — or the one mistake cascades
+  // into "read but never assigned" on top of the E3003 that already said it.
+  it('counts a write above the declaration, so W3003 does not pile on', () => {
+    expect(checkCodes(main('x <- 1;', 'Definir x Como Entero;', 'Escribir x;'))).toEqual(['E3003'])
+    expect(checkCodes(main('Leer x;', 'Definir x Como Entero;', 'Escribir x;'))).toEqual(['E3003'])
+  })
+
   it('keeps E3001 for a name no declaration below ever provides', () => {
     expect(
       checkCodes(main('Escribir noExiste;', 'Definir z Como Entero;', 'z <- 1;', 'Escribir z;')),
