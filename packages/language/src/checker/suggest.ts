@@ -34,7 +34,7 @@ export function damerauLevenshtein(left: string, right: string, max: number): nu
     previousPrevious = previous
     previous = current
   }
-  return previous[b.length] as number
+  return Math.min(previous[b.length] as number, max + 1)
 }
 
 /**

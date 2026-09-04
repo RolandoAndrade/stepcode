@@ -21,8 +21,11 @@ describe('damerauLevenshtein', () => {
   })
 
   it('stops counting past the cutoff instead of walking the whole matrix', () => {
-    expect(damerauLevenshtein('abcdef', 'zzzzzz', 2)).toBeGreaterThan(2)
-    expect(damerauLevenshtein('', 'abcdef', 2)).toBeGreaterThan(2)
+    expect(damerauLevenshtein('abcdef', 'zzzzzz', 2)).toBe(3)
+    expect(damerauLevenshtein('', 'abcdef', 2)).toBe(3)
+    // The row minimum can stay at or under `max` while the bottom-right cell (the real
+    // distance) is further away — the return must still cap at `max + 1`.
+    expect(damerauLevenshtein('ca', 'abc', 1)).toBe(2)
   })
 })
 
