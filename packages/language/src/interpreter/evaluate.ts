@@ -354,8 +354,12 @@ export function* execute(ctx: Context, frame: RuntimeFrame, stmt: Stmt): Gen<Com
     case 'DimensionStmt': {
       for (const item of stmt.items) {
         const symbol = symbolOf(ctx, item.name)
-        if (symbol.type.kind !== 'array')
-          throw new Error(`"${item.name.text}" is not an array (E3022)`)
+        if (symbol.type.kind !== 'array') {
+          throw new Error(
+            `the checker types every "Dimension" target as an array before a started program ` +
+              `reaches it (E3022 rejects anything else); "${item.name.text}" was not`,
+          )
+        }
         const sizes = yield* evaluateSizes(ctx, frame, item.sizes)
         slotOf(frame, symbol).value = allocateArray(symbol.type.element, sizes, {
           name: item.name.text,
@@ -449,8 +453,8 @@ export function* execute(ctx: Context, frame: RuntimeFrame, stmt: Stmt): Gen<Com
         if (step > 0 ? counter > to : counter < to) return 'normal'
         const after = afterBody(yield* runBody(ctx, frame, stmt.body))
         if (after !== null) return after
-        yield pause(ctx, stmt)
         slot.value = counter + step
+        yield pause(ctx, stmt)
       }
     }
     case 'BreakStmt':

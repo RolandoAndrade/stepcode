@@ -1,8 +1,11 @@
 import { profiles } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
 import { formatDiagnostic } from '../../src/diagnostics/index'
-import { slotOf } from '../../src/interpreter/frame'
+import { type Context, execute } from '../../src/interpreter/evaluate'
+import { bodyScopeOf, createFrame, slotOf } from '../../src/interpreter/frame'
 import { isArrayValue, type RuntimeValue } from '../../src/interpreter/value'
+import { LineMap } from '../../src/source/index'
+import { compileEs, profileNamed } from '../helpers'
 import { type RunMainReport, runMain } from './drive'
 
 const main = (...lines: string[]): string =>
@@ -419,6 +422,49 @@ describe('Para (§5.9)', () => {
     expect(report.pauses).toEqual([2, 3, 4, 3, 4, 3])
   })
 
+  it('increments the counter before yielding the loop-line pause, so an inspection there sees the new value', () => {
+    // Driven directly, one `execute` step at a time, because `runMain`'s report only records
+    // pause *lines*, not the frame state at each one: a host stepping at the loop line must see
+    // the already-incremented counter (§3.4, §5.9), not the value the just-finished body saw.
+    const source = main(
+      'Definir i Como Entero;',
+      'Para i <- 1 Hasta 3 Hacer',
+      'FinPara',
+      'Escribir i;',
+    )
+    const program = compileEs(source)
+    const profile = profileNamed('es')
+    const mainBlock = program.ast.main
+    if (mainBlock === null) throw new Error('the program has no main block')
+    const forStmt = mainBlock.body.find((stmt) => stmt.kind === 'ForStmt')
+    if (forStmt === undefined) throw new Error('expected a ForStmt in the fixture')
+    const ctx: Context = {
+      program,
+      profile,
+      indexBase: profile.options.indexBase,
+      io: { write: () => {} },
+      random: () => 0.5,
+      lines: new LineMap(source),
+    }
+    const frame = createFrame(bodyScopeOf(program, mainBlock), 1)
+    const symbol = frame.scope.symbols.get('i')
+    if (symbol === undefined) throw new Error('"i" is not declared in the fixture')
+    const loopLine = 3
+    const counterAtLoopLinePause: (RuntimeValue | undefined)[] = []
+    const gen = execute(ctx, frame, forStmt)
+    let step = gen.next()
+    while (!step.done) {
+      if (step.value.kind === 'pause' && step.value.line === loopLine) {
+        counterAtLoopLinePause.push(slotOf(frame, symbol).value)
+      }
+      step = gen.next()
+    }
+    // The first pause on the loop line is `execute`'s own entry pause, before `from` is even
+    // evaluated: the counter is still unassigned there. Every later one is the loop's own-line
+    // pause after a body, and must already carry the incremented value.
+    expect(counterAtLoopLinePause).toEqual([undefined, 2, 3, 4])
+  })
+
   it('reports a computed zero step as E4008 at the step expression', () => {
     const source = main(
       'Definir i, s Como Entero;',
@@ -491,6 +537,14 @@ describe('calls and returns (§5.2, §5.5)', () => {
       ].join('\n'),
     )
     expect(report.output).toBe('f\n')
+  })
+
+  it('a builtin call statement executes and discards its result', () => {
+    // `Azar()` (the `random` builtin) is callable as an expression, so the parser accepts a
+    // bare `Azar();` as a `CallStmt` whose `call` is a `BuiltinCall` (§2, parseAssignOrCall).
+    const report = runMain(main('Azar();', 'Escribir "ok";'))
+    expect(report.error).toBeUndefined()
+    expect(report.output).toBe('ok\n')
   })
 
   it('reports E4006 at the function name when it ends without a result', () => {
