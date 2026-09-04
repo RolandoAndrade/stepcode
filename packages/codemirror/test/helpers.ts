@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { ensureSyntaxTree } from '@codemirror/language'
 import { EditorState, type Extension } from '@codemirror/state'
 import type { SyntaxNode, Tree } from '@lezer/common'
@@ -18,8 +18,12 @@ export const es0: ResolvedProfile = resolveProfile(
   builtinProfiles,
 )
 
-/** The language package's corpora, read in place — nothing is copied into this package. */
-const corpusRoot = fileURLToPath(new URL('../../language/test/corpus', import.meta.url))
+/**
+ * The language package's corpora, read in place — nothing is copied into this package.
+ * Built with `node:url`'s own `URL`, not the global one: a happy-dom test environment
+ * replaces `globalThis.URL` with a polyfill `fileURLToPath` does not recognize as a file URL.
+ */
+const corpusRoot = fileURLToPath(new NodeURL('../../language/test/corpus', import.meta.url))
 
 export interface CorpusSource {
   readonly slug: string
