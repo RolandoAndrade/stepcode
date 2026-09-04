@@ -6,9 +6,13 @@ import {
   type Context,
   type Event,
   evaluate,
+  frameForCall,
   type Gen,
+  type InputEvent,
+  runFrame,
 } from '../../src/interpreter/evaluate'
 import { bodyScopeOf, createFrame, type RuntimeFrame, slotOf } from '../../src/interpreter/frame'
+import { parseInput } from '../../src/interpreter/input'
 import { RuntimeError, type RuntimeValue } from '../../src/interpreter/value'
 import { LineMap } from '../../src/source/index'
 import { compileEs, type ProfileName, profileNamed } from '../helpers'
@@ -107,4 +111,104 @@ export function runtimeErrorOf(fn: () => unknown): Diagnostic {
     throw error
   }
   throw new Error('expected a RuntimeError')
+}
+
+export interface RunMainOptions {
+  readonly inputs?: readonly string[]
+  readonly profileName?: ProfileName
+  readonly random?: () => number
+}
+
+export interface RunMainReport {
+  readonly output: string
+  readonly error: Diagnostic | undefined
+  readonly main: RuntimeFrame
+  /** The line of every pause event, in order. */
+  readonly pauses: number[]
+  /** The millis of every wait event, in order. */
+  readonly waits: number[]
+  readonly cleared: number
+}
+
+/**
+ * A miniature controller for the statement tests: runs main to the end, opening a frame per
+ * call event and answering input events from `inputs`. A rejected or missing input throws a
+ * plain `Error`, since these tests never exercise the rejection loop (that is Task 7's).
+ */
+export function runMain(source: string, options: RunMainOptions = {}): RunMainReport {
+  const program = compileEs(source, options.profileName ?? 'es')
+  const profile = profileNamed(options.profileName ?? 'es')
+  const mainBlock = program.ast.main
+  if (mainBlock === null) throw new Error('the program has no main block')
+  let output = ''
+  let cleared = 0
+  const ctx: Context = {
+    program,
+    profile,
+    indexBase: profile.options.indexBase,
+    io: {
+      write: (text) => {
+        output += text
+      },
+      clear: () => {
+        cleared++
+      },
+    },
+    random: options.random ?? (() => 0.5),
+    lines: new LineMap(source),
+  }
+  const main = createFrame(bodyScopeOf(program, mainBlock), 1)
+  const frames: RuntimeFrame[] = [main]
+  const stack: Gen<RuntimeValue | undefined>[] = [runFrame(ctx, main)]
+  const pauses: number[] = []
+  const waits: number[] = []
+  const inputs = [...(options.inputs ?? [])]
+  const answer = (event: InputEvent): void => {
+    const text = inputs.shift()
+    if (text === undefined) throw new Error('the program asked for more input than the test gave')
+    if (event.target === null) return
+    const parsed = parseInput(text, event.target.type, profile)
+    if (!parsed.ok) throw new Error(`"${text}" was rejected for ${event.target.name}`)
+    event.target.slot.value = parsed.value
+  }
+  let sent: RuntimeValue | undefined
+  try {
+    for (;;) {
+      const gen = stack[stack.length - 1]
+      if (gen === undefined) break
+      const result = gen.next(sent)
+      sent = undefined
+      if (result.done) {
+        stack.pop()
+        frames.pop()
+        if (stack.length === 0) break
+        sent = result.value
+        continue
+      }
+      const event = result.value
+      switch (event.kind) {
+        case 'pause':
+          pauses.push(event.line)
+          break
+        case 'input':
+          answer(event)
+          break
+        case 'wait':
+          waits.push(event.millis)
+          break
+        case 'call': {
+          const frame = frameForCall(ctx, event)
+          frames.push(frame)
+          stack.push(runFrame(ctx, frame))
+          break
+        }
+      }
+    }
+    return { output, error: undefined, main, pauses, waits, cleared }
+  } catch (error) {
+    if (error instanceof RuntimeError) {
+      return { output, error: error.diagnostic, main, pauses, waits, cleared }
+    }
+    throw error
+  }
 }
