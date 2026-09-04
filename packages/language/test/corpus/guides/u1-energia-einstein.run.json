@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "one gram of Energion",
+      "inputs": ["0.001"],
+      "output": "Introduce la masa del Energion en kg: \nLa energia liberada es: 89875517873681.77 joules\n"
+    }
+  ]
+}

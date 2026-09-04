@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a weighted average that rounds into the pass band",
+      "inputs": ["Ana", "15", "18", "17"],
+      "output": "Nombre: \nParcial I (30%): \nParcial II (35%): \nParcial III (35%): \nAna fue Aprobado\n"
+    }
+  ]
+}

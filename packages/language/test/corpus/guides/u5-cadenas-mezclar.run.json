@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a shorter first string, so the tail of the second is appended",
+      "inputs": ["abc", "wxyz"],
+      "output": "Texto 1: \nTexto 2: \nResultado es awbxcyz\n"
+    }
+  ]
+}

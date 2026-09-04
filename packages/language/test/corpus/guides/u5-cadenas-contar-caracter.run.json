@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "the letter a, counted five times",
+      "inputs": ["cada palabra", "a"],
+      "output": "Introduce texto: \nIntroduce caracter: \n5 repeticiones\n"
+    }
+  ]
+}

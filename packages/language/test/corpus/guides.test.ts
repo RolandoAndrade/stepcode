@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url'
 import { profiles } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
 import { compile } from '../../src/compile'
+import { DIAGNOSTIC_CODES } from '../../src/diagnostics/index'
+import { start } from '../../src/interpreter/run'
+import { collectRun } from '../helpers'
 
 const dir = fileURLToPath(new URL('./guides', import.meta.url))
 const files = readdirSync(dir)
@@ -45,4 +48,47 @@ describe('the course-guide error corpus', () => {
     const { diagnostics } = compile(source, { profile: profiles.es })
     expect(diagnostics.map((one) => one.code)).toEqual(expectedCodes(source))
   })
+})
+
+const runtimeDir = join(dir, 'runtime')
+const runtimeFiles = readdirSync(runtimeDir)
+  .filter((name) => name.endsWith('.stepcode'))
+  .sort()
+
+/** `// expect: E4001` then zero or more `// input: <text>` lines, the text after the single space verbatim. */
+function runtimeHeader(source: string): { expected: string[]; inputs: string[] } {
+  const lines = source.split('\n')
+  const expected = expectedCodes(source)
+  const inputs: string[] = []
+  for (const line of lines.slice(1)) {
+    if (!line.startsWith('// input:')) break
+    inputs.push(line.slice('// input:'.length + 1))
+  }
+  return { expected, inputs }
+}
+
+describe('the course-guide runtime corpus', () => {
+  it('holds one program per runtime code', () => {
+    const codes = runtimeFiles.map((file) => file.slice(0, 5).toUpperCase()).sort()
+    expect(codes).toEqual(DIAGNOSTIC_CODES.filter((code) => code.startsWith('E4')))
+  })
+
+  it.each(runtimeFiles)(
+    'runtime/%s compiles clean and ends with exactly the code it declares',
+    (file) => {
+      const source = readFileSync(join(runtimeDir, file), 'utf8')
+      const { expected, inputs } = runtimeHeader(source)
+      const program = compile(source, { profile: profiles.es })
+      expect(program.diagnostics.filter((one) => one.severity === 'error')).toEqual([])
+      const run = start(program, { profile: profiles.es, io: { write: () => {} } })
+      const result = collectRun(run, inputs)
+      const codes =
+        result.kind === 'error'
+          ? [result.diagnostic.code]
+          : result.kind === 'input' && result.rejected !== undefined
+            ? [result.rejected.code]
+            : []
+      expect(codes).toEqual(expected)
+    },
+  )
 })

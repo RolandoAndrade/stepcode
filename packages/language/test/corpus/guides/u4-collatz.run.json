@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "six climbs to sixteen before falling to one",
+      "inputs": ["6"],
+      "output": "Introduce numero: \n6\n3\n10\n5\n16\n8\n4\n2\n1\nLlego a 1 en 8 pasos\n"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a flag two rows per stripe, four columns wide",
+      "inputs": ["2", "4"],
+      "output": "Introduce alto de franja: \nIntroduce ancho: \nAAAA\nAAAA\nZZZZ\nZZZZ\nRRRR\nRRRR\n"
+    }
+  ]
+}

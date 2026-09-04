@@ -15,8 +15,10 @@ Entero[,]` — absent), `Concatenar`, `Escribir Sin Saltar`, `Esperar`, `Esperar
 `Limpiar Pantalla` and `Aleatorio` (all absent), recursion (absent), and `DIV`, `Caracter`,
 `Subcadena`, `Segun` over `Cadena`, and the trigonometric and logarithmic builtins (all thin).
 
-Runtime inputs and expected outputs come later, in sub-spec C; for now these programs only
-have to be valid, well-typed StepCode.
+Every program also has a `<slug>.run.json` sidecar — `{ runs: [{ name?, inputs, output, seed? }] }`,
+the schema of `../programs/README.md` — recorded with `scripts/record-run.ts` and read against
+the source by hand; `run.test.ts` replays each one under `es` and asserts the output. The
+inputs chosen for each program are listed under **Runs** below.
 
 ## Programs
 
@@ -122,3 +124,75 @@ so these files pin both what is reported and what is *not*.
 | `w3002-variable-no-usada` | a declared variable that is never read | W3002 |
 | `w3003-variable-sin-valor` | an accumulator read before it is initialised | W3003 |
 | `w3004-funcion-sin-resultado` | the function never assigns its result | W3004 |
+
+## Runtime corpus
+
+`runtime/` holds one program per runtime code, E4001–E4008, each a realistic mistake from the
+same guides. The first line declares the code; when the program reads input, one
+`// input: <text>` line per answer follows it, the text after the single space verbatim:
+
+```
+// expect: E4004
+// input: veinte
+```
+
+`guides.test.ts` compiles each one clean, drives it with `start` and `continue`, answers input
+from the header lines, and asserts the run ends with exactly that code — from an `error` result,
+or, for E4004, from the `rejected` diagnostic of the re-reported input request.
+
+## Runs
+
+| Program | Inputs | What the run shows |
+| --- | --- | --- |
+| `pretaller-bandera-venezuela` | `2` `4` | a flag two rows per stripe, four columns wide |
+| `pretaller-mosaico-con-marco` | `4` | a four-by-four mosaic inside its frame |
+| `pretaller-mosaico` | `4` | a four-by-four mosaic of alternating colours |
+| `repaso-altura-a-metros` | `Femenino` `5.6` | a female height of 5.6 feet lands in the tall branch |
+| `repaso-cadenas-concatenadas` | — | the reassignment chain of the guide's own program |
+| `repaso-numeros-repetidos` | `4` `4` `7` | two of the three numbers match |
+| `repaso-salario-por-tramos` | `40` `2500` | a gross salary that reaches every tax tier |
+| `u1-energia-einstein` | `0.001` | one gram of Energion |
+| `u1-operaciones-basicas` | `17` `5` | seventeen and five, so every operator shows a distinct value |
+| `u1-saludo-nombre-apellido` | `Rolando` `Andrade` | a first and last name joined into one greeting |
+| `u1-tiempo-mru` | `12` `0.5` | a snail that does move, so the division branch runs |
+| `u2-tipos-de-datos` | `Ana` `22` `1.62` `P` | one value of each type, with the student branch true |
+| `u3-formula-cuadratica` | `1` `-5` `6` | a quadratic with two real roots |
+| `u3-funciones-trigonometricas` | `45` | forty-five degrees, where the tangent is one |
+| `u3-intercambio-por-referencia` | `7` `3` | two values swapped through by-reference parameters |
+| `u3-mayor-de-tres` | `4` `9` `6` | the largest of three is the middle argument |
+| `u4-area-circulo-constante` | `2.5` | a radius of two and a half, both constants |
+| `u4-collatz` | `6` | six climbs to sixteen before falling to one |
+| `u4-conversion-de-distancias` | `5` `km` `mi` | five kilometres to miles, a labelled case in both Segun |
+| `u4-mcd-recursivo` | `48` `18` | forty-eight and eighteen, four levels of recursion |
+| `u4-mcm-con-mcd` | `12` `18` `s` `4` `6` `n` | two passes of the Repetir loop before the user answers n |
+| `u4-numero-a-hexadecimal` | `255` `4095` `0` | two conversions, then zero ends the loop |
+| `u4-palindromo-numerico` | `12321` `1234` `0` | one palindrome, one that is not, then zero |
+| `u4-paquetes-de-caramelos` | `18` | eighteen sweets leave one over |
+| `u4-primos-en-intervalo` | `10` `30` | the primes between ten and thirty |
+| `u4-promedio-ponderado` | `Ana` `15` `18` `17` | a weighted average that rounds into the pass band |
+| `u4-suma-de-digitos` | `-1234` | a negative number, so Abs is what makes the loop run |
+| `u5-arreglos-buscar-cadena` | `4` `Pera` `Manzana` `Uva` `Melon` `manzana` | a lowercase query finds a capitalised entry |
+| `u5-arreglos-eliminar-pares` | `6` `3` `8` `5` `4` `7` `10` | three of six numbers survive the compaction |
+| `u5-arreglos-generador-de-nombres` | `3` `2` `Ana` `Luis` `Sofia` `Perez` `Gomez` `4`, seed 1 | four names drawn from three firsts and two lasts |
+| `u5-arreglos-insercion-ordenada` | `5` `3` `9` `1` `7` `2` `8` `6` `4` `10` | ten numbers inserted, the array sorted after each one |
+| `u5-arreglos-menu-de-orden` | `5` `2` `4` `1` `5` `3` `2` | option two sorts the five numbers descending |
+| `u5-arreglos-minimo-y-maximo` | `5` `7` `2` `9` `4` `1` | the smallest last and the largest in the middle |
+| `u5-arreglos-orden-descendente` | `5` `3` `8` `1` `9` `5` | five numbers sorted from largest to smallest |
+| `u5-arreglos-producto-punto` | `3` `0.5` `1.5` `-2` `4` `2` `3` | three weights against three inputs |
+| `u5-cadenas-contar-caracter` | `cada palabra` `a` | the letter a, counted five times |
+| `u5-cadenas-eliminar-vocales` | `Programacion Estructurada` | every vowel dropped from a two-word phrase |
+| `u5-cadenas-invertir` | `algoritmo` | a word reversed character by character |
+| `u5-cadenas-mayusculas-alternadas` | `algoritmo` | even positions upper, odd lower |
+| `u5-cadenas-mezclar` | `abc` `wxyz` | a shorter first string, so the tail of the second is appended |
+| `u5-cadenas-primer-repetido` | `programa` | the r of programa is the first letter to repeat |
+| `u5-cadenas-vocales-en-mayuscula` | `algoritmo` | only the vowels come back uppercase |
+| `u5-matrices-producto` | `2` `3` `2` `1` `2` `3` `4` `5` `6` `7` `8` `9` `10` `11` `12` | a two-by-three matrix times a three-by-two |
+| `u5-matrices-simetrica` | `3` `1` `2` `3` `2` `4` `5` `3` `5` `6` | a three-by-three matrix that is symmetric |
+| `u5-matrices-suma` | `2` `2` `1` `2` `3` `4` `5` `6` `7` `8` | two two-by-two matrices added entry by entry |
+| `u5-matrices-transpuesta` | `2` `3` `1.5` `2.5` `3.5` `4.5` `5.5` `6.5` | a two-by-three matrix of reals transposed |
+| `u5-pretaller-adivinar-contrasena` | `clave` `3` `abc` `clave` | one wrong guess, then the right one |
+| `u5-pretaller-editor-de-cadena` | `5` `H` `1` `o` `2` `x` `0` | two characters written into a blank of five, then position zero |
+| `u5-pretaller-palabras-sin-repetir` | `sol` `luna` `sol` `""` | a repeated word is refused before the empty line ends it |
+| `u6-funciones-utilitarias` | `6` `7` | six feet, then seven: prime and factorial both in range |
+| `u6-menu-interactivo` | `1` `1000` `""` `2` `10` `""` `0` | both menu options, then zero leaves |
+| `u6-operaciones-de-arreglo` | `5` `4` `9` `1` `7` `3` `7` | five numbers through all eight subprograms |

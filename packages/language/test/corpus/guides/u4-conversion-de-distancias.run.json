@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "five kilometres to miles, a labelled case in both Segun",
+      "inputs": ["5", "km", "mi"],
+      "output": "Introduce distancia: \nIntroduce unidad de origen: \nIntroduce unidad de destino: \n5km son 3.106855mi\n"
+    }
+  ]
+}

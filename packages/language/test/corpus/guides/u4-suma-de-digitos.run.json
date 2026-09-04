@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a negative number, so Abs is what makes the loop run",
+      "inputs": ["-1234"],
+      "output": "Introduce n: \nLa suma de sus digitos es: 10\n"
+    }
+  ]
+}

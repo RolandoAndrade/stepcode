@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a quadratic with two real roots",
+      "inputs": ["1", "-5", "6"],
+      "output": "Introduce a: \nIntroduce b: \nIntroduce c: \nx1 = 3\nx2 = 2\n"
+    }
+  ]
+}

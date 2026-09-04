@@ -1,0 +1,9 @@
+// expect: E4007
+// input: -4
+// U3: raíz cuadrada de un número negativo.
+Proceso RaizNegativa
+    Definir x Como Real;
+    Escribir "Número:";
+    Leer x;
+    Escribir "Raíz: ", RC(x);
+FinProceso
