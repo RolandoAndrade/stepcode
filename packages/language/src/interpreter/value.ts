@@ -104,7 +104,8 @@ export function cellSlot(array: ArrayValue, offset: number): Slot {
       return array.data[offset]
     },
     set value(next: RuntimeValue | undefined) {
-      array.data[offset] = isArrayValue(next) ? undefined : next
+      if (isArrayValue(next)) throw new Error('a cell never holds an array (E3009)')
+      array.data[offset] = next
     },
   }
 }

@@ -2,6 +2,7 @@ import { profiles } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
 import { formatDiagnostic } from '../../src/diagnostics/index'
 import {
+  type ArrayValue,
   allocateArray,
   cellOffset,
   cellSlot,
@@ -117,6 +118,17 @@ describe('the value model', () => {
     expect(array.data).toEqual([undefined, 7, undefined])
     array.data[1] = 9
     expect(slot.value).toBe(9)
+  })
+
+  it('throws rather than silently coercing an array write into a cell (checker-guaranteed by E3009)', () => {
+    const array = allocateArray('integer', [3], { name: 'a', spans: [span] })
+    const slot = cellSlot(array, 1)
+    const nested: ArrayValue = { element: 'integer', dims: [1], data: [undefined] }
+    expect(() => {
+      slot.value = nested
+    }).toThrow(/array/)
+    // The buffer is untouched: the throw happens before any write.
+    expect(array.data).toEqual([undefined, undefined, undefined])
   })
 
   it('fail throws a RuntimeError carrying a diagnostic with the given data', () => {

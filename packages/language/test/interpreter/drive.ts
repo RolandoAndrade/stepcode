@@ -134,6 +134,12 @@ export interface RunMainReport {
  * A miniature controller for the statement tests: runs main to the end, opening a frame per
  * call event and answering input events from `inputs`. A rejected or missing input throws a
  * plain `Error`, since these tests never exercise the rejection loop (that is Task 7's).
+ *
+ * This predates `Controller.advance()` in `src/interpreter/run.ts` (Task 5, controller Task 6)
+ * and is a second, hand-rolled loop over the same events, kept only because `statements.test.ts`
+ * already runs against it. It is not itself proof that the shipped controller behaves the same
+ * way; `test/corpus/step-equivalence.test.ts` and `test/interpreter/integration.test.ts` are the
+ * backstop that checks the shipped controller against this one and against a plain `run.continue()`.
  */
 export function runMain(source: string, options: RunMainOptions = {}): RunMainReport {
   const program = compileEs(source, options.profileName ?? 'es')

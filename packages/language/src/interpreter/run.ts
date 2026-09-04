@@ -61,7 +61,11 @@ export interface Run {
   stepOver(): StepResult
   /** Until the current frame returns. */
   stepOut(): StepResult
-  /** Until a breakpoint, or `budget` statements have executed. */
+  /**
+   * Until a breakpoint, or `budget` statements have executed. A non-positive `budget` (`0` or
+   * less) executes nothing: it reports `paused/budget` at the line the run is already sitting
+   * on (or, from `ready`, at the first statement's line), matching "at most `n`" (§3.5).
+   */
   continue(opts?: { readonly budget?: number }): StepResult
   /** Only legal in state `input`. */
   input(text: string): void
@@ -149,8 +153,12 @@ class Controller implements Run {
 
   continue(opts: { readonly budget?: number } = {}): StepResult {
     const budget = opts.budget
-    return this.command('continue', (_now, passed) =>
-      budget !== undefined && passed >= budget ? 'budget' : null,
+    const budgetBeforeFirst = budget !== undefined && budget <= 0
+    return this.command(
+      'continue',
+      (_now, passed) => (budget !== undefined && passed >= budget ? 'budget' : null),
+      true,
+      budgetBeforeFirst,
     )
   }
 
@@ -194,13 +202,18 @@ class Controller implements Run {
     return frame
   }
 
-  private command(name: string, rule: StopRule, breakpointsBeforeFirst = true): StepResult {
+  private command(
+    name: string,
+    rule: StopRule,
+    breakpointsBeforeFirst = true,
+    stopBeforeFirst = false,
+  ): StepResult {
     if (this.state === 'done' || this.state === 'error') {
       throw new Error(`${name} is not legal in state ${this.state}`)
     }
     if (this.state === 'input') return this.reportInput()
     try {
-      return this.drive(rule, breakpointsBeforeFirst)
+      return this.drive(rule, breakpointsBeforeFirst, stopBeforeFirst)
     } catch (error) {
       if (!(error instanceof RuntimeError)) throw error
       this.failure = {
@@ -219,7 +232,11 @@ class Controller implements Run {
    * command. A pause point is counted when it is passed: resuming past the one the run is
    * sitting on counts, so `continue({ budget: 1 })` executes exactly one statement.
    */
-  private drive(rule: StopRule, breakpointsBeforeFirst: boolean): StepResult {
+  private drive(
+    rule: StopRule,
+    breakpointsBeforeFirst: boolean,
+    stopBeforeFirst = false,
+  ): StepResult {
     let passed = 0
     if (!this.primed) {
       // The pause before the first statement is the position `ready` stands for (§3.1); it is
@@ -237,6 +254,10 @@ class Controller implements Run {
         return this.stopped('breakpoint', first.line)
       }
     }
+    // A non-positive budget (§3.5) stops here, before anything is resumed past: `atPause`
+    // still holds the pause the run is already sitting on (or the one `ready` just primed to),
+    // and nothing below this line has executed.
+    if (stopBeforeFirst) return this.stopped('budget', this.innermost().line)
     if (this.atPause) passed++
     for (;;) {
       const event = this.advance()

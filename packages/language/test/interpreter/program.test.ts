@@ -99,21 +99,36 @@ describe('runProgram (§3.6)', () => {
     expect(outcome.frames.map((frame) => frame.name)).toEqual(['p'])
   })
 
-  it('yields to the event loop between budget slices', async () => {
+  it('yields to the event loop between budget slices, on the default macrotask sleep', async () => {
     const program = compileEs(
       main('Definir i Como Entero;', 'Para i <- 1 Hasta 3 Hacer', '  Escribir i;', 'FinPara'),
     )
     const marks: string[] = []
     const h = harness([], { budget: 1 })
+    // Drop the harness's fake `sleep` so this pins the *default* budget yield to a real
+    // macrotask, not the harness's synchronously-resolving stub.
+    const { sleep: _unused, ...withoutSleep } = h.options
     setTimeout(() => marks.push('tick'), 0)
     const options: RunProgramOptions = {
-      ...h.options,
+      ...withoutSleep,
       io: { ...h.options.io, write: (text) => void marks.push(text.trim()) },
     }
     await runProgram(program, options)
     // The tick was queued before the run started and the first slice ends before any output,
     // so the macrotask await lets it through first; without that await it would come last.
     expect(marks).toEqual(['tick', '1', '2', '3'])
+  })
+
+  it('routes the budget yield through an injected sleep instead of a hard-wired macrotask', async () => {
+    // A host on fake timers relies on this: the budget yield must go through the same
+    // injectable `sleep` as `Esperar`, not a hard-wired `setTimeout`.
+    const program = compileEs(
+      main('Definir i Como Entero;', 'Para i <- 1 Hasta 3 Hacer', '  Escribir i;', 'FinPara'),
+    )
+    const h = harness([], { budget: 1 })
+    await runProgram(program, h.options)
+    // One budget-yield `sleep(0)` between each `continue({ budget: 1 })` slice this run takes.
+    expect(h.sleeps).toEqual([0, 0, 0, 0, 0, 0, 0])
   })
 
   it('defaults the budget to 10000 statements and still finishes a longer run', async () => {

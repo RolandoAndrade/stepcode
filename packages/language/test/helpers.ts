@@ -763,7 +763,10 @@ export async function runSidecar(
     sleep: () => Promise.resolve(),
     ...(run.seed === undefined ? {} : { random: seeded(run.seed) }),
   })
-  if (next !== run.inputs.length) {
+  // A non-`done` outcome is reported first: an early runtime error or abort leaves inputs
+  // unread as a matter of course, and that outcome is what the caller's own `done` assertion
+  // should see, not a generic "unconsumed input(s)" Error that hides it.
+  if (outcome.kind === 'done' && next !== run.inputs.length) {
     throw new Error(
       `${slug}: the sidecar has ${run.inputs.length - next} unconsumed input(s) left over`,
     )

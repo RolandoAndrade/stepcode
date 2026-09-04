@@ -267,6 +267,33 @@ describe('continue and budget (§3.5)', () => {
     const { run } = startSource(counting)
     expect(run.continue({ budget: 1000 })).toEqual({ kind: 'done' })
   })
+
+  it('budget: 0 pauses immediately, from ready, without executing the first statement', () => {
+    const { run, output } = startSource(counting)
+    const stopped = paused(run.continue({ budget: 0 }))
+    expect(stopped.reason).toBe('budget')
+    // Same line `ready`'s own inspect() reports: the first statement, not yet executed.
+    expect(stopped.line).toBe(2)
+    expect(output()).toBe('')
+    expect(stopped.frames[0]?.variables.map((v) => v.value)).toEqual([undefined, undefined])
+  })
+
+  it('budget: 0 pauses immediately from paused too, executing nothing further', () => {
+    const { run } = startSource(counting)
+    const first = paused(run.continue({ budget: 2 }))
+    expect(first.reason).toBe('budget')
+    const still = paused(run.continue({ budget: 0 }))
+    expect(still.reason).toBe('budget')
+    expect(still.line).toBe(first.line)
+    expect(still.frames).toEqual(first.frames)
+  })
+
+  it('rejects a negative budget the same way as zero: paused/budget, nothing executed', () => {
+    const { run, output } = startSource(counting)
+    const stopped = paused(run.continue({ budget: -1 }))
+    expect(stopped.reason).toBe('budget')
+    expect(output()).toBe('')
+  })
 })
 
 describe('input (§3.2, §5.7)', () => {

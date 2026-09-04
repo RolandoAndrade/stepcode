@@ -70,7 +70,10 @@ export async function runProgram(
       case 'error':
         return { kind: 'error', diagnostic: result.diagnostic, frames: result.frames }
       case 'paused':
-        await timeout(0)
+        // Route through the same injectable `sleep` as `Esperar` (§3.6), not a hard-wired
+        // macrotask, so a host on fake timers does not hang between budget slices; `sleep`
+        // already defaults to a real macrotask (`timeout`) when the caller injects nothing.
+        await sleep(0)
         break
       case 'input': {
         const request: InputRequest =
