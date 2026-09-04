@@ -54,10 +54,51 @@ describe('block matching', () => {
     expect(matchText(open, open.indexOf('Si 1'), 1)?.matched).toBe(false)
   })
 
-  it('still matches parentheses and brackets by text', () => {
+  it('matches parentheses and brackets through their own tree props', () => {
     expect(matchText(source, source.indexOf('('), 1)).toEqual({ end: ')', matched: true })
     const arr = main('  Definir a Como Entero;\n  Dimension a[3];')
     expect(matchText(arr, arr.indexOf('['), 1)).toEqual({ end: ']', matched: true })
+  })
+
+  it('matches each nested parenthesis to its own closer, not an outer one', () => {
+    const nested = main('  Escribir ((1 + 2) * (3));')
+    const outer = nested.indexOf('((')
+    // The outer `)` closes the whole `((1 + 2) * (3))` group, past both inner pairs.
+    const state = stateFor(nested, stepcodeBlockMatching())
+    const outerResult = matchBrackets(state, outer, 1)
+    expect(outerResult?.matched).toBe(true)
+    expect(outerResult?.end?.from).toBe(nested.lastIndexOf(')'))
+
+    const innerFirst = outer + 1
+    const firstMatch = matchText(nested, innerFirst, 1)
+    expect(firstMatch).toEqual({ end: ')', matched: true })
+    // That closer is the one right after `2`, not the one after `3`.
+    const firstResult = matchBrackets(state, innerFirst, 1)
+    expect(firstResult?.end?.from).toBe(nested.indexOf(')'))
+
+    const innerSecond = nested.indexOf('(3')
+    const secondMatch = matchText(nested, innerSecond, 1)
+    expect(secondMatch).toEqual({ end: ')', matched: true })
+    const secondResult = matchBrackets(state, innerSecond, 1)
+    expect(secondResult?.end?.from).toBe(nested.indexOf(')', innerSecond))
+  })
+
+  it('does not match a parenthesis embedded in a string', () => {
+    const withString = main('  Escribir "(" + (1);')
+    // The real `(` before `1` matches the real `)` right after it, ignoring the one in the
+    // string that comes before it in the text.
+    const realOpen = withString.lastIndexOf('(')
+    expect(matchText(withString, realOpen, 1)).toEqual({ end: ')', matched: true })
+
+    // The `(` inside the string literal does not participate in matching: the matcher finds it
+    // (matchBrackets always answers something for a bracket-shaped character), but reports it
+    // unmatched, because nothing outside the string shares its String token type — the string
+    // does not participate.
+    const stringOpen = withString.indexOf('"(') + 1
+    const state = stateFor(withString, stepcodeBlockMatching())
+    const stringResult = matchBrackets(state, stringOpen, 1)
+    expect(stringResult?.matched).toBe(false)
+    expect(stringResult?.end).toBeUndefined()
   })
 
   it('finds nothing on a plain keyword', () => {
