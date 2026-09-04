@@ -83,6 +83,16 @@ export const MATCHING_PAIRS: readonly (readonly [KeywordKey, KeywordKey])[] = [
   ['program', 'endProgram'],
 ]
 
+/**
+ * Opener ↔ closer punctuation node names (spec §4.2). The stock bracket matcher's text
+ * fallback only pairs characters whose tree nodes share one type, and ours are distinct types
+ * by design, so these get the same `closedBy`/`openedBy` treatment as the keyword pairs.
+ */
+export const PUNCT_MATCHING_PAIRS: readonly (readonly [string, string])[] = [
+  ['OpenParen', 'CloseParen'],
+  ['OpenBracket', 'CloseBracket'],
+]
+
 export const NODE_NAMES: readonly string[] = [
   ...STRUCTURE_NAMES,
   ...LEAF_NAMES,
@@ -99,12 +109,20 @@ export function nodeId(name: string): number {
 }
 
 const ERROR_NAMES: ReadonlySet<string> = new Set(['Error', 'ErrorStmt', 'ErrorExpr'])
-const closers = new Map<string, string>(
-  MATCHING_PAIRS.map(([open, close]) => [keywordNodeName(open), keywordNodeName(close)]),
-)
-const openers = new Map<string, string>(
-  MATCHING_PAIRS.map(([open, close]) => [keywordNodeName(close), keywordNodeName(open)]),
-)
+const closers = new Map<string, string>([
+  ...MATCHING_PAIRS.map(([open, close]): [string, string] => [
+    keywordNodeName(open),
+    keywordNodeName(close),
+  ]),
+  ...PUNCT_MATCHING_PAIRS.map(([open, close]): [string, string] => [open, close]),
+])
+const openers = new Map<string, string>([
+  ...MATCHING_PAIRS.map(([open, close]): [string, string] => [
+    keywordNodeName(close),
+    keywordNodeName(open),
+  ]),
+  ...PUNCT_MATCHING_PAIRS.map(([open, close]): [string, string] => [close, open]),
+])
 
 function propsFor(name: string): readonly [NodeProp<readonly string[]>, readonly string[]][] {
   const closer = closers.get(name)

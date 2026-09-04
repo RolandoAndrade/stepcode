@@ -9,6 +9,7 @@ import {
   NODE_NAMES,
   nodeId,
   nodeSet,
+  PUNCT_MATCHING_PAIRS,
   STRUCTURE_NAMES,
 } from '../src/nodes'
 
@@ -60,5 +61,19 @@ describe('node names', () => {
     }
     expect(nodeSet.types[nodeId('ThenKeyword')]?.prop(NodeProp.closedBy)).toBeUndefined()
     expect(nodeSet.types[nodeId('WhileKeyword')]?.prop(NodeProp.openedBy)).toBeUndefined()
+  })
+
+  it('pairs parentheses and brackets through closedBy and openedBy too', () => {
+    expect(PUNCT_MATCHING_PAIRS.length).toBe(2)
+    for (const [opener, closer] of PUNCT_MATCHING_PAIRS) {
+      const open = nodeSet.types[nodeId(opener)]
+      const close = nodeSet.types[nodeId(closer)]
+      expect(open?.prop(NodeProp.closedBy)).toEqual([closer])
+      expect(close?.prop(NodeProp.openedBy)).toEqual([opener])
+    }
+    expect(nodeSet.types[nodeId('OpenParen')]?.prop(NodeProp.closedBy)).toEqual(['CloseParen'])
+    expect(nodeSet.types[nodeId('CloseParen')]?.prop(NodeProp.openedBy)).toEqual(['OpenParen'])
+    expect(nodeSet.types[nodeId('OpenBracket')]?.prop(NodeProp.closedBy)).toEqual(['CloseBracket'])
+    expect(nodeSet.types[nodeId('CloseBracket')]?.prop(NodeProp.openedBy)).toEqual(['OpenBracket'])
   })
 })
