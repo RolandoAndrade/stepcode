@@ -295,12 +295,12 @@ Strict mode: the counter must resolve to an existing `variable` of type `Entero`
 current scope, else E3001 (unknown, hint `declare`) or E3026 (counter must be `Entero`,
 data: found). A name that resolves to something else takes the code that already names that
 kind: a subprogram is E3005, a constant E3007, and a parameter or a function's result
-variable is E3026 with the `kind` hint ("has to be a variable of this block"). Pseint mode: an unknown counter declares a `counter` symbol of type `Entero`
-at the loop; a known `Entero` variable is used as is. Inside the loop body the symbol is
-flagged as a counter, so assignment, `Leer`, and passing it `Por Referencia` are E3008; after
-the loop it is an ordinary
-variable again, holding whatever the runtime left. `from`, `to`, `step` must be `Entero`
-(E3010 with the usual hint). A `step` folding to zero is E3027.
+variable is E3026 with the `kind` hint ("has to be a variable of this block"). Pseint mode:
+an unknown counter declares a `counter` symbol of type `Entero` at the loop; a known `Entero`
+variable is used as is. Inside the loop body the symbol is flagged as a counter, so
+assignment, `Leer`, and passing it `Por Referencia` are E3008; after the loop it is an
+ordinary variable again, holding whatever the runtime left. `from`, `to`, `step` must be
+`Entero` (E3010 with the usual hint). A `step` folding to zero is E3027.
 
 ### 5.10 Romper, Continuar, Retornar
 
@@ -403,7 +403,7 @@ Errors E3001–E3039, warnings W3001–W3004. Severity is fixed per code.
 | E3023 | array size is not a positive integer constant | — |
 | E3024 | constant value is not constant | `name` |
 | E3025 | division by zero | `op` |
-| E3026 | counter must be an integer | `name`, `found`; variant `kind` |
+| E3026 | counter must be an integer variable | `name`, `found`; variant `kind` |
 | E3027 | step is zero | — |
 | E3028 | selector type cannot be switched on | `found` |
 | E3029 | case label is not constant | — |

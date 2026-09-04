@@ -2,6 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { compile } from '../../src/compile'
 import { type CorpusProgram, corpusPrograms, profileNamed } from '../helpers'
 
+interface Mutated {
+  readonly source: string
+  /**
+   * The identifier this mutation misspelled, when it misspelled one. Misspelling a variable's
+   * last read leaves it written and never read, and that W3002 is true of the mutated text —
+   * but only for *that* name, and only once. Every other warning is a cascade.
+   */
+  readonly misspelled?: string
+}
+
 interface Mutation {
   readonly name: string
   /**
@@ -11,14 +21,8 @@ interface Mutation {
    * currently mutates. Today's counts, in the order below: 72, 84, 70, 7, 29.
    */
   readonly atLeast: number
-  /**
-   * The warning this mutation legitimately makes true of the mutated program, if any. A
-   * misspelled read is still the one mistake, but the variable it stopped reading really is
-   * written and never read now. Anything else the mutation draws is a cascade.
-   */
-  readonly alsoWarns?: 'W3002'
-  /** The mutated source, or `undefined` when this program has nothing to mutate. */
-  apply(source: string): string | undefined
+  /** The mutated program, or `undefined` when this program has nothing to mutate. */
+  apply(source: string): Mutated | undefined
 }
 
 const mutations: Mutation[] = [
@@ -31,13 +35,12 @@ const mutations: Mutation[] = [
           source,
         )
       if (match === null) return undefined
-      return source.slice(0, match.index) + source.slice(match.index + match[0].length)
+      return { source: source.slice(0, match.index) + source.slice(match.index + match[0].length) }
     },
   },
   {
     name: 'misspell the last use of a name',
     atLeast: 80,
-    alsoWarns: 'W3002',
     apply: (source) => {
       const match = /Escribir[ \t]+([A-Za-zÁÉÍÓÚÑáéíóúñ_][\w]*)[ \t]*;/g
       const all = [...source.matchAll(match)]
@@ -47,7 +50,10 @@ const mutations: Mutation[] = [
       // From the end of the match: `Escribir` itself holds a `c`, and misspelling the keyword
       // is a parser mistake, not the one this mutation is named for.
       const at = last.index + (last[0] as string).lastIndexOf(name)
-      return `${source.slice(0, at)}${name}qz${source.slice(at + name.length)}`
+      return {
+        source: `${source.slice(0, at)}${name}qz${source.slice(at + name.length)}`,
+        misspelled: name,
+      }
     },
   },
   {
@@ -60,7 +66,7 @@ const mutations: Mutation[] = [
       if (match === null) return undefined
       const at = match.index + (match[1] as string).length
       const digits = match[2] as string
-      return `${source.slice(0, at)}"${digits}"${source.slice(at + digits.length)}`
+      return { source: `${source.slice(0, at)}"${digits}"${source.slice(at + digits.length)}` }
     },
   },
   {
@@ -71,9 +77,11 @@ const mutations: Mutation[] = [
         source,
       )
       if (match === null || match.index === undefined) return undefined
-      return `${source.slice(0, match.index)}${match[1]}(${match[2]});${source.slice(
-        match.index + match[0].length,
-      )}`
+      return {
+        source: `${source.slice(0, match.index)}${match[1]}(${match[2]});${source.slice(
+          match.index + match[0].length,
+        )}`,
+      }
     },
   },
   {
@@ -82,9 +90,11 @@ const mutations: Mutation[] = [
     apply: (source) => {
       const match = /(\w)[ \t]\+[ \t](\w)/.exec(source)
       if (match === null || match.index === undefined) return undefined
-      return `${source.slice(0, match.index)}${match[1]} Y ${match[2]}${source.slice(
-        match.index + match[0].length,
-      )}`
+      return {
+        source: `${source.slice(0, match.index)}${match[1]} Y ${match[2]}${source.slice(
+          match.index + match[0].length,
+        )}`,
+      }
     },
   },
 ]
@@ -116,21 +126,29 @@ describe('one mistake, one diagnostic', () => {
     const profile = profileNamed(profileName)
     for (const mutation of mutations) {
       const mutated = mutation.apply(source)
-      if (mutated === undefined || mutated === source) continue
+      if (mutated === undefined || mutated.source === source) continue
       applied.set(mutation.name, (applied.get(mutation.name) ?? 0) + 1)
       it(`${file}: ${mutation.name}`, () => {
         expect(compile(source, { profile }).diagnostics).toEqual([])
         // Every diagnostic, warnings included: a cascade into W3002 or W3003 is exactly the
         // kind of second complaint this property exists to catch.
-        const after = compile(mutated, { profile }).diagnostics
-        const errors = after.filter((one) => one.severity === 'error')
-        const others = after.filter((one) => one.code !== mutation.alsoWarns)
+        const after = compile(mutated.source, { profile }).diagnostics
+        const at = (one: (typeof after)[number]): string =>
+          `${one.code}@${mutated.source.slice(one.span.start, one.span.end)}`
+        expect(after.filter((one) => one.severity === 'error').map(at)).toHaveLength(1)
+        // The one warning a misspelling may leave behind: W3002 on the very name it
+        // misspelled, and only one. Anything else, from any family, is a second complaint.
+        // Names compare case-folded: a symbol's name is canonical, the source's is as typed.
+        const warnings = after
+          .filter((one) => one.severity === 'warning')
+          .map((one) => `${one.code}@${String(one.data.name)}`.toLowerCase())
+        const allowed =
+          mutated.misspelled === undefined ? [] : [`W3002@${mutated.misspelled}`.toLowerCase()]
         expect(
-          errors.map((one) => `${one.code}@${mutated.slice(one.span.start, one.span.end)}`),
-        ).toHaveLength(1)
-        expect(
-          others.map((one) => `${one.code}@${mutated.slice(one.span.start, one.span.end)}`),
-        ).toHaveLength(1)
+          warnings.filter((one) => !allowed.includes(one)),
+          'a warning this mutation did not make true',
+        ).toEqual([])
+        expect(warnings.length, 'more than one warning').toBeLessThanOrEqual(1)
       })
     }
   }
