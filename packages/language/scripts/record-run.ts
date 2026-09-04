@@ -3,8 +3,12 @@
  * §8.2, §8.3). The interpreter produces the output; a human reads it against the program
  * before committing. From the repo root:
  *
- *   node --experimental-transform-types --conditions=development packages/language/scripts/record-run.ts \
+ *   node --experimental-transform-types --conditions=development \
+ *     --import ./packages/language/scripts/register.mjs packages/language/scripts/record-run.ts \
  *     <programs|guides> <slug> [--name <text>] [--seed <n>] [--replace] [--input <text>]...
+ *
+ * (`register.mjs` lets plain Node resolve this codebase's extensionless imports; see its
+ * header for why.)
  *
  * `--input` repeats, one per input request in order (`Esperar Tecla` takes one too). `--seed`
  * is required when the program calls `Azar` or `Aleatorio` (default 1 then). `--replace`

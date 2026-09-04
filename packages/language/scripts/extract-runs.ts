@@ -5,7 +5,10 @@
  * slug rule is the same, so each v1 test lands beside the program it exercised.
  *
  * Run once from the repo root, review every sidecar it wrote, then commit:
- *   node --experimental-transform-types --conditions=development packages/language/scripts/extract-runs.ts
+ *   node --experimental-transform-types --conditions=development \
+ *     --import ./packages/language/scripts/register.mjs packages/language/scripts/extract-runs.ts
+ * (`register.mjs` lets plain Node resolve this codebase's extensionless imports; see its
+ * header for why.)
  *
  * Per v1 test it collects the input list, every asserted `output-request` string, every negated
  * one and `toBeCalledTimes(n)`; runs the v2 program with those inputs (seed 1 when it uses
