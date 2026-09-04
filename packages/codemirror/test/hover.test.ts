@@ -22,6 +22,20 @@ const program = [
   'FinProceso',
 ].join('\n')
 
+/** The `f(): T` forms, which return through `Retornar` and so declare no result variable. */
+const returning = [
+  'Funcion sumar(): Entero',
+  '  Retornar 1;',
+  'FinFuncion',
+  'Funcion lista(): Entero[]',
+  '  Definir xs Como Entero[3];',
+  '  Retornar xs;',
+  'FinFuncion',
+  'Proceso p',
+  '  Escribir sumar();',
+  'FinProceso',
+].join('\n')
+
 const linesAt = (marker: string, offset = 0): readonly string[] | null =>
   hoverInfoAt(stateFor(program), program.indexOf(marker) + offset, 1, options)?.lines ?? null
 
@@ -43,6 +57,14 @@ describe('hoverInfoAt', () => {
     expect(linesAt('doble(MAX')).toEqual(['función doble: Entero', 'declarada en la línea 4'])
     expect(linesAt('llena(a')).toEqual(['procedimiento llena', 'declarada en la línea 1'])
     expect(linesAt('doble(n')).toEqual(['función doble: Entero', 'declarada en la línea 4'])
+  })
+
+  it('describes a function that returns through Retornar, with no result variable', () => {
+    const at = (marker: string): readonly string[] | null =>
+      hoverInfoAt(stateFor(returning), returning.indexOf(marker), 1, options)?.lines ?? null
+    expect(at('sumar():')).toEqual(['función sumar: Entero', 'declarada en la línea 1'])
+    expect(at('lista():')).toEqual(['función lista: Entero[]', 'declarada en la línea 4'])
+    expect(at('sumar();')).toEqual(['función sumar: Entero', 'declarada en la línea 1'])
   })
 
   it('describes a builtin by its signature', () => {

@@ -4,7 +4,12 @@ import { symbolAt } from './symbols'
 
 /** The start of the declaration of the name at `pos`, or null (spec §5.10). */
 export function definitionAt(state: EditorState, pos: number): number | null {
-  return symbolAt(state, pos, 0)?.symbol.declaredAt.span.start ?? null
+  const found = symbolAt(state, pos, 0)
+  // §5.10 resolves the name as §5.9 does, and §5.9 says nothing about a recovery symbol: it is
+  // declared at the very use that named it (language spec §3.2), so jumping there would move
+  // nowhere while reporting success — and a command that returns true swallows the key.
+  if (found === null || found.symbol.recovered === true) return null
+  return found.symbol.declaredAt.span.start
 }
 
 export const goToDefinition: Command = (view) => {

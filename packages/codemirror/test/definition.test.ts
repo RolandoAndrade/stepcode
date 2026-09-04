@@ -15,6 +15,9 @@ const program = [
   'FinProceso',
 ].join('\n')
 
+/** E3001: the checker declares a recovery symbol whose `declaredAt` is this very use. */
+const undeclared = ['Proceso p', '  Escribir nope;', 'FinProceso'].join('\n')
+
 describe('definitionAt', () => {
   it('finds the declaration of a variable and of a called subprogram', () => {
     const state = stateFor(program)
@@ -34,6 +37,10 @@ describe('definitionAt', () => {
     expect(definitionAt(state, program.indexOf('Proceso'))).toBeNull()
     expect(definitionAt(state, program.indexOf('3);'))).toBeNull()
   })
+
+  it('returns null on an undeclared name, whose recovery symbol declares nothing', () => {
+    expect(definitionAt(stateFor(undeclared), undeclared.indexOf('nope'))).toBeNull()
+  })
 })
 
 describe('goToDefinition', () => {
@@ -51,6 +58,14 @@ describe('goToDefinition', () => {
     view.dispatch({ selection: EditorSelection.single(program.indexOf('Proceso')) })
     expect(goToDefinition(view)).toBe(false)
     expect(view.state.selection.main.head).toBe(program.indexOf('Proceso'))
+    view.destroy()
+  })
+
+  it('reports failure on an undeclared name instead of jumping to the use itself', () => {
+    const view = new EditorView({ state: stateFor(undeclared) })
+    view.dispatch({ selection: EditorSelection.single(undeclared.indexOf('nope') + 1) })
+    expect(goToDefinition(view)).toBe(false)
+    expect(view.state.selection.main.head).toBe(undeclared.indexOf('nope') + 1)
     view.destroy()
   })
 
