@@ -10,6 +10,7 @@ import {
 } from '@lezer/common'
 import type { ResolvedProfile } from '@stepcode/profiles'
 import { type CompileResult, compile } from 'stepcode'
+import { blockProps, indentOnInputPatterns } from './blocks'
 import { nodeSet } from './nodes'
 import { buildTree, compileProp, type TreeData } from './tree'
 
@@ -55,7 +56,7 @@ class StepcodeParser extends Parser {
   }
 }
 
-/** The language data for a profile; Task 5 adds `indentOnInput`. */
+/** The language data for a profile: comment tokens only. */
 export function languageData(profile: ResolvedProfile): { [name: string]: unknown } {
   return { commentTokens: { line: profile.operators.comment[0] ?? '//' } }
 }
@@ -70,8 +71,10 @@ export function stepcodeLanguage(profile: ResolvedProfile): Language {
   const cached = languages.get(profile)
   if (cached !== undefined) return cached
   const data = defineLanguageFacet(languageData(profile))
-  const set = nodeSet.extend(languageDataProp.add({ Program: data }))
-  const language = new Language(data, new StepcodeParser(profile, set), [], 'stepcode')
+  const set = nodeSet.extend(languageDataProp.add({ Program: data }), ...blockProps(profile))
+  // Spec §5.4: one `indentOnInput` rule per pattern, each its own facet value.
+  const rules = indentOnInputPatterns(profile).map((pattern) => data.of({ indentOnInput: pattern }))
+  const language = new Language(data, new StepcodeParser(profile, set), rules, 'stepcode')
   languages.set(profile, language)
   return language
 }
