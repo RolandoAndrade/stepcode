@@ -484,3 +484,21 @@ TDD throughout; each task starts with its failing test.
 - No highlight style, lint gutter, or line numbers in `stepcode()`: hosts differ.
 - Round-trip strings live in this package, not in `stepcode`: the language package's
   catalogs are diagnostics only.
+
+## 12. Amendments from planning
+
+Decided while writing `plans/2026-09-04-codemirror.md`; the plan's "Deviations" section has
+the reasoning.
+
+- `CompileResult` gains `readonly tokens: readonly Token[]` (the tree builder needs the token
+  stream; additive, `stepcode` patch changeset).
+- `repeat`↔`until` is the only `Repetir` pair. `Repetir … Mientras Que` does not match:
+  marking the `while` keyword as opened by `repeat` would make every ordinary `Mientras`
+  report "no match", because the matcher answers from the first direction that resolves.
+- Switch indentation (§5.4): `es` and `en` spell no `case` keyword, so a case line is
+  recognised by the shape `valor:`; a case line sits one unit past `Segun`, its body two
+  units, and a line after `De Otro Modo` two units.
+- Debug markers map through changes with explicit line-survival logic rather than
+  `RangeSet.map`, which would move a marker onto the next line when its own line is deleted.
+- `stepcodeLanguage(profile)` is memoized per profile object, and the node set is extended per
+  language with the profile-dependent props; names and ids in §4.2 are unchanged.
