@@ -237,13 +237,21 @@ describe('Dimension (§5.2)', () => {
     expect(report.texts).toEqual(['lista'])
   })
 
-  // M8: the recovery symbol an unresolved read plants is not a declaration (§3.2), so
-  // dimensioning it is still dimensioning a name nothing declares.
-  it('reports a name that only a recovery symbol stands for', () => {
+  // M8: the recovery symbol an unresolved read plants is not a declaration (§3.2), so it
+  // never becomes a dimensioned array — but the mistake it stands for was already reported,
+  // and saying it again here would be one mistake, two diagnostics.
+  it('says nothing more about a name only a recovery symbol stands for', () => {
     const source = main('Escribir lista[1];', 'Dimension lista[5];')
     const report = checkSource(source)
-    expect(report.codes).toEqual(['E3001', 'E3021'])
-    expect(report.texts).toEqual(['lista', 'lista'])
+    expect(report.codes).toEqual(['E3001'])
+    expect(report.texts).toEqual(['lista'])
+  })
+
+  it('leaves the declaration below to explain itself, once', () => {
+    const read = main('Escribir x;', 'Dimension x[5];', 'Definir x Como Entero;')
+    expect(checkCodes(read)).toEqual(['E3003'])
+    const write = main('x[1] <- 1;', 'Dimension x[5];', 'Definir x Como Entero;')
+    expect(checkCodes(write)).toEqual(['E3003'])
   })
 
   it('does not declare in pseint mode either', () => {

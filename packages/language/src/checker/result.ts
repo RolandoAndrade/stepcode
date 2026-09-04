@@ -142,16 +142,21 @@ export function reportAssignFailure(
   failure: AssignFailure,
   context: AssignContext = {},
 ): void {
+  // E3009 and E3011 are about the value, so `{name}` is the value's own name and the caller's
+  // never stands in for it. A value that has no name — a call returning an array — drops the
+  // variant with it, and the base template says the same thing without naming anything.
+  const own = failure.code === 'E3009' || failure.code === 'E3011' ? nameOf(source) : undefined
   const data: Record<string, string | number> = {
     expected: typeToString(failure.expected, state.profile),
     found: typeToString(failure.found, state.profile),
-    ...context.data,
   }
-  if (failure.code === 'E3009' || failure.code === 'E3011') {
-    const name = nameOf(source)
-    if (name.length > 0 || data.name === undefined) data.name = name
+  for (const [slot, value] of Object.entries(context.data ?? {})) {
+    if (slot === 'name' && own !== undefined) continue
+    data[slot] = value
   }
-  if (failure.hint !== undefined) data.hint = failure.hint
+  if (own !== undefined && own.length > 0) data.name = own
+  const hint = own !== undefined && own.length === 0 ? undefined : failure.hint
+  if (hint !== undefined) data.hint = hint
   if (failure.length !== undefined) data.length = failure.length
   const code = failure.code === 'E3010' && context.code !== undefined ? context.code : failure.code
   report(state, code, source.span, data, context.related)

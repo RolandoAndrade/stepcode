@@ -250,9 +250,7 @@ function checkDimension(state: CheckerState, stmt: DimensionStmt): void {
     const id = item.name
     if (id.missing === true) continue
     const symbol = lookupLocal(state.frame.scope, id.name)
-    // A recovery symbol is not a declaration (§3.2): dimensioning it is still dimensioning a
-    // name nothing declares.
-    if (symbol === undefined || symbol.recovered === true) {
+    if (symbol === undefined) {
       // pseint declares on assignment, never here (§5.2). The recovery symbol of §3.2 stands
       // in for the missing declaration all the same, so the uses below it say nothing more:
       // one missing `Definir`, one diagnostic.
@@ -261,6 +259,15 @@ function checkDimension(state: CheckerState, stmt: DimensionStmt): void {
       continue
     }
     state.symbols.set(id, symbol)
+    // A recovery symbol is not a declaration (§3.2), so it never becomes a dimensioned array
+    // — but the name it stands for was already reported once, and this statement is not a
+    // second mistake. Re-declaring here would also throw away the reads and writes it has
+    // collected, which the real declaration below inherits; `Dimension` is one of them,
+    // being an initialization (§9).
+    if (symbol.recovered === true) {
+      symbol.writes++
+      continue
+    }
     if (symbol.kind !== 'variable') {
       report(state, 'E3022', id.span, { name: id.text, hint: 'kind' })
       continue
