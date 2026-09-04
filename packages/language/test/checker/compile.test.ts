@@ -109,4 +109,13 @@ describe('compile carries the checker tables and the source', () => {
     if (arg === undefined) return
     expect(result.types.get(arg)).toEqual({ kind: 'scalar', name: 'integer' })
   })
+
+  it('hands back the token stream the parser produced', () => {
+    const source = 'Proceso p\n  Escribir 1;\nFinProceso'
+    const result = compile(source, { profile: profiles.es })
+    const words = result.tokens
+      .filter((token) => token.kind !== 'whitespace' && token.kind !== 'newline')
+      .map((token) => token.text)
+    expect(words).toEqual(['Proceso', 'p', 'Escribir', '1', ';', 'FinProceso', ''])
+  })
 })

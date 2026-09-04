@@ -1,2 +1,4 @@
 export const packageName = '@stepcode/codemirror'
-export { packageName as languagePackageName } from 'stepcode'
+
+export type { PlaceholderKey, Strings } from './strings'
+export { stringsFor } from './strings'

@@ -4,6 +4,12 @@
   "description": "CodeMirror 6 language support and debug extensions for StepCode",
   "license": "MIT",
   "author": "Rolando Andrade",
+  "keywords": [
+    "stepcode",
+    "codemirror",
+    "pseudocode",
+    "pseint"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/RolandoAndrade/stepcode",
@@ -36,9 +42,19 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "catalog:",
+    "@codemirror/language": "catalog:",
+    "@codemirror/lint": "catalog:",
+    "@codemirror/state": "catalog:",
+    "@codemirror/view": "catalog:",
+    "@lezer/common": "catalog:",
+    "@lezer/highlight": "catalog:",
+    "@stepcode/profiles": "workspace:*",
     "stepcode": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
+    "happy-dom": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
