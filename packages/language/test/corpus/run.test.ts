@@ -14,7 +14,7 @@ describe('the conformance corpus runs (§8.1)', () => {
       const title = run.name ?? `run ${index + 1}`
       it(`${program.file} · ${title} produces its recorded output`, async () => {
         const profile = profileNamed(program.profileName)
-        const { outcome, output } = await runSidecar(program.source, profile, run)
+        const { outcome, output } = await runSidecar(program.source, profile, run, program.slug)
         expect(outcome).toEqual({ kind: 'done' })
         expect(output).toBe(run.output)
       })

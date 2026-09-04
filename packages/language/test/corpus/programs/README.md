@@ -115,8 +115,8 @@ level (a missing `;` under `requireSemicolons`) is covered by
 Five programs were removed from this directory instead of being rewritten: no rewrite keeps
 what they compute, because each one leans on v1 behaviour v2 does not have. What the checker
 says about each is pinned in `test/checker/by-code.test.ts` instead, and the v1 originals stay
-in `test/corpus/v1/` (`arrays.v1.ts`, `arithmetic-operations.v1.ts` and `subprograms.v1.ts`)
-and in this repository's history.
+in `test/corpus/v1/` (`arrays.v1.ts`, `arithmetic-operations.v1.ts`, `subprograms.v1.ts` and
+`strings.v1.ts`) and in this repository's history.
 
 | Program | Why it is gone |
 |---|---|

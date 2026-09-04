@@ -21,7 +21,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { corpusIndexBaseZero, profileNamed, type SidecarRun } from '../test/helpers'
+import { profileForCorpus, profileNamed, type SidecarRun } from '../test/helpers'
 import { runSource, usesRandom } from './run-source'
 
 const root = fileURLToPath(new URL('../test/corpus', import.meta.url))
@@ -209,6 +209,8 @@ function addRun(slug: string, expectation: Expectation): void {
   runsBySlug.set(slug, runs)
 }
 
+let unresolved = 0
+
 for (const file of readdirSync(v1)
   .filter((name) => name.endsWith('.v1.ts'))
   .sort()) {
@@ -224,14 +226,16 @@ for (const file of readdirSync(v1)
     if (block.kind === 'describe') continue
     const ref = PROGRAM_REF.exec(block.body)
     const slug = ref?.[1] !== undefined ? importedPrograms.get(ref[1]) : current
-    if (slug === undefined) continue
+    if (slug === undefined) {
+      unresolved++
+      continue
+    }
     addRun(slug, expectationOf(block, slug, importedInputs))
   }
 }
 // Keep the slug numbering aligned with extract-corpus.ts, which emitted these last.
 for (const slug of importedPrograms.values()) uniqueSlug(slug)
 
-const zeroBased = new Set(corpusIndexBaseZero())
 let written = 0
 let mismatches = 0
 const unconfirmed: string[] = []
@@ -244,7 +248,7 @@ for (const [slug, expectations] of [...runsBySlug].sort(([a], [b]) => (a < b ? -
     continue
   }
   const source = readFileSync(file, 'utf8')
-  const profile = profileNamed(zeroBased.has(slug) ? 'es0' : 'es')
+  const profile = profileNamed(profileForCorpus(slug))
   const seed = usesRandom(source) ? 1 : undefined
   const runs: SidecarRun[] = []
   for (const expectation of expectations) {
@@ -280,9 +284,12 @@ for (const [slug, expectations] of [...runsBySlug].sort(([a], [b]) => (a < b ? -
       unconfirmed.push(`${slug} · ${expectation.name}: ${computed}`)
     if (expectation.lines.length === 0 && expectation.times === null)
       withoutExpectation.push(`${slug} · ${expectation.name}`)
+    // v1's `const inputs = [...]` was sometimes a bigger answer pool than the program ever
+    // read from (`test-abs`'s `[-1, 1]` for a program with one `Leer`): trim to what the
+    // program actually consumed, or `runSidecar` rightly rejects the sidecar as stray.
     const inputs = expectation.repeat
       ? Array.from({ length: report.requests }, () => expectation.inputs[0] ?? '')
-      : expectation.inputs
+      : expectation.inputs.slice(0, report.requests)
     runs.push({
       name: expectation.name,
       inputs,
@@ -299,7 +306,9 @@ const programs = readdirSync(out).filter((name) => name.endsWith('.stepcode'))
 const missing = programs.filter(
   (name) => !existsSync(join(out, name.replace('.stepcode', '.run.json'))),
 )
-console.log(`\n${written} sidecars written, ${mismatches} mismatches`)
+console.log(
+  `\n${written} sidecars written, ${mismatches} mismatches, ${unresolved} test(s) skipped (no program resolved)`,
+)
 console.log(
   `boolean rewrite (true/false → Verdadero/Falso) touched: ${[...booleanRewrites].sort().join(', ') || 'none'}`,
 )

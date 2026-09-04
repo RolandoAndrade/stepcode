@@ -406,6 +406,21 @@ export function corpusIndexBaseZero(): string[] {
     .filter((line) => line.length > 0)
 }
 
+let zeroBasedSlugs: Set<string> | undefined
+
+/**
+ * The one `es`/`es0` rule the harness and both corpus scripts apply (interpreter spec §8.1,
+ * §8.2): `es0` for a `programs/` slug `index-base-0.txt` lists (the v1 `$ arrays@stepcode`
+ * directive), `es` for everything else — `guides/` never carries that directive.
+ */
+export function profileForCorpus(
+  slug: string,
+  dir: 'programs' | 'guides' = 'programs',
+): ProfileName {
+  zeroBasedSlugs ??= new Set(corpusIndexBaseZero())
+  return dir === 'programs' && zeroBasedSlugs.has(slug) ? 'es0' : 'es'
+}
+
 export interface CorpusProgram {
   /** The file name without its extension, which is how the corpus lists name a program. */
   readonly slug: string
@@ -424,7 +439,6 @@ let corpus: CorpusProgram[] | undefined
  */
 export function corpusPrograms(): readonly CorpusProgram[] {
   if (corpus !== undefined) return corpus
-  const zeroBased = new Set(corpusIndexBaseZero())
   corpus = readdirSync(corpusDir)
     .filter((name) => name.endsWith('.stepcode'))
     .sort()
@@ -434,7 +448,7 @@ export function corpusPrograms(): readonly CorpusProgram[] {
         slug,
         file,
         source: readFileSync(join(corpusDir, file), 'utf8'),
-        profileName: zeroBased.has(slug) ? ('es0' as const) : ('es' as const),
+        profileName: profileForCorpus(slug),
       }
     })
   return corpus
@@ -709,12 +723,15 @@ export function readSidecar(dir: string, slug: string): Sidecar | undefined {
 /**
  * One sidecar run through `runProgram`: a no-op sleep, an `io` that appends to a buffer and
  * answers `read` from `inputs`. A request past the end of `inputs` and a rejected request both
- * throw, because a sidecar that does not answer its program is wrong (§8.1).
+ * throw, because a sidecar that does not answer its program is wrong (§8.1) — and so does
+ * finishing with unconsumed `inputs` left over: a hand-edited sidecar with stray answers is
+ * just as wrong, only silently, since nothing else would ever notice the extras.
  */
 export async function runSidecar(
   source: string,
   profile: ResolvedProfile,
   run: SidecarRun,
+  slug: string,
 ): Promise<{ outcome: RunOutcome; output: string }> {
   const program = compile(source, { profile })
   let output = ''
@@ -746,5 +763,10 @@ export async function runSidecar(
     sleep: () => Promise.resolve(),
     ...(run.seed === undefined ? {} : { random: seeded(run.seed) }),
   })
+  if (next !== run.inputs.length) {
+    throw new Error(
+      `${slug}: the sidecar has ${run.inputs.length - next} unconsumed input(s) left over`,
+    )
+  }
   return { outcome, output }
 }

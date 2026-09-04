@@ -19,7 +19,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { corpusIndexBaseZero, profileNamed, type Sidecar, type SidecarRun } from '../test/helpers'
+import { profileForCorpus, profileNamed, type Sidecar, type SidecarRun } from '../test/helpers'
 import { runSource, usesRandom } from './run-source'
 
 const root = fileURLToPath(new URL('../test/corpus', import.meta.url))
@@ -59,9 +59,7 @@ const file = join(dir, `${slug}.stepcode`)
 if (!existsSync(file)) usage(`${file} does not exist`)
 const source = readFileSync(file, 'utf8')
 if (usesRandom(source) && seed === undefined) seed = 1
-const profile = profileNamed(
-  dirName === 'programs' && corpusIndexBaseZero().includes(slug) ? 'es0' : 'es',
-)
+const profile = profileNamed(profileForCorpus(slug, dirName))
 
 const report = await runSource(source, profile, inputs, seed)
 console.log('--- output ---')
