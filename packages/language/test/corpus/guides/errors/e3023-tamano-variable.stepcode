@@ -1,0 +1,9 @@
+// expect: E3023
+// U5 Arreglos P1: se dimensiona el arreglo con la cantidad que leyó el usuario.
+Proceso TamanoVariable
+    Definir a, n Como Entero;
+    Leer n;
+    Dimension a[n];
+    Leer a[1];
+    Escribir a[1];
+FinProceso

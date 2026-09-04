@@ -1,0 +1,15 @@
+// expect: E3032
+// U3 P7: se le pasa un literal al parámetro por referencia.
+SubProceso Intercambiar(a Como Entero Por Referencia, b Como Entero Por Referencia)
+    Definir aux Como Entero;
+    aux <- a;
+    a <- b;
+    b <- aux;
+FinSubProceso
+
+Proceso LiteralPorReferencia
+    Definir a Como Entero;
+    Leer a;
+    Intercambiar(a, 5);
+    Escribir a;
+FinProceso

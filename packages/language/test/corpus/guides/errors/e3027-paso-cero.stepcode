@@ -1,0 +1,10 @@
+// expect: E3027
+// U4 P7: el paso del Para es cero, el ciclo no avanza.
+Proceso PasoCero
+    Definir i, total Como Entero;
+    total <- 0;
+    Para i <- 1 Hasta 10 Con Paso 0 Hacer
+        total <- total + i;
+    FinPara
+    Escribir total;
+FinProceso

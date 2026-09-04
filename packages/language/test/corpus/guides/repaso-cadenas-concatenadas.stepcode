@@ -1,0 +1,15 @@
+// Guía de Repaso — Pregunta 4: seguir el valor de varias cadenas que se van reasignando.
+Proceso Algo
+    Definir hombre, mujer, rojo, azul, verde Como Cadena;
+    hombre <- "mujer";
+    mujer <- hombre + "mujer";
+    hombre <- hombre + "y" + "mujer";
+    rojo <- "azul";
+    azul <- "rojo";
+    verde <- "amarillo y" + azul;
+    Escribir "Hombre es ", hombre;
+    Escribir "Mujer es ", mujer;
+    Escribir "Rojo es ", rojo;
+    Escribir "Azul es ", azul;
+    Escribir "Verde es ", verde;
+FinProceso

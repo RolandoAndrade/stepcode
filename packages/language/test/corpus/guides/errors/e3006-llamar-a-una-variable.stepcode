@@ -1,0 +1,8 @@
+// expect: E3006
+// U6 P1: se llama a una variable como si fuera una función.
+Proceso LlamarVariable
+    Definir suma Como Entero;
+    suma <- 3;
+    Escribir suma;
+    Escribir suma(1, 2);
+FinProceso

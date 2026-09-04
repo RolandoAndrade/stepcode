@@ -1,0 +1,18 @@
+// Guía Práctica U3 — Pregunta 8: el mayor de tres números, con una función de dos.
+Funcion Mayor(a Como Entero, b Como Entero): Entero
+    Si a > b Entonces
+        Retornar a;
+    FinSi
+    Retornar b;
+FinFuncion
+
+Proceso MayorDeTres
+    Definir a, b, c Como Entero;
+    Escribir "Introduce A: ";
+    Leer a;
+    Escribir "Introduce B: ";
+    Leer b;
+    Escribir "Introduce C: ";
+    Leer c;
+    Escribir "El mayor es ", Mayor(Mayor(a, b), c);
+FinProceso

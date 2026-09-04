@@ -1,0 +1,10 @@
+// expect: E3010
+// U4 P4: el promedio, que es Real, se guarda en un Entero.
+Proceso PromedioEnEntero
+    Definir primera, segunda Como Real;
+    Definir promedio Como Entero;
+    Leer primera;
+    Leer segunda;
+    promedio <- (primera + segunda) / 2;
+    Escribir promedio;
+FinProceso

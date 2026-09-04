@@ -1,0 +1,21 @@
+// Guía U5 Cadenas — Pregunta 8: contar las repeticiones de un carácter en un texto.
+Funcion Repeticiones(frase Como Cadena, buscado Como Caracter): Entero
+    Definir i, cuenta Como Entero;
+    cuenta <- 0;
+    Para i <- 1 Hasta Longitud(frase) Hacer
+        Si frase[i] = buscado Entonces
+            cuenta <- cuenta + 1;
+        FinSi
+    FinPara
+    Retornar cuenta;
+FinFuncion
+
+Proceso ContarCaracter
+    Definir frase Como Cadena;
+    Definir buscado Como Caracter;
+    Escribir "Introduce texto: ";
+    Leer frase;
+    Escribir "Introduce caracter: ";
+    Leer buscado;
+    Escribir Repeticiones(frase, buscado), " repeticiones";
+FinProceso

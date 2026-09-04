@@ -1,0 +1,36 @@
+// Guía de Repaso — Pregunta 10: salario bruto y neto con impuestos por tramos.
+Funcion Impuestos(bruto Como Real): Real
+    Definir total Como Real;
+    total <- 0;
+    Si bruto > 90000 Entonces
+        total <- total + (bruto - 90000) * 0.40;
+    FinSi
+    Si bruto > 60000 Entonces
+        Si bruto > 90000 Entonces
+            total <- total + 30000 * 0.30;
+        Sino
+            total <- total + (bruto - 60000) * 0.30;
+        FinSi
+    FinSi
+    Si bruto > 30000 Entonces
+        Si bruto > 60000 Entonces
+            total <- total + 30000 * 0.20;
+        Sino
+            total <- total + (bruto - 30000) * 0.20;
+        FinSi
+    FinSi
+    Retornar total;
+FinFuncion
+
+Proceso SalarioPorTramos
+    Definir horas, porHora, bruto, aPagar Como Real;
+    Escribir "Introduce horas trabajadas: ";
+    Leer horas;
+    Escribir "Introduce salario por horas: ";
+    Leer porHora;
+    bruto <- horas * porHora;
+    aPagar <- Impuestos(bruto);
+    Escribir "El salario bruto es ", bruto;
+    Escribir "Impuestos a pagar: ", aPagar;
+    Escribir "Sueldo neto: ", bruto - aPagar;
+FinProceso

@@ -1,0 +1,39 @@
+// Guía U5 Pretaller — Pregunta 2: acumular palabras en una lista sin admitir repetidas.
+Funcion Posicion(palabras Como Cadena[], cantidad Como Entero, buscada Como Cadena): Entero
+    Definir i Como Entero;
+    Para i <- 1 Hasta cantidad Hacer
+        Si palabras[i] = buscada Entonces
+            Retornar i;
+        FinSi
+    FinPara
+    Retornar -1;
+FinFuncion
+
+Proceso PalabrasSinRepetir
+    Definir palabras Como Cadena[10];
+    Definir cantidad, i Como Entero;
+    Definir palabra, linea Como Cadena;
+    cantidad <- 0;
+    Repetir
+        Escribir "Introduce palabra: ";
+        Leer palabra;
+        Si palabra <> "" Entonces
+            Si Posicion(palabras, cantidad, palabra) <> -1 Entonces
+                Escribir "Palabra ya usada.";
+            Sino Si cantidad = 10 Entonces
+                Escribir "La lista esta llena.";
+            Sino
+                cantidad <- cantidad + 1;
+                palabras[cantidad] <- palabra;
+            FinSi
+            linea <- "";
+            Para i <- 1 Hasta cantidad Hacer
+                Si i > 1 Entonces
+                    linea <- linea + ", ";
+                FinSi
+                linea <- linea + palabras[i];
+            FinPara
+            Escribir "Palabras: ", linea;
+        FinSi
+    Hasta Que palabra = "";
+FinProceso

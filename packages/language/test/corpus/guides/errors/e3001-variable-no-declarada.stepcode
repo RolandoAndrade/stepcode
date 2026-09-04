@@ -1,0 +1,7 @@
+// expect: E3001
+// U1 P4: el estudiante olvida declarar n2.
+Proceso SumaSinDeclarar
+    Definir n1 Como Entero;
+    Leer n1;
+    Escribir n1 + n2;
+FinProceso

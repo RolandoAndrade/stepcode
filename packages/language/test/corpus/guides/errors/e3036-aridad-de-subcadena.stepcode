@@ -1,0 +1,7 @@
+// expect: E3036
+// U5 Cadenas P11: a Subcadena le falta la posición final.
+Proceso SubcadenaCorta
+    Definir frase Como Cadena;
+    Leer frase;
+    Escribir Subcadena(frase, 2);
+FinProceso
