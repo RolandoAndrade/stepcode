@@ -119,13 +119,26 @@ export interface AssignContext {
   readonly related?: readonly RelatedSpan[]
 }
 
+/** The name a diagnostic can print for an expression; empty when it has no name of its own. */
+export function nameOf(expr: Expr): string {
+  if (expr.kind === 'Identifier') return expr.text
+  if (expr.kind === 'Index') return nameOf(expr.target)
+  return ''
+}
+
 /**
  * The one place a type reaches a diagnostic. Both types are rendered here with
  * `typeToString`, so no catalog ever receives a `Type` object.
+ *
+ * The failing value is passed as a node, not as a span, so `{name}` is filled here for the
+ * codes whose message is about the value itself — E3009 ("«b» is a whole array") and E3011.
+ * No call site can leave that slot empty, and none can fill it with the wrong name: the
+ * target of an assignment, the callee of a call and the constant being declared are all names
+ * of something else. Only when the value has no name of its own does the caller's stand in.
  */
 export function reportAssignFailure(
   state: CheckerState,
-  span: Span,
+  source: Expr,
   failure: AssignFailure,
   context: AssignContext = {},
 ): void {
@@ -134,8 +147,12 @@ export function reportAssignFailure(
     found: typeToString(failure.found, state.profile),
     ...context.data,
   }
+  if (failure.code === 'E3009' || failure.code === 'E3011') {
+    const name = nameOf(source)
+    if (name.length > 0 || data.name === undefined) data.name = name
+  }
   if (failure.hint !== undefined) data.hint = failure.hint
   if (failure.length !== undefined) data.length = failure.length
   const code = failure.code === 'E3010' && context.code !== undefined ? context.code : failure.code
-  report(state, code, span, data, context.related)
+  report(state, code, source.span, data, context.related)
 }

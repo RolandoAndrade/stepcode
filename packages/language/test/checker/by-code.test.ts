@@ -93,6 +93,57 @@ const cases: Case[] = [
     clean: main('Definir lista Como Entero[3];', 'Escribir lista[1];'),
   },
   {
+    // The value is the array, so E3009 names the value — not the target it did not fit.
+    code: 'E3009',
+    source: main('Definir n Como Entero;', 'Definir b Como Entero[3];', 'n <- b;', 'Escribir n;'),
+    text: 'b',
+    clean: main('Definir n Como Entero;', 'n <- 1;', 'Escribir n;'),
+  },
+  {
+    code: 'E3009',
+    source: [
+      'Funcion r Como Entero <- f()',
+      '  Definir b Como Entero[3];',
+      '  Retornar b;',
+      'FinFuncion',
+      'Proceso p',
+      '  Escribir f();',
+      'FinProceso',
+    ].join('\n'),
+    text: 'b',
+    clean: [
+      'Funcion r Como Entero <- f()',
+      '  Retornar 1;',
+      'FinFuncion',
+      'Proceso p',
+      '  Escribir f();',
+      'FinProceso',
+    ].join('\n'),
+  },
+  {
+    code: 'E3009',
+    source: main(
+      'Definir i Como Entero;',
+      'Definir b Como Entero[3];',
+      'Para i <- b Hasta 3 Hacer',
+      '  Escribir i;',
+      'FinPara',
+    ),
+    text: 'b',
+    clean: main('Definir i Como Entero;', 'Para i <- 1 Hasta 3 Hacer', '  Escribir i;', 'FinPara'),
+  },
+  {
+    // In argument position the mismatch is about the argument, so E3009 names the argument.
+    code: 'E3009',
+    source: withF(
+      'SubProceso f(n Como Entero)',
+      'Escribir n;',
+      'Definir b Como Entero[3];\n  f(b);',
+    ),
+    text: 'b',
+    clean: withF('SubProceso f(n Como Entero)', 'Escribir n;', 'f(1);'),
+  },
+  {
     code: 'E3010',
     source: main('Definir n Como Entero;', 'n <- 2.5;', 'Escribir n;'),
     text: '2.5',
@@ -440,6 +491,74 @@ describe('every checker code has a case', () => {
         const report = checkSource(entry.clean, entry.profile ?? 'es')
         expect(report.codes, report.diagnostics.join(', ')).not.toContain(entry.code)
       })
+
+      // C1: a slot no call site filled renders as a literal `{name}` in front of the reader.
+      // Asserting it over *every* diagnostic each case emits, and not only over the one the
+      // case is named for, is what makes a second unfilled path impossible to sneak in.
+      it('renders every diagnostic it emits with no unfilled slot', () => {
+        for (const source of [entry.source, entry.clean]) {
+          const report = checkSource(source, entry.profile ?? 'es')
+          for (const diagnostic of report.result.diagnostics) {
+            const spanish = formatDiagnostic(diagnostic, 'es', report.profile)
+            const english = formatDiagnostic(diagnostic, 'en', profiles.en)
+            expect(spanish, `${diagnostic.code} in es`).not.toMatch(/\{[a-zA-Z$:]+\}/)
+            expect(english, `${diagnostic.code} in en`).not.toMatch(/\{[a-zA-Z$:]+\}/)
+          }
+        }
+      })
     })
   }
+})
+
+/**
+ * C1/I1: E3009 says "«x» is a whole array". The name is the *array's*, wherever the array
+ * turned up — the value of an assignment, a returned value, a `Para` bound, an argument — and
+ * never the target it did not fit into or the callee it was passed to.
+ */
+describe('E3009 names the array itself', () => {
+  const named = (source: string): string[] => {
+    const report = checkSource(source)
+    return report.result.diagnostics
+      .filter((one) => one.code === 'E3009')
+      .map((one) => formatDiagnostic(one, 'es', report.profile))
+  }
+
+  it('names the value of an assignment, not its target', () => {
+    expect(
+      named(main('Definir n Como Entero;', 'Definir b Como Entero[3];', 'n <- b;', 'Escribir n;')),
+    ).toEqual(['«b» es un arreglo completo, y aquí hace falta un valor.'])
+  })
+
+  it('names the returned value', () => {
+    const source = [
+      'Funcion r Como Entero <- f()',
+      '  Definir b Como Entero[3];',
+      '  Retornar b;',
+      'FinFuncion',
+      'Proceso p',
+      '  Escribir f();',
+      'FinProceso',
+    ].join('\n')
+    expect(named(source)).toEqual(['«b» es un arreglo completo, y aquí hace falta un valor.'])
+  })
+
+  it('names a Para bound', () => {
+    const source = main(
+      'Definir i Como Entero;',
+      'Definir b Como Entero[3];',
+      'Para i <- b Hasta 3 Hacer',
+      '  Escribir i;',
+      'FinPara',
+    )
+    expect(named(source)).toEqual(['«b» es un arreglo completo, y aquí hace falta un valor.'])
+  })
+
+  it('names the argument, not the callee', () => {
+    const source = withF(
+      'SubProceso f(n Como Entero)',
+      'Escribir n;',
+      'Definir b Como Entero[3];\n  f(b);',
+    )
+    expect(named(source)).toEqual(['«b» es un arreglo completo, y aquí hace falta un valor.'])
+  })
 })

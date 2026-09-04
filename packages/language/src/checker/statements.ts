@@ -37,14 +37,13 @@ import {
   constantLookup,
   declareRecovered,
   markWritten,
-  nameOf,
   reportUnknownName,
   resolveIdentifier,
   typeOf,
   typeOfIndex,
 } from './expressions'
 import { reportUnreachable } from './flow'
-import { type CheckerState, report, reportAssignFailure, setType } from './result'
+import { type CheckerState, nameOf, report, reportAssignFailure, setType } from './result'
 // biome-ignore lint/suspicious/noShadowRestrictedNames: `Symbol` is the checker's own type, per the checker spec (§3.1); it never appears with the global.
 import { createSymbol, declareSymbol, lookupLocal, type Symbol, type SymbolKind } from './scope'
 
@@ -195,7 +194,7 @@ function checkAssign(state: CheckerState, stmt: AssignStmt): void {
   if (target === undefined) return
   const failure = assignFailure(target, value, stmt.value)
   if (failure === undefined) return
-  reportAssignFailure(state, stmt.value.span, failure, { data: { name: nameOf(stmt.target) } })
+  reportAssignFailure(state, stmt.value, failure)
 }
 
 function checkWrite(state: CheckerState, stmt: WriteStmt): void {
@@ -226,7 +225,7 @@ function checkReturn(state: CheckerState, stmt: ReturnStmt): void {
     return
   }
   const failure = assignFailure(body.resultType, value, stmt.value)
-  if (failure !== undefined) reportAssignFailure(state, stmt.value.span, failure)
+  if (failure !== undefined) reportAssignFailure(state, stmt.value, failure)
 }
 
 /**
@@ -295,7 +294,7 @@ function checkConstant(state: CheckerState, stmt: ConstantStmt): void {
   if (declared !== undefined && folded !== undefined) {
     const failure = assignFailure(declared, constType(folded), stmt.value)
     if (failure !== undefined) {
-      reportAssignFailure(state, stmt.value.span, failure, { data: { name: id.text } })
+      reportAssignFailure(state, stmt.value, failure, { data: { name: id.text } })
     }
   }
   const type = declared ?? (folded === undefined ? UNKNOWN : constType(folded))
@@ -364,7 +363,7 @@ function checkSwitch(state: CheckerState, stmt: SwitchStmt): void {
       if (switchable && !isUnknown(selector)) {
         const failure = assignFailure(selector, constType(folded), value)
         if (failure !== undefined) {
-          reportAssignFailure(state, value.span, failure)
+          reportAssignFailure(state, value, failure)
           continue
         }
       }
@@ -385,7 +384,7 @@ function checkSwitch(state: CheckerState, stmt: SwitchStmt): void {
 function checkIntegerBound(state: CheckerState, expr: Expr): void {
   const type = typeOf(state, expr)
   const failure = assignFailure(INTEGER, type, expr)
-  if (failure !== undefined) reportAssignFailure(state, expr.span, failure)
+  if (failure !== undefined) reportAssignFailure(state, expr, failure)
 }
 
 /**

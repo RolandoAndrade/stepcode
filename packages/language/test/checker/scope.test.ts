@@ -113,18 +113,19 @@ describe('the checker state', () => {
 
   it('renders the two types of an assignment failure before reporting it', () => {
     const state = createState(sample, profiles.es)
-    reportAssignFailure(state, { start: 0, end: 1 }, assignFailure(INTEGER, REAL)!)
+    // The failing value is the node itself, so the diagnostic covers exactly it.
+    reportAssignFailure(state, parseExpr('2.5'), assignFailure(INTEGER, REAL)!)
     expect(state.diagnostics[0]).toEqual({
       code: 'E3010',
       severity: 'error',
-      span: { start: 0, end: 1 },
+      span: { start: 0, end: 3 },
       data: { expected: 'Entero', found: 'Real', hint: 'trunc' },
     })
   })
 
   it('turns an assignment failure into E3035 when the context says argument', () => {
     const state = createState(sample, profiles.es)
-    reportAssignFailure(state, { start: 0, end: 1 }, assignFailure(INTEGER, REAL)!, {
+    reportAssignFailure(state, parseExpr('2.5'), assignFailure(INTEGER, REAL)!, {
       code: 'E3035',
       data: { name: 'f', position: 2 },
     })
@@ -140,14 +141,8 @@ describe('the checker state', () => {
 
   it('keeps E3009 and E3011 as themselves even in an argument context', () => {
     const state = createState(sample, profiles.es)
-    reportAssignFailure(
-      state,
-      { start: 0, end: 1 },
-      assignFailure(CHAR, STRING, parseExpr('"ab"'))!,
-      {
-        code: 'E3035',
-      },
-    )
+    const value = parseExpr('"ab"')
+    reportAssignFailure(state, value, assignFailure(CHAR, STRING, value)!, { code: 'E3035' })
     expect(state.diagnostics[0]?.code).toBe('E3011')
     expect(state.diagnostics[0]?.data.length).toBe(2)
   })

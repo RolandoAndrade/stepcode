@@ -33,17 +33,17 @@ import {
   UNKNOWN,
 } from '../types/type'
 import { ensureChecked } from './driver'
-import { type BodyState, type CheckerState, report, reportAssignFailure, setType } from './result'
+import {
+  type BodyState,
+  type CheckerState,
+  nameOf,
+  report,
+  reportAssignFailure,
+  setType,
+} from './result'
 // biome-ignore lint/suspicious/noShadowRestrictedNames: `Symbol` is the checker's own type, per the checker spec (§3.1); it never appears with the global.
 import { createSymbol, declareSymbol, lookup, type Symbol } from './scope'
 import { suggestName } from './suggest'
-
-/** The name a diagnostic can print for an expression; empty when it has no name of its own. */
-export function nameOf(expr: Expr): string {
-  if (expr.kind === 'Identifier') return expr.text
-  if (expr.kind === 'Index') return nameOf(expr.target)
-  return ''
-}
 
 /** Only `Constante` symbols fold; everything else is a runtime value (§4.6). */
 export function constantLookup(state: CheckerState): ConstantLookup {
@@ -383,7 +383,7 @@ function checkArguments(
     if (param === undefined || param === null || arg === undefined) continue
     const failure = assignFailure(param.type, argTypes[position] ?? UNKNOWN, arg)
     if (failure !== undefined) {
-      reportAssignFailure(state, arg.span, failure, {
+      reportAssignFailure(state, arg, failure, {
         code: 'E3035',
         data: { name: decl.name.text, position: position + 1 },
         ...(related === undefined ? {} : { related }),
