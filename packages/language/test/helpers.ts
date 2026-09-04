@@ -12,6 +12,7 @@ import { createScope, createSymbol, declareSymbol } from '../src/checker/scope'
 import { type CompileResult, compile } from '../src/compile'
 import type { Diagnostic, DiagnosticCode } from '../src/diagnostics/index'
 import { formatDiagnostic } from '../src/diagnostics/index'
+import { type Run, type StepResult, start } from '../src/interpreter/run'
 import type { Token } from '../src/lexer/index'
 import { isTrivia, tokenize } from '../src/lexer/index'
 import { createContext } from '../src/parser/context'
@@ -610,4 +611,55 @@ export function compileEs(source: string, profileName: ProfileName = 'es'): Comp
     )
   }
   return result
+}
+
+export interface StartOptions {
+  readonly profileName?: ProfileName
+  readonly random?: () => number
+  readonly stackDepth?: number
+}
+
+/** `start` over a compiled source with a buffering `io`; `writes` keeps every `io.write` apart. */
+export function startSource(
+  source: string,
+  options: StartOptions = {},
+): { run: Run; output: () => string; writes: string[]; program: CompileResult } {
+  const program = compileEs(source, options.profileName ?? 'es')
+  const writes: string[] = []
+  const run = start(program, {
+    profile: profileNamed(options.profileName ?? 'es'),
+    io: { write: (text) => void writes.push(text) },
+    ...(options.random === undefined ? {} : { random: options.random }),
+    ...(options.stackDepth === undefined ? {} : { limits: { stackDepth: options.stackDepth } }),
+  })
+  return { run, output: () => writes.join(''), writes, program }
+}
+
+/**
+ * Drives `run` with `continue()` — no breakpoints, no budget — answering input requests from
+ * `inputs` in order and carrying straight on after a wait. Ends at `done`, at `error`, at a
+ * request that was rejected, or at a request there is no answer left for; the caller decides
+ * which of those it expected.
+ */
+export function collectRun(run: Run, inputs: readonly string[] = []): StepResult {
+  const queue = [...inputs]
+  for (;;) {
+    const result = run.continue()
+    switch (result.kind) {
+      case 'done':
+      case 'error':
+        return result
+      case 'input': {
+        if (result.rejected !== undefined) return result
+        const text = queue.shift()
+        if (text === undefined) return result
+        run.input(text)
+        break
+      }
+      case 'wait':
+        break
+      case 'paused':
+        throw new Error(`continue() without breakpoints or budget paused (${result.reason})`)
+    }
+  }
 }
