@@ -184,3 +184,39 @@ describe('W3004 function result never assigned', () => {
     expect(checkCodes(source)).toEqual([])
   })
 })
+
+describe('one mistake, one diagnostic — a failed use still counts as a read', () => {
+  it('a use above its own declaration is E3003 alone, not also W3002', () => {
+    const source = main('Escribir x;', 'Definir x Como Entero;', 'x <- 1;')
+    expect(checkCodes(source)).toEqual(['E3003'])
+  })
+
+  it('calling a variable is E3006 alone, not also W3002', () => {
+    const source = main('Definir x Como Entero;', 'x <- 1;', 'x(3);')
+    expect(checkCodes(source)).toEqual(['E3006'])
+  })
+
+  it('using a subprogram as a variable is E3005 alone, not also a flow warning', () => {
+    const source = [
+      'SubProceso f()',
+      '  Escribir 1;',
+      'FinSubProceso',
+      'Proceso p',
+      '  Escribir f;',
+      'FinProceso',
+    ].join('\n')
+    expect(checkCodes(source)).toEqual(['E3005'])
+  })
+
+  it('using a procedure as a value is E3020 alone, not also a flow warning', () => {
+    const source = [
+      'SubProceso f()',
+      '  Escribir 1;',
+      'FinSubProceso',
+      'Proceso p',
+      '  Escribir f();',
+      'FinProceso',
+    ].join('\n')
+    expect(checkCodes(source)).toEqual(['E3020'])
+  })
+})

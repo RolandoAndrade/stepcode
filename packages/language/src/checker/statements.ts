@@ -84,6 +84,13 @@ export function declareNamed(
   }
   const symbol = createSymbol({ name: id.name, kind, type, declaredAt: id, scope })
   if (dimensioned) symbol.dimensioned = true
+  // The recovered symbol this replaces already stood for the name at every use since the
+  // mistake was reported (§3.2): the reads and writes it collected belong to this symbol too,
+  // or a pre-declaration use would cascade into a false "never read"/"never assigned" warning.
+  if (existing !== undefined && existing.recovered === true) {
+    symbol.reads = existing.reads
+    symbol.writes = existing.writes
+  }
   declareSymbol(scope, symbol)
   state.symbols.set(id, symbol)
   return symbol
