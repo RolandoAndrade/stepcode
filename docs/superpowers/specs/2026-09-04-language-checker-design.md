@@ -295,7 +295,8 @@ Strict mode: the counter must resolve to an existing `variable` of type `Entero`
 current scope, else E3001 (unknown, hint `declare`) or E3026 (counter must be `Entero`,
 data: found). Pseint mode: an unknown counter declares a `counter` symbol of type `Entero`
 at the loop; a known `Entero` variable is used as is. Inside the loop body the symbol is
-flagged as a counter, so assignment and `Leer` are E3008; after the loop it is an ordinary
+flagged as a counter, so assignment, `Leer`, and passing it `Por Referencia` are E3008; after
+the loop it is an ordinary
 variable again, holding whatever the runtime left. `from`, `to`, `step` must be `Entero`
 (E3010 with the usual hint). A `step` folding to zero is E3027.
 
