@@ -81,6 +81,20 @@ profile object is passed to `compile`; the core never reads files.
 Deliberately absent: Turborepo, a Lezer grammar, ANTLR, a language server, any server
 component. Each can be added later without moving package boundaries.
 
+Why the parser is handwritten rather than generated with ANTLR, as v1's was:
+
+- Keywords are profile data, resolved at runtime. ANTLR fixes them at generation time, so a
+  user profile with its own spellings or multi-word keywords would need a parser per profile,
+  or a lexer that reads every keyword as an identifier and reclassifies it afterwards.
+- Diagnostics were v1's biggest pain. Generated recovery produces generic messages and cascades
+  after one typo; the one-typo-one-diagnostic rule needs recovery written at each construct.
+- v1 kept two grammars, ANTLR for execution and Lezer for the editor, and they drifted. One
+  parser feeds both the interpreter and CodeMirror's tree builder.
+- The v1 grammar was adapted from Pascal and carried constructs that were neither PSeInt nor
+  StepCode. Rewriting let the construct set be defined from PSeInt and the v1 corpus.
+- The ANTLR runtime is a large dependency for a browser editor that must run on phones, and its
+  parse trees are a poor base for a typed AST with side tables.
+
 ### 3.1 Parser
 
 Handwritten: recursive descent for statements, Pratt for expressions. Keywords are
