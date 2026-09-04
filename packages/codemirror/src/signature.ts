@@ -43,12 +43,24 @@ function activeArgument(state: EditorState, call: SyntaxNode, pos: number): numb
   return count
 }
 
-/** The header of a declaration, its parameters split out so one can be marked active. */
-function headerParts(decl: SubprogramDecl, source: string, active: number): SignaturePart[] {
+/**
+ * Where a header stops: after its parameter list's closing parenthesis. The search stays on
+ * the line the parameters end on, and a declaration written without a parameter list at all
+ * ends at its name — otherwise a parenthesis in the body would be taken for the list's.
+ */
+function headerEnd(decl: SubprogramDecl, source: string): number {
   const last = decl.params[decl.params.length - 1]
   const paramsEnd = last === undefined ? decl.name.span.end : last.span.end
-  const closeParen = source.indexOf(')', paramsEnd)
-  const end = closeParen < 0 ? paramsEnd : closeParen + 1
+  const newline = source.indexOf('\n', paramsEnd)
+  const rest = source.slice(paramsEnd, newline < 0 ? source.length : newline)
+  if (last === undefined && !rest.trimStart().startsWith('(')) return paramsEnd
+  const closeParen = rest.indexOf(')')
+  return closeParen < 0 ? paramsEnd : paramsEnd + closeParen + 1
+}
+
+/** The header of a declaration, its parameters split out so one can be marked active. */
+function headerParts(decl: SubprogramDecl, source: string, active: number): SignaturePart[] {
+  const end = headerEnd(decl, source)
   const parts: SignaturePart[] = []
   let cursor = decl.span.start
   decl.params.forEach((param, index) => {

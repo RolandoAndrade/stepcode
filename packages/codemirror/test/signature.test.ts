@@ -63,6 +63,20 @@ describe('signatureAt', () => {
     expect(signature === null ? null : signatureText(signature.parts)).toBe('Azar() : Real')
   })
 
+  it('stops a parameterless header at the name, not at a parenthesis in the body', () => {
+    const source = [
+      'SubProceso saludar',
+      '  Escribir ")";',
+      'FinSubProceso',
+      'Proceso p',
+      '  saludar();',
+      'FinProceso',
+    ].join('\n')
+    const state = stateFor(source)
+    const signature = signatureAt(state, source.indexOf('saludar();') + 8, options)
+    expect(signature === null ? null : signatureText(signature.parts)).toBe('SubProceso saludar')
+  })
+
   it('is an extension a state accepts', () => {
     const state = EditorState.create({ doc: 'x', extensions: stepcodeSignatureHelp(options) })
     expect(state.doc.length).toBe(1)
