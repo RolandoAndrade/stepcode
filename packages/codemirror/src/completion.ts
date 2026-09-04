@@ -5,6 +5,7 @@ import { BUILTIN_KEYS, KEYWORD_KEYS, type ResolvedProfile, TYPE_KEYS } from '@st
 import { BUILTIN_SIGNATURES, type CompileResult, typeToString } from 'stepcode'
 import type { StepcodeOptions } from './options'
 import { stepcodeLanguage, treeDataAt } from './parser'
+import { blockSnippets } from './snippets'
 import type { Strings } from './strings'
 import { stringsFor } from './strings'
 import { builtinSignatureParts, signatureText, symbolLabel, visibleSymbols } from './symbols'
@@ -72,14 +73,15 @@ function typeCompletions(profile: ResolvedProfile): Completion[] {
   return out
 }
 
-/** Every keyword with a spelling, as its first spelling. Task 8 swaps block openers for snippets. */
-export function keywordCompletions(profile: ResolvedProfile): Completion[] {
+/** Every keyword with a spelling; the block openers apply their snippet (spec §5.7). */
+export function keywordCompletions(profile: ResolvedProfile, strings: Strings): Completion[] {
+  const snippets = blockSnippets(profile, strings)
   const out: Completion[] = []
   for (const key of KEYWORD_KEYS) {
     const label = profile.keywords[key]?.[0]
-    if (label !== undefined && label.length > 0) {
-      out.push({ label, type: 'keyword', boost: BOOST.keyword })
-    }
+    if (label === undefined || label.length === 0) continue
+    const snippet = (snippets as ReadonlyMap<string, Completion>).get(key)
+    out.push(snippet ?? { label, type: 'keyword', boost: BOOST.keyword })
   }
   return out
 }
@@ -91,7 +93,7 @@ export function completionSourceFor(options: StepcodeOptions): CompletionSource 
   const fixed = [
     ...builtinCompletions(profile, strings),
     ...typeCompletions(profile),
-    ...keywordCompletions(profile),
+    ...keywordCompletions(profile, strings),
   ]
   return (context) => {
     const word = context.matchBefore(WORD)

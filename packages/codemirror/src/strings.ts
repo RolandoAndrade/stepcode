@@ -54,9 +54,9 @@ const es: Strings = {
     name: 'nombre',
     parameters: 'parametros',
     result: 'resultado',
-    counter: 'i',
+    counter: 'contador',
     start: 'inicio',
-    limit: 'fin',
+    limit: 'limite',
     case: 'caso',
   },
 }
@@ -89,9 +89,9 @@ const en: Strings = {
     name: 'name',
     parameters: 'parameters',
     result: 'result',
-    counter: 'i',
+    counter: 'counter',
     start: 'start',
-    limit: 'end',
+    limit: 'limit',
     case: 'case',
   },
 }

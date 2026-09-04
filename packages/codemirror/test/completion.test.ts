@@ -124,4 +124,11 @@ describe('completion', () => {
     expect(option(result, 'Write')?.type).toBe('keyword')
     expect(option(result, 'Sqrt')?.detail).toBe('(number) : Real')
   })
+
+  it('applies a block opener as a snippet', () => {
+    const result = complete(program, '1;')
+    expect(typeof option(result, 'Si')?.apply).toBe('function')
+    expect(typeof option(result, 'Proceso')?.apply).toBe('function')
+    expect(option(result, 'Entonces')?.apply).toBeUndefined()
+  })
 })
