@@ -6,7 +6,9 @@ const main = (...lines: string[]): string =>
 
 describe('Definir (§5.1)', () => {
   it('declares every name of the statement with the written type', () => {
-    const source = main('Definir a, b Como Entero;', 'a <- 1;', 'b <- a;')
+    // `B` (case-folded to the same symbol as `b`) reads it without adding a second `b` node,
+    // so `typeOfExpr(source, 'b')` below still finds exactly one match.
+    const source = main('Definir a, b Como Entero;', 'a <- 1;', 'b <- a;', 'Escribir B;')
     expect(checkCodes(source)).toEqual([])
     // `b` names one typed node: the assignment target. `a` names two — the target of the
     // first assignment and the value of the second.
@@ -24,12 +26,19 @@ describe('Definir (§5.1)', () => {
     expect(checkCodes(main('Definir lista Como Entero[0];', 'lista[1] <- 1;'))).toEqual(['E3023'])
     expect(checkCodes(main('Definir lista Como Entero[2.5];', 'lista[1] <- 1;'))).toEqual(['E3023'])
     expect(
-      checkCodes(main('Definir n Como Entero;', 'Definir lista Como Entero[n];', 'lista[1] <- 1;')),
+      checkCodes(
+        main(
+          'Definir n Como Entero;',
+          'n <- 5;',
+          'Definir lista Como Entero[n];',
+          'lista[1] <- 1;',
+        ),
+      ),
     ).toEqual(['E3023'])
   })
 
   it('reports a second declaration of the same name, pointing at the first', () => {
-    const source = main('Definir a Como Entero;', 'Definir a Como Real;', 'a <- 1;')
+    const source = main('Definir a Como Entero;', 'Definir a Como Real;', 'a <- 1;', 'Escribir a;')
     const report = checkSource(source)
     expect(report.codes).toEqual(['E3002'])
     expect(report.result.diagnostics[0]?.related?.[0]?.span.start).toBe(
@@ -66,6 +75,7 @@ describe('Definir (§5.1)', () => {
       'Proceso p',
       '  Definir f Como Entero;',
       '  f <- 1;',
+      '  Escribir f;',
       'FinProceso',
     ].join('\n')
     expect(checkCodes(source)).toEqual(['E3004'])
@@ -75,7 +85,13 @@ describe('Definir (§5.1)', () => {
     // §3.2: names are declared in source order, so `z` does not exist yet at the `Escribir` —
     // but its `Definir` does, and that is E3003, not E3001. The recovery symbol the report
     // plants only silences repeats; the real declaration replaces it silently.
-    const source = main('Escribir z;', 'Escribir z;', 'Definir z Como Entero;', 'z <- 1;')
+    const source = main(
+      'Escribir z;',
+      'Escribir z;',
+      'Definir z Como Entero;',
+      'z <- 1;',
+      'Escribir z;',
+    )
     const report = checkSource(source)
     expect(report.codes).toEqual(['E3003'])
     expect(report.result.diagnostics[0]?.related?.[0]?.span.start).toBe(
@@ -84,33 +100,33 @@ describe('Definir (§5.1)', () => {
   })
 
   it('keeps E3001 for a name no declaration below ever provides', () => {
-    expect(checkCodes(main('Escribir noExiste;', 'Definir z Como Entero;', 'z <- 1;'))).toEqual([
-      'E3001',
-    ])
+    expect(
+      checkCodes(main('Escribir noExiste;', 'Definir z Como Entero;', 'z <- 1;', 'Escribir z;')),
+    ).toEqual(['E3001'])
   })
 })
 
 describe('assignment (§5.4)', () => {
   it('accepts what fits and widens what widens', () => {
-    expect(checkCodes(main('Definir x Como Real;', 'x <- 1;'))).toEqual([])
-    expect(checkCodes(main('Definir s Como Cadena;', "s <- 'a';"))).toEqual([])
-    expect(checkCodes(main('Definir c Como Caracter;', "c <- 'a';"))).toEqual([])
-    expect(checkCodes(main('Definir c Como Caracter;', 'c <- "a";'))).toEqual([])
+    expect(checkCodes(main('Definir x Como Real;', 'x <- 1;', 'Escribir x;'))).toEqual([])
+    expect(checkCodes(main('Definir s Como Cadena;', "s <- 'a';", 'Escribir s;'))).toEqual([])
+    expect(checkCodes(main('Definir c Como Caracter;', "c <- 'a';", 'Escribir c;'))).toEqual([])
+    expect(checkCodes(main('Definir c Como Caracter;', 'c <- "a";', 'Escribir c;'))).toEqual([])
   })
 
   it('reports what does not fit, at the value', () => {
-    const source = main('Definir n Como Entero;', 'n <- 2.5;')
+    const source = main('Definir n Como Entero;', 'n <- 2.5;', 'Escribir n;')
     expect(checkSource(source).diagnostics).toEqual([`E3010@${spanOf(source, '2.5')}`])
     expect(checkSource(source).result.diagnostics[0]?.data.hint).toBe('trunc')
   })
 
   it('offers the div hint when the value came from a division', () => {
-    const source = main('Definir n Como Entero;', 'n <- 7 / 2;')
+    const source = main('Definir n Como Entero;', 'n <- 7 / 2;', 'Escribir n;')
     expect(checkSource(source).result.diagnostics[0]?.data.hint).toBe('div')
   })
 
   it('reports a literal too long for a Caracter', () => {
-    const source = main('Definir c Como Caracter;', 'c <- "ab";')
+    const source = main('Definir c Como Caracter;', 'c <- "ab";', 'Escribir c;')
     const report = checkSource(source)
     expect(report.codes).toEqual(['E3011'])
     expect(report.result.diagnostics[0]?.data.length).toBe(2)
@@ -122,6 +138,7 @@ describe('assignment (§5.4)', () => {
       'Definir s Como Cadena;',
       's <- "ab";',
       'c <- s;',
+      'Escribir c;',
     )
     expect(checkSource(source).result.diagnostics[0]?.data.hint).toBe('index')
   })
@@ -133,7 +150,9 @@ describe('assignment (§5.4)', () => {
   })
 
   it('refuses to assign a whole array or a subprogram name', () => {
-    expect(checkCodes(main('Definir lista Como Entero[3];', 'lista <- 1;'))).toEqual(['E3009'])
+    expect(
+      checkCodes(main('Definir lista Como Entero[3];', 'lista <- 1;', 'Escribir lista[1];')),
+    ).toEqual(['E3009'])
     const subprogram = [
       'SubProceso f()',
       'FinSubProceso',
@@ -203,9 +222,14 @@ describe('Dimension (§5.2)', () => {
   })
 
   it('refuses a second dimensioning', () => {
-    const twice = main('Definir lista Como Entero;', 'Dimension lista[5];', 'Dimension lista[5];')
+    const twice = main(
+      'Definir lista Como Entero;',
+      'Dimension lista[5];',
+      'Dimension lista[5];',
+      'Escribir lista[1];',
+    )
     expect(checkSource(twice).result.diagnostics[0]?.data.hint).toBe('again')
-    const sized = main('Definir lista Como Entero[5];', 'Dimension lista[5];')
+    const sized = main('Definir lista Como Entero[5];', 'Dimension lista[5];', 'Escribir lista[1];')
     expect(checkSource(sized).result.diagnostics[0]?.data.hint).toBe('again')
   })
 
@@ -222,7 +246,11 @@ describe('Dimension (§5.2)', () => {
   })
 
   it('refuses a rank the declaration does not have', () => {
-    const source = main('Definir tabla Como Real[,];', 'Dimension tabla[3];')
+    const source = main(
+      'Definir tabla Como Real[,];',
+      'Dimension tabla[3];',
+      'Escribir tabla[1,1];',
+    )
     const report = checkSource(source)
     expect(report.codes).toEqual(['E3022'])
     expect(report.result.diagnostics[0]?.data).toEqual({
@@ -234,7 +262,9 @@ describe('Dimension (§5.2)', () => {
   })
 
   it('checks its sizes the way Definir does', () => {
-    expect(checkCodes(main('Definir lista Como Entero;', 'Dimension lista[0];'))).toEqual(['E3023'])
+    expect(
+      checkCodes(main('Definir lista Como Entero;', 'Dimension lista[0];', 'Escribir lista[1];')),
+    ).toEqual(['E3023'])
   })
 })
 
@@ -283,7 +313,9 @@ describe('Constante (§5.3)', () => {
 
   it('clashes with a variable of the same name like any other declaration', () => {
     expect(
-      checkCodes(main('Definir MAX Como Entero;', 'Constante MAX <- 10;', 'Escribir MAX;')),
+      checkCodes(
+        main('Definir MAX Como Entero;', 'MAX <- 1;', 'Constante MAX <- 10;', 'Escribir MAX;'),
+      ),
     ).toEqual(['E3002'])
   })
 })
@@ -305,7 +337,9 @@ describe('Leer (§5.5)', () => {
   })
 
   it('refuses a whole array and a letter of a text', () => {
-    expect(checkCodes(main('Definir lista Como Entero[3];', 'Leer lista;'))).toEqual(['E3009'])
+    expect(
+      checkCodes(main('Definir lista Como Entero[3];', 'Leer lista;', 'Escribir lista[1];')),
+    ).toEqual(['E3009'])
     const text = main('Definir s Como Cadena;', 's <- "ab";', 'Leer s[1];')
     expect(checkCodes(text)).toEqual(['E3013'])
   })

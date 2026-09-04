@@ -14,6 +14,7 @@ import type { Span } from '../source/index'
 import { fold } from '../types/fold'
 import { arrayOf, isUnknown, scalar, type Type, UNKNOWN } from '../types/type'
 import { constantLookup, typeOf } from './expressions'
+import { reportBodyWarnings } from './flow'
 import { type BodyState, type CheckerState, type CheckResult, createState, report } from './result'
 import {
   createScope,
@@ -197,6 +198,7 @@ function checkMain(state: CheckerState, block: MainBlock): void {
   const previous = state.frame
   state.frame = { scope, subprogram: null, loopDepth: 0, pending: pendingNames(block.body) }
   checkStatements(state, block.body)
+  reportBodyWarnings(state, scope, null, undefined)
   state.frame = previous
 }
 
@@ -245,6 +247,7 @@ export function ensureChecked(
     pending: pendingNames(decl.body),
   }
   checkStatements(state, decl.body)
+  reportBodyWarnings(state, body.scope, decl, body)
   state.frame = previous
   body.status = 'checked'
   return body

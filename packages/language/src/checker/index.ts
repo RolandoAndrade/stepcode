@@ -1,4 +1,5 @@
 export { check, ensureChecked, typeFromRef } from './driver'
+export { reportBodyWarnings, reportUnreachable } from './flow'
 export type { BodyState, CheckerState, CheckResult, Frame } from './result'
 export { createState, report, reportAssignFailure, setType } from './result'
 export type { Scope, Symbol, SymbolInit, SymbolKind } from './scope'

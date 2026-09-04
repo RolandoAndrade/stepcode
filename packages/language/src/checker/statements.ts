@@ -43,6 +43,7 @@ import {
   typeOf,
   typeOfIndex,
 } from './expressions'
+import { reportUnreachable } from './flow'
 import { type CheckerState, report, reportAssignFailure, setType } from './result'
 // biome-ignore lint/suspicious/noShadowRestrictedNames: `Symbol` is the checker's own type, per the checker spec (§3.1); it never appears with the global.
 import { createSymbol, declareSymbol, lookupLocal, type Symbol, type SymbolKind } from './scope'
@@ -434,6 +435,7 @@ function checkFor(state: CheckerState, stmt: ForStmt): void {
 
 export function checkStatements(state: CheckerState, stmts: readonly Stmt[]): void {
   for (const stmt of stmts) checkStatement(state, stmt)
+  reportUnreachable(state, stmts)
 }
 
 export function checkStatement(state: CheckerState, stmt: Stmt): void {

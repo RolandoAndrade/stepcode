@@ -67,6 +67,7 @@ describe('phase one: signatures', () => {
       'Proceso p',
       '  Definir total Como Entero;',
       '  total <- 1;',
+      '  Escribir total;',
       '  f();',
       'FinProceso',
     ].join('\n')
@@ -343,6 +344,7 @@ describe('user calls (§5.11)', () => {
       'Proceso p',
       '  Definir a Como Entero;',
       '  a <- 1;',
+      '  Escribir a;',
       '  a(2);',
       'FinProceso',
     ].join('\n')
@@ -390,6 +392,7 @@ describe('user calls (§5.11)', () => {
       'FinSubProceso',
       'Proceso p',
       '  Definir lista Como Entero[10];',
+      '  Escribir lista[1];',
       '  f(lista);',
       'FinProceso',
     ].join('\n')
