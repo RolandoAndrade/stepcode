@@ -3235,11 +3235,6 @@ export function markWritten(state: CheckerState, expr: Expr): void {
 }
 
 /**
- * §5.11: a `Por Referencia` parameter needs somewhere to write back — a variable, a
- * parameter, the result variable, a counter, or one element of an array. A constant, a
- * literal, or any computed expression is E3032.
- */
-/**
  * §5.9: a counter is read-only inside its own loop, and a `Por Referencia` argument is a
  * write, so an active counter passed by reference is E3008 rather than E3032.
  */
@@ -3255,6 +3250,11 @@ export function argText(expr: Expr): string {
   return target.kind === 'Identifier' ? target.text : ''
 }
 
+/**
+ * §5.11: a `Por Referencia` parameter needs somewhere to write back — a variable, a
+ * parameter, the result variable, or one element of an array (an active counter is caught
+ * earlier by `isActiveCounter`). A constant, a literal, or any computed expression is E3032.
+ */
 export function isPassableByRef(state: CheckerState, expr: Expr): boolean {
   const target = expr.kind === 'Index' ? expr.target : expr
   if (target.kind !== 'Identifier' || target.missing === true) return false
