@@ -19,7 +19,20 @@ const program = 'Proceso p\n  Definir a Como Entero;\n  a <- 1;\n  Escribir a;\n
 const unknownEs = 'Proceso p\n  Escribir noExiste;\nFinProceso'
 const unknownEn = 'Program p\n  Write nope;\nEndProgram'
 
-/** Every lint message the bundle produces for a document, once the linter has run. */
+/**
+ * Lints now, without the clock: `forceLinting` runs the one synchronous source immediately,
+ * and its diagnostics are dispatched a microtask later — so poll the count, bounded.
+ */
+async function linted(view: EditorView): Promise<number> {
+  const before = diagnosticCount(view.state)
+  forceLinting(view)
+  for (let round = 0; round < 50 && diagnosticCount(view.state) === before; round++) {
+    await Promise.resolve()
+  }
+  return diagnosticCount(view.state)
+}
+
+/** Every lint message the bundle produces for a document. */
 async function lintMessages(
   doc: string,
   options: { profile: ResolvedProfile; locale?: string },
@@ -29,8 +42,7 @@ async function lintMessages(
     parent: document.body,
   })
   ensureSyntaxTree(view.state, view.state.doc.length, 1e9)
-  forceLinting(view)
-  await new Promise((resolve) => setTimeout(resolve, 400))
+  await linted(view)
   const messages: string[] = []
   forEachDiagnostic(view.state, (diagnostic) => {
     messages.push(diagnostic.message)
@@ -55,9 +67,7 @@ describe('stepcode()', () => {
     view.dispatch({ changes: { from, to: from + 1, insert: 'b' } })
     ensureSyntaxTree(view.state, view.state.doc.length, 1e9)
     expect(compileResultAt(view.state)?.diagnostics.map((d) => d.code)).toEqual(['W3002', 'E3001'])
-    forceLinting(view)
-    await new Promise((resolve) => setTimeout(resolve, 400))
-    expect(diagnosticCount(view.state)).toBe(2)
+    expect(await linted(view)).toBe(2)
 
     view.dispatch({ effects: [toggleBreakpoint.of({ line: 3 }), setCurrentLine.of(3)] })
     expect(breakpointLines(view.state)).toEqual([3])

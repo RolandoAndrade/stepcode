@@ -43,7 +43,9 @@ hover, and `F12` go to definition. Switch profiles by wrapping it in a `Compartm
 
 Every piece is also exported alone: `stepcodeLanguage`, `stepcodeLint`, `stepcodeCompletion`,
 `stepcodeSignatureHelp`, `stepcodeHover`, `stepcodeBlockMatching`, `stepcodeKeymap`.
-`compileResultAt(state)` hands back the `CompileResult` the tree was built from.
+`compileResultAt(state)` hands back the `CompileResult` the tree was built from, `treeDataAt(state)`
+adds the offset maps the features use, and `stepcodeDiagnostics(state, options)` is the lint
+mapping without the linter, for a host's own Problems panel.
 
 Not included on purpose: a highlight style, the lint gutter, line numbers, history, the
 default keymap.
@@ -71,5 +73,5 @@ and the matching keyword pair (`.cm-matchingBracket`, `.cm-nonmatchingBracket`).
 ## Strings
 
 Diagnostics render through `stepcode`'s catalogs; the few strings this package adds (symbol
-kinds, "declared on line", snippet placeholders) come from `stringsFor(locale)` with `es` and
-`en`, falling back to `en`. `stepcode({ profile, locale })` defaults `locale` to the profile's.
+kinds, "declared on line", snippet placeholders) come from its own table, which covers `es` and
+`en` and falls back to `en`. `stepcode({ profile, locale })` defaults `locale` to the profile's.

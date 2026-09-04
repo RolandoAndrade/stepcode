@@ -15,15 +15,24 @@ const functions = {
   goToDefinition: api.goToDefinition,
   compileResultAt: api.compileResultAt,
   treeDataAt: api.treeDataAt,
+  stepcodeDiagnostics: api.stepcodeDiagnostics,
   debug: api.debug,
   breakpoints: api.breakpoints,
   currentLine: api.currentLine,
   breakpointLines: api.breakpointLines,
   breakpointsChanged: api.breakpointsChanged,
   currentLineOf: api.currentLineOf,
-  stringsFor: api.stringsFor,
-  buildTree: api.buildTree,
 }
+
+/** Everything the barrel exports at runtime — nothing beyond spec §3 (types erase). */
+const surface = [
+  ...Object.keys(functions),
+  'packageName',
+  'stepcodeKeymap',
+  'toggleBreakpoint',
+  'setBreakpoints',
+  'setCurrentLine',
+].sort()
 
 describe('@stepcode/codemirror', () => {
   it('exposes its package name', () => {
@@ -38,9 +47,13 @@ describe('@stepcode/codemirror', () => {
     expect(api.toggleBreakpoint).toBeDefined()
     expect(api.setBreakpoints).toBeDefined()
     expect(api.setCurrentLine).toBeDefined()
-    expect(api.compileProp).toBeDefined()
-    expect(api.stepcodeBaseTheme).toBeDefined()
-    expect(api.nodeSet).toBeDefined()
+  })
+
+  it('exports nothing else: internals stay internal', () => {
+    expect(Object.keys(api).sort()).toEqual(surface)
+    for (const name of ['nodeSet', 'buildTree', 'symbolAt', 'compileProp']) {
+      expect(Object.hasOwn(api, name), name).toBe(false)
+    }
   })
 
   it('bundles a LanguageSupport per profile', () => {
