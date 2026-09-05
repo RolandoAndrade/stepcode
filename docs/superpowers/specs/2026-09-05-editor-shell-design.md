@@ -126,11 +126,14 @@ components are the 4a components unchanged; a thin wrapper per panel adapts the 
 
 All dockview chrome is replaced by custom components:
 
-- **Tab:** label only, 12 px, muted; the active tab of a multi-tab group has `--sc-fg` and a 2 px
-  accent underline. No icons, no close button.
+- **Tab:** the panel's icon (14 px, `PANEL_ICONS`) then its label, 12 px, muted; the active tab of
+  a multi-tab group has `--sc-fg` and a 2 px accent underline. No close button.
 - **Group header:** the tabs on the left; on the right a collapse chevron and, for the console,
   panel-owned actions (clear, auto-scroll). A single-panel group renders its label like a heading
-  rather than a tab. Height 28 px.
+  rather than a tab. Height 28 px. **The editor group has no header at all**
+  (`group.header.hidden = true`, applied after the default layout and after `fromJSON`, followed by
+  `group.relayout()` so the editor claims the freed 28 px): it holds one panel that can never leave
+  it, so its tab says nothing the filename in the toolbar does not.
 - **Drop overlay:** `--sc-accent-soft` fill with a 1 px accent border.
 - **Floating group:** hairline border, `--sc-shadow`, 8 px radius, draggable by its header,
   resizable by its edges. Minimum size 240 × 160.
@@ -142,13 +145,14 @@ other panels; it accepts panels docked beside it. Dragging the editor tab does n
 ### 3.2 Default layout
 
 ```
-┌───────────────────────────────────────┐
-│ editor                                │
-│                                       │
-│                                       │
-├───────────────────────────────────────┤
-│ Consola │ Problemas │ Variables    ⌄  │  ← collapsed bottom group, 28 px
-└───────────────────────────────────────┘
+┌──┬────────────────────────────────────┐
+│  │ editor (no tab strip)              │
+│  │                                    │
+│  │                                    │
+│  ├────────────────────────────────────┤
+│▌▪│ Consola │ Problemas │ Variables ⌄  │  ← bottom group, hidden when collapsed
+└──┴────────────────────────────────────┘
+   ↑ sidebar, 40 px
 ```
 
 One bottom group with the three panels as tabs, collapsed. Its expanded height is 30 % of the
@@ -156,19 +160,40 @@ area (minimum 120 px). "Restablecer diseño" returns to exactly this.
 
 ### 3.3 Collapse
 
-Collapse is a shell feature layered over dockview; dockview has no primitive for it.
+Collapse is a shell feature layered over dockview; dockview has no primitive for it, but it does
+hide a grid view, and that is what a collapsed group is: **gone from the grid, not shrunk to a
+strip**.
 
-- Every docked group has a chevron. Collapsing sets a size constraint on the group equal to its
-  header size (`maximumHeight` for groups on the top/bottom edge, `maximumWidth` for groups on the
-  left/right edge) and remembers the previous size. Expanding lifts the constraint and restores
-  the size.
-- A side group collapsed to a vertical strip shows its labels rotated 90° reading bottom to top.
-  Clicking a label in a collapsed strip expands the group and activates that tab.
-- Floating and popped-out groups do not collapse; their chevron is absent.
-- Dragging a tab out of a collapsed group expands nothing; the new group is expanded.
-- A group that is collapsed when the user starts a drag onto it becomes a tab target as usual.
+- Every docked group has a chevron. Collapsing is `group.api.setVisible(false)`, expanding is
+  `setVisible(true)`. Dockview caches the hidden view's size and gives it back on show, so the
+  shell remembers no sizes; its JSON carries the hidden state (`visible: false`) across a reload.
+- Floating and popped-out groups do not collapse; their chevron is absent. (Dockview would hide a
+  floating group's overlay and only warn for a popped-out one — the shell refuses both.)
+- Hiding and showing are animated: the shell marks the dock root `.sc-animating` just before the
+  call, and `dock.css` transitions the inline `top`/`left`/`width`/`height` dockview writes on
+  `.dv-view` and `.dv-sash` for 180 ms. The mark is cleared by the first `transitionend` on the
+  root or by a 250 ms fallback, so it is never on while the user drags a sash, and
+  `prefers-reduced-motion: reduce` turns it off.
 
-The set of collapsed group ids is stored next to dockview's JSON (§7).
+The set of collapsed group ids is stored next to dockview's JSON (§7). It stays the shell's own
+truth rather than being read back from `api.isVisible`, because `fromJSON` restores a hidden view
+without firing the visibility event that field is fed from.
+
+**Sidebar.** A 40 px strip on the left of the layout area, full height between toolbar and status
+bar, `--sc-surface` with a `--sc-border` right edge. Pinned to its bottom, one icon button per
+non-editor panel — Consola, Problemas, Variables — with the panel name as tooltip and accessible
+name. Given the panel's group, a click:
+
+| Group | Panel | Click does |
+|---|---|---|
+| hidden | any | show the group and activate that panel |
+| visible | the tab in front | hide the group (counts as a manual collapse, §3.4) |
+| visible | another tab | activate that panel |
+
+The button of a panel that is visible *and* in front of its group is accented (`--sc-accent`, a
+2 px accent bar on its left edge, `aria-pressed="true"`); every other button is muted. The
+Problemas button carries a small `--sc-error` badge with the error count while `diagnostics` holds
+errors, and nothing when it holds none.
 
 ### 3.4 Auto-expand
 
@@ -486,7 +511,8 @@ Below 768 px (`matchMedia`, re-evaluated on resize) the shell renders `MobileShe
   the editor. Horizontal scroll, no wrap.
 - **Bottom sheet:** three positions, `collapsed` (handle only), `half` (45 % of height), `full`
   (top bar remains). Drag the handle or tap it to cycle; swipe down from `half` collapses. Tabs
-  in the handle switch pages; pages are the panel components. Auto-expand events (§3.4) move it
+  in the handle carry the panel icon (14 px) before the label and switch pages; pages are the panel
+  components. Auto-expand events (§3.4) move it
   to `half`; an input request moves it to `full` and focuses the field. An input request opens the
 sheet even if the user collapsed it manually during this run (§3.4); the manual-collapse rule
 applies to run and pause only. Touch targets are at least 44 px, except the keys inside the 40 px
