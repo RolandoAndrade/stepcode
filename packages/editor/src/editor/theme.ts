@@ -26,8 +26,14 @@ export const EDITOR_THEME_SPEC: Readonly<Record<string, Readonly<Record<string, 
   '.cm-stepcode-breakpoint': { backgroundColor: 'var(--sc-breakpoint)' },
   '.cm-stepcode-current-line': { backgroundColor: 'var(--sc-current-line)' },
   '.cm-stepcode-current-line-marker': { borderLeftColor: 'var(--sc-warning)' },
-  '.cm-lintRange-error': { textDecoration: 'underline wavy var(--sc-error)' },
-  '.cm-lintRange-warning': { textDecoration: 'underline wavy var(--sc-warning)' },
+  '.cm-lintRange-error': {
+    backgroundImage: 'none',
+    textDecoration: 'underline wavy var(--sc-error)',
+  },
+  '.cm-lintRange-warning': {
+    backgroundImage: 'none',
+    textDecoration: 'underline wavy var(--sc-warning)',
+  },
   '.cm-tooltip': {
     backgroundColor: 'var(--sc-surface-raised)',
     color: 'var(--sc-fg)',
@@ -37,8 +43,11 @@ export const EDITOR_THEME_SPEC: Readonly<Record<string, Readonly<Record<string, 
     backgroundColor: 'var(--sc-selection)',
     color: 'var(--sc-fg)',
   },
-  '.cm-matchingBracket': { outline: '1px solid var(--sc-success)' },
-  '.cm-nonmatchingBracket': { outline: '1px solid var(--sc-error)' },
+  '.cm-matchingBracket': { outline: '1px solid var(--sc-success)', backgroundColor: 'transparent' },
+  '.cm-nonmatchingBracket': {
+    outline: '1px solid var(--sc-error)',
+    backgroundColor: 'transparent',
+  },
 }
 
 export const appEditorTheme: Extension = EditorView.theme(EDITOR_THEME_SPEC)

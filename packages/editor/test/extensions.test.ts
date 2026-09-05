@@ -40,8 +40,10 @@ function viewFor(doc = PROGRAM) {
 
 function values(spec: unknown): string[] {
   const out: string[] = []
-  // `@lezer/highlight` tags are self-referential (a Tag's `set` array includes the tag itself),
-  // so a plain recursive walk over HIGHLIGHT_SPECS overflows the stack; guard with `seen`.
+  // `seen` is cycle safety only, not a semantic filter: Lezer's `Tag.set` contains the tag
+  // itself, so a plain recursive walk over HIGHLIGHT_SPECS would revisit the same Tag forever
+  // and overflow the stack. Skipping an already-visited object breaks that cycle without
+  // changing which strings get collected from the plain data we actually care about.
   const seen = new Set<object>()
   const visit = (node: unknown): void => {
     if (typeof node === 'string') out.push(node)
@@ -56,25 +58,37 @@ function values(spec: unknown): string[] {
   return out
 }
 
+/** Non-color CSS keywords a colorish-named property may legitimately hold instead of a token. */
+const COLOR_KEYWORDS = new Set(['none', 'transparent', 'unset', 'inherit'])
+
 describe('tokens only', () => {
   it('colors the highlight style and the editor theme through var(--sc-…)', () => {
     const colorish = /color|background|border|outline|decoration/i
     for (const spec of HIGHLIGHT_SPECS) {
       for (const [key, value] of Object.entries(spec)) {
         if (key === 'tag') continue
-        if (colorish.test(key) || key === 'textDecoration')
+        if (colorish.test(key) || key === 'textDecoration') {
+          if (COLOR_KEYWORDS.has(String(value))) continue
           expect(String(value)).toContain('var(--sc-')
+        }
       }
     }
     for (const [selector, rules] of Object.entries(EDITOR_THEME_SPEC)) {
       for (const [property, value] of Object.entries(rules)) {
-        if (colorish.test(property))
+        if (colorish.test(property)) {
+          if (COLOR_KEYWORDS.has(String(value))) continue
           expect(String(value), `${selector} ${property}`).toContain('var(--sc-')
+        }
       }
     }
     for (const value of [...values(HIGHLIGHT_SPECS), ...values(EDITOR_THEME_SPEC)]) {
       expect(value).not.toMatch(/#[0-9a-fA-F]{3,6}\b|\brgba?\(/)
     }
+  })
+
+  it('clears the vendor lint squiggle so lint marks stay token-driven', () => {
+    expect(EDITOR_THEME_SPEC['.cm-lintRange-error']?.backgroundImage).toBe('none')
+    expect(EDITOR_THEME_SPEC['.cm-lintRange-warning']?.backgroundImage).toBe('none')
   })
 })
 
