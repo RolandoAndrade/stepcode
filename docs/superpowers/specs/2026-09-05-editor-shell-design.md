@@ -65,11 +65,18 @@ Four horizontal bands on a desktop:
 |---|---|---|
 | Toolbar | 40 px | menu, filename, file actions · run cluster |
 | Layout area | remaining | dockview (§3) |
-| Status bar | 24 px | cursor · profile · problems · run state |
+| Status bar | 24 px | problems · run state · cursor · profile |
 
 The toolbar and status bar use `--sc-surface`; the layout area uses `--sc-bg`; groups inside
 dockview use `--sc-surface` for headers and `--sc-bg` for bodies. A 1 px hairline in
 `--sc-border` separates bands. No other borders; shadows only on floating groups and dialogs.
+
+**Stacking.** Dockview's stylesheet uses z-index up to 9999 for sashes and drop overlays, so a
+Tailwind `z-50` overlay of ours paints *under* a resize sash. One token settles it:
+`--sc-z-modal: 10000` in tokens.css, mapped in `@theme inline` as `--z-index-modal`, and used as
+`z-modal` by every overlay that must cover the layout — dialog overlays and contents, dropdown
+and popover contents, tooltips, and the toast viewport. Overlay and content share the token; the
+content wins because it comes later in the DOM.
 
 ### 2.2 Type, spacing, icons, motion
 

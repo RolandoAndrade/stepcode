@@ -3,6 +3,16 @@
  * Tailwind reads these through `@theme inline` in index.css; CodeMirror through `var(--sc-…)`.
  * `--sc-line` and `--sc-current-line` are overlays and stay rgba; everything else is hex.
  */
+/*
+ * Not a color and not theme-dependent, so it stays out of the two token blocks below: dockview's
+ * stylesheet stacks sashes and drop overlays up to 9999, and anything of ours that must cover the
+ * whole layout — dialogs, menus, tooltips, toasts — goes above that. Mapped to Tailwind's
+ * `z-modal` in index.css.
+ */
+html {
+  --sc-z-modal: 10000;
+}
+
 :root {
   --sc-bg: #fafafa;
   --sc-surface: #ffffff;

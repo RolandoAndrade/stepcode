@@ -27,7 +27,7 @@ export function Tooltip({
         <RadixTooltip.Content
           side="bottom"
           sideOffset={6}
-          className="pointer-events-none z-50 rounded bg-surface-raised px-2 py-1 text-fg text-xs shadow-panel [@media(hover:none)]:hidden"
+          className="pointer-events-none z-modal rounded bg-surface-raised px-2 py-1 text-fg text-xs shadow-panel [@media(hover:none)]:hidden"
         >
           {tooltipText(label, shortcut)}
         </RadixTooltip.Content>

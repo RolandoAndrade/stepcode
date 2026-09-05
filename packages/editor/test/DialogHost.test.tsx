@@ -28,4 +28,18 @@ describe('DialogHost', () => {
       act(() => store.getState().closeDialog())
     }
   })
+
+  it('stacks its overlay and its content above the dock sashes', () => {
+    const { store } = storeWith({})
+    renderWithStore(
+      <TooltipProvider>
+        <DialogHost env={env} />
+      </TooltipProvider>,
+      store,
+    )
+    act(() => store.getState().openDialog('about'))
+    expect(screen.getByRole('dialog').className).toContain('z-modal')
+    const overlay = document.querySelector('[data-radix-popper-content-wrapper], .bg-overlay')
+    expect(overlay?.className).toContain('z-modal')
+  })
 })

@@ -29,7 +29,7 @@ export function Settings({ initialSection = 'language' }: { initialSection?: Set
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && store.getState().closeDialog()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-overlay" />
+        <Dialog.Overlay className="fixed inset-0 z-modal bg-overlay" />
         <Dialog.Content
           ref={contentRef}
           tabIndex={-1}
@@ -40,7 +40,7 @@ export function Settings({ initialSection = 'language' }: { initialSection?: Set
             event.preventDefault()
             contentRef.current?.focus()
           }}
-          className="fixed inset-0 z-50 flex flex-col bg-surface text-fg sm:inset-auto sm:top-1/2 sm:left-1/2 sm:h-[min(90vh,520px)] sm:w-[min(95vw,720px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:shadow-panel"
+          className="fixed inset-0 z-modal flex flex-col bg-surface text-fg sm:inset-auto sm:top-1/2 sm:left-1/2 sm:h-[min(90vh,520px)] sm:w-[min(95vw,720px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:shadow-panel"
         >
           <TooltipProvider>
             <div className="flex h-10 items-center justify-between border-b border-border px-3">

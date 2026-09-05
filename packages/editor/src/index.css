@@ -37,6 +37,7 @@
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
   --ease-shell: cubic-bezier(0.2, 0, 0, 1);
+  --z-index-modal: var(--sc-z-modal);
 }
 
 @layer base {

@@ -88,7 +88,7 @@ export function ProfilePopover({
           role="menu"
           align="start"
           sideOffset={4}
-          className="z-50 min-w-44 rounded-md bg-surface p-1 text-sm text-fg shadow-panel"
+          className="z-modal min-w-44 rounded-md bg-surface p-1 text-sm text-fg shadow-panel"
         >
           {items.map((item) => (
             <Popover.Close asChild key={item.id}>

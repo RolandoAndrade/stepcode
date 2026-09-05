@@ -84,7 +84,7 @@ function Entries({ entries }: { entries: MenuEntry[] }) {
               </Dropdown.SubTrigger>
               <Dropdown.Portal>
                 <Dropdown.SubContent
-                  className="z-50 min-w-48 rounded-md bg-surface p-1 text-fg shadow-panel"
+                  className="z-modal min-w-48 rounded-md bg-surface p-1 text-fg shadow-panel"
                   sideOffset={4}
                 >
                   <Entries entries={entry.items} />
@@ -138,7 +138,7 @@ export function Menu({ env }: { env: FileEnvironment }) {
         <Dropdown.Content
           align="start"
           sideOffset={6}
-          className="z-50 min-w-56 rounded-md bg-surface p-1 text-fg shadow-panel"
+          className="z-modal min-w-56 rounded-md bg-surface p-1 text-fg shadow-panel"
         >
           <Entries entries={entries} />
         </Dropdown.Content>

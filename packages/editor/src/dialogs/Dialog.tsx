@@ -25,9 +25,9 @@ export function Dialog({
   return (
     <RadixDialog.Root open={open} onOpenChange={(next) => !next && store.getState().closeDialog()}>
       <RadixDialog.Portal>
-        <RadixDialog.Overlay className="fixed inset-0 z-40 bg-overlay" />
+        <RadixDialog.Overlay className="fixed inset-0 z-modal bg-overlay" />
         <RadixDialog.Content
-          className={`fixed inset-0 z-50 flex flex-col bg-surface text-fg sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[90vh] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:shadow-panel ${wide ? 'sm:w-[min(95vw,760px)]' : 'sm:w-[min(90vw,440px)]'}`}
+          className={`fixed inset-0 z-modal flex flex-col bg-surface text-fg sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[90vh] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:shadow-panel ${wide ? 'sm:w-[min(95vw,760px)]' : 'sm:w-[min(90vw,440px)]'}`}
         >
           <TooltipProvider>
             <div className="flex h-10 items-center justify-between border-b border-border px-3">

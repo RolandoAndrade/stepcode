@@ -24,7 +24,7 @@ export function Toaster() {
           <Toast.Description>{toast.message}</Toast.Description>
         </Toast.Root>
       ))}
-      <Toast.Viewport className="fixed right-4 bottom-8 z-50 flex flex-col gap-2" />
+      <Toast.Viewport className="fixed right-4 bottom-8 z-modal flex flex-col gap-2" />
     </Toast.Provider>
   )
 }

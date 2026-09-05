@@ -48,9 +48,7 @@ describe('StatusBar', () => {
   it('drops the problems icon when there is nothing to report', () => {
     const { store } = storeWith({})
     renderWithStore(<StatusBar />, store)
-    expect(
-      screen.getByRole('button', { name: /Sin problemas/ }).querySelector('svg'),
-    ).toBeNull()
+    expect(screen.getByRole('button', { name: /Sin problemas/ }).querySelector('svg')).toBeNull()
   })
 
   it('shows problems left and the profile right when compact', () => {
