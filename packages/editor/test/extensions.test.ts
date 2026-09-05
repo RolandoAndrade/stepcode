@@ -68,7 +68,11 @@ const COLOR_KEYWORDS = new Set(['none', 'transparent', 'unset', 'inherit', 'curr
 /** Properties a colorish name catches that carry no color at all (`borderRadius`, `minWidth`). */
 const COLORLESS = /radius|width|spacing|position|inset|collapse/i
 
-/** `currentColor` is a color the rule inherits from a token set on the same element. */
+/**
+ * `currentColor` is a color the rule inherits from a token set on the same element — the lint dot
+ * takes it from `.cm-lint-marker-error`'s `color: var(--sc-error)`. What that escape could hide
+ * (a vendor color winning anyway) is what the mounted marker test below actually checks.
+ */
 const carriesAColor = (property: string, value: string): boolean =>
   !COLORLESS.test(property) && !COLOR_KEYWORDS.has(value) && !value.includes('currentColor')
 
