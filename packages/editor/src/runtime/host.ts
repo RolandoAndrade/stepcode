@@ -15,6 +15,8 @@ export class RuntimeHost implements HostApi {
   /** Bumped on every spawn and terminate, so a late message from an old worker is dropped. */
   private generation = 0
   private readonly listeners = new Set<HostListener>()
+  /** Set by `dispose()`. Once true, `post` and `stop` are no-ops: no spawn, no emit. */
+  private disposed = false
 
   constructor(private readonly spawn: SpawnWorker = defaultSpawn) {}
 
@@ -62,19 +64,22 @@ export class RuntimeHost implements HostApi {
     this.post({ kind: 'setBreakpoints', lines })
   }
 
-  /** Terminate, respawn, and announce `ready` ourselves: a dead worker cannot. */
+  /** Terminate, respawn, and announce `ready` ourselves: a dead worker cannot. No-op once disposed. */
   stop(): void {
+    if (this.disposed) return
     this.terminate()
     this.spawnWorker()
     this.emit({ kind: 'state', state: 'ready' })
   }
 
   dispose(): void {
+    this.disposed = true
     this.terminate()
     this.listeners.clear()
   }
 
   private post(message: HostMessage): void {
+    if (this.disposed) return
     ;(this.worker ?? this.spawnWorker()).postMessage(message)
   }
 
@@ -86,14 +91,10 @@ export class RuntimeHost implements HostApi {
       if (generation === this.generation) this.emit(event.data)
     }
     // `@vitest/web-worker` (under happy-dom) fires an `onmessage`-property assignment twice per
-    // real worker post — its `addEventListener('message', ...)` path does not double-fire, and a
-    // real browser Worker supports both equally, so prefer it. The test double `FakeWorker` has
-    // no `addEventListener`, so it falls back to the property the brief's tests exercise.
-    if (typeof worker.addEventListener === 'function') {
-      worker.addEventListener('message', handleMessage)
-    } else {
-      worker.onmessage = handleMessage
-    }
+    // real worker post; `addEventListener('message', ...)` does not double-fire there, and a real
+    // browser Worker supports it identically, so always use it.
+    worker.addEventListener('message', handleMessage)
+    // `error`/`messageerror` on the worker are deliberately unhandled in 4a — a follow-up.
     this.worker = worker
     return worker
   }

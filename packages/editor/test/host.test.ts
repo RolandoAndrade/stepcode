@@ -30,16 +30,19 @@ const LOOP = [
 class FakeWorker {
   readonly posted: HostMessage[] = []
   terminated = false
-  onmessage: ((event: MessageEvent<WorkerMessage>) => void) | null = null
+  private handler: ((event: MessageEvent<WorkerMessage>) => void) | null = null
   postMessage(message: HostMessage): void {
     this.posted.push(message)
   }
   terminate(): void {
     this.terminated = true
   }
+  addEventListener(type: string, handler: (event: MessageEvent<WorkerMessage>) => void): void {
+    if (type === 'message') this.handler = handler
+  }
   /** Speak as the worker. */
   say(message: WorkerMessage): void {
-    this.onmessage?.({ data: message } as MessageEvent<WorkerMessage>)
+    this.handler?.({ data: message } as MessageEvent<WorkerMessage>)
   }
   asWorker(): Worker {
     return this as unknown as Worker
@@ -136,6 +139,18 @@ describe('RuntimeHost with a fake worker', () => {
     host.stop()
     expect(workers.length).toBe(1)
     expect(received).toEqual([{ kind: 'state', state: 'ready' }])
+  })
+
+  it('stays inert after dispose: no respawn on a command, no ready on stop', () => {
+    const { host, workers, received } = fakes()
+    host.start(COUNT, es, [], 'run')
+    host.dispose()
+    expect(workers.length).toBe(1)
+    received.length = 0
+    host.start(COUNT, es, [], 'run')
+    host.stop()
+    expect(workers.length).toBe(1)
+    expect(received).toEqual([])
   })
 })
 
