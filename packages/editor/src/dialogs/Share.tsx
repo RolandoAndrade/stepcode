@@ -14,17 +14,19 @@ export function Share({ clipboard, base }: { clipboard?: Clipboard; base?: strin
   const strings = useEditorStore(stringsOf)
   const source = useEditorStore((s) => s.source)
   const profileId = useEditorStore((s) => s.profileId)
-  const [url, setUrl] = useState('')
+  const [hash, setHash] = useState('')
 
   useEffect(() => {
     let cancelled = false
-    encodeShare({ source, profileId }).then((hash) => {
-      if (!cancelled) setUrl(shareUrl(hash, base))
+    encodeShare({ source, profileId }).then((next) => {
+      if (!cancelled) setHash(next)
     })
     return () => {
       cancelled = true
     }
-  }, [source, profileId, base])
+  }, [source, profileId])
+
+  const url = hash === '' ? '' : shareUrl(hash, base)
 
   const copy = async (): Promise<void> => {
     await (clipboard ?? navigator.clipboard).writeText(url)
