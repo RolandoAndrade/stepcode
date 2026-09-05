@@ -280,7 +280,7 @@ Changes to the 4a panels, all inside the panel files:
 ### 4.1 Layout
 
 ```
-[≡] [hola.stepcode]  [Nuevo] [Abrir] [Guardar•]        [Ejecutar] [Depurar] … [Pausar] [Detener]
+[≡] [hola]  [Nuevo] [Abrir] [Guardar•]        [Ejecutar] [Depurar] … [Pausar] [Detener]
 ```
 
 Left to right: menu button (hexagon icon 20 px, tooltip "Menú"), filename, file actions. The run
@@ -295,11 +295,14 @@ solid instead of sliding.
 
 An inline text input styled as plain text (no border until hover or focus), 14 px, width fits
 content with a 32 ch maximum. Enter or blur commits; Escape reverts; an empty name reverts. The
-name is the document name (§8), extension included. Nothing marks the name itself: a document
-whose text differs from the last file save (or from the starter program, for a document never
-saved) shows an accent dot on the corner of the Save button, and that button's tooltip reads
-"Guardar · cambios sin guardar". The browser title still is `● name · StepCode`, since a tab
-strip has no Save button to carry the mark.
+field shows and edits the document name (§8) without its extension — the stored name keeps its
+extension because files are saved with it. Committing re-applies the extension to the edited
+stem: an explicit accepted extension typed in the field is honored, otherwise the document's
+current extension is preserved (a new document defaults to `.stepcode`). Nothing marks the name
+itself: a document whose text differs from the last file save (or from the starter program, for
+a document never saved) shows an accent dot on the corner of the Save button, and that button's
+tooltip reads "Guardar · cambios sin guardar". The browser title still is `● stem · StepCode`,
+also without the extension, since a tab strip has no Save button to carry the mark.
 
 ### 4.3 Run cluster
 

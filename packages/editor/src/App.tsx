@@ -8,6 +8,7 @@ import { installShortcuts } from './shell/shortcuts'
 import { Toolbar } from './shell/Toolbar'
 import { useIsNarrow } from './shell/useIsNarrow'
 import { useEditorStore, useEditorStoreApi } from './store/context'
+import { displayName } from './store/document'
 import { isDirty, stringsOf } from './store/store'
 import { TooltipProvider } from './ui/Tooltip'
 
@@ -31,7 +32,7 @@ export function App({ env, narrow }: { env: FileEnvironment; narrow?: boolean })
 
   useEffect(() => installShortcuts(store, env), [store, env])
   useEffect(() => {
-    document.title = strings.app.windowTitle(name, dirty)
+    document.title = strings.app.windowTitle(displayName(name), dirty)
   }, [strings, name, dirty])
 
   return (

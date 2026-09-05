@@ -13,7 +13,7 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Menú' })).toBeDefined()
     expect(await screen.findByRole('region', { name: 'Editor' })).toBeDefined()
     expect(screen.getByRole('button', { name: /Sin problemas/ })).toBeDefined()
-    expect(document.title).toBe('sin título.stepcode · StepCode')
+    expect(document.title).toBe('sin título · StepCode')
   })
 
   it('renders the phone shell when narrow', () => {
@@ -43,7 +43,7 @@ describe('App', () => {
       host.emit({ kind: 'state', state: 'done' })
       store.getState().setSource('x')
     })
-    expect(document.title).toBe('● sin título.stepcode · StepCode')
+    expect(document.title).toBe('● sin título · StepCode')
     rendered.unmount()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F5', cancelable: true }))
     expect(host.calls).toEqual(['start:run'])

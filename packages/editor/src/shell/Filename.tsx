@@ -1,18 +1,19 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useEditorStore } from '../store/context'
-import { nameWithExtension } from '../store/document'
+import { displayName, EXTENSIONS, nameWithExtension } from '../store/document'
 import { stringsOf } from '../store/store'
 
 /**
  * Spec §4.2: plain text until hovered or focused; Enter/blur commit, Escape reverts. The unsaved
- * mark is on the Save button, where the action that clears it is.
+ * mark is on the Save button, where the action that clears it is. The field shows and edits the
+ * name without its extension; the document keeps its extension because files are saved with it.
  */
 export function Filename() {
   const strings = useEditorStore(stringsOf)
   const name = useEditorStore((s) => s.name)
   const setName = useEditorStore((s) => s.setName)
-  const [draft, setDraft] = useState(name)
-  useEffect(() => setDraft(name), [name])
+  const [draft, setDraft] = useState(displayName(name))
+  useEffect(() => setDraft(displayName(name)), [name])
   // Enter and Escape both call `blur()` synchronously, which fires the input's own onBlur
   // (commit) before React applies the state update they just queued. This flag makes that
   // blur-triggered commit a no-op: Enter already committed explicitly, and Escape's revert
@@ -23,9 +24,21 @@ export function Filename() {
       skipNextCommitRef.current = false
       return
     }
-    const next = nameWithExtension(draft)
-    if (next === '') setDraft(name)
-    else if (next !== name) setName(next)
+    const stem = draft.trim()
+    if (stem === '') {
+      setDraft(displayName(name))
+      return
+    }
+    // An explicit accepted extension typed by the user is honored; otherwise the document's
+    // current extension is preserved (a new document defaults to .stepcode via nameWithExtension).
+    const hasExplicitExtension = EXTENSIONS.some((extension) =>
+      stem.toLowerCase().endsWith(extension),
+    )
+    const currentExtension =
+      EXTENSIONS.find((extension) => name.toLowerCase().endsWith(extension)) ?? '.stepcode'
+    const next = hasExplicitExtension ? nameWithExtension(stem) : `${stem}${currentExtension}`
+    if (next !== name) setName(next)
+    else setDraft(stem)
   }
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
     if (event.key === 'Enter') {
@@ -35,7 +48,7 @@ export function Filename() {
       event.currentTarget.blur()
     }
     if (event.key === 'Escape') {
-      setDraft(name)
+      setDraft(displayName(name))
       skipNextCommitRef.current = true
       event.currentTarget.blur()
     }

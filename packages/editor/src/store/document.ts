@@ -25,3 +25,12 @@ export function nameWithExtension(raw: string): string {
     ? name
     : `${name}.stepcode`
 }
+
+/**
+ * Spec §4.2: the toolbar shows the name without its extension. Strips one known extension
+ * (case-insensitively); a name with no known extension is returned untouched.
+ */
+export function displayName(name: string): string {
+  const extension = EXTENSIONS.find((candidate) => name.toLowerCase().endsWith(candidate))
+  return extension === undefined ? name : name.slice(0, name.length - extension.length)
+}
