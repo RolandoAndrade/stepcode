@@ -5,7 +5,7 @@ import { browserEnvironment } from './files/actions'
 import { useUpdatePrompt } from './pwa/register'
 import { UpdateToast } from './pwa/UpdateToast'
 import { RuntimeHost } from './runtime/host'
-import { applyShareFromLocation } from './share/onLoad'
+import { loadFromLocation } from './share/onLoad'
 import { StoreProvider } from './store/context'
 import {
   applyDocument,
@@ -57,7 +57,7 @@ function render(root: HTMLElement, store: EditorStore): void {
   )
 }
 
-/** Spec §7: settings, then the document, then a share link — persistence starts after all three. */
+/** Spec §7: settings, then the document, then the URL — persistence starts after all three. */
 async function boot(): Promise<void> {
   const root = document.getElementById('root')
   if (!root) throw new Error('Missing #root element')
@@ -72,7 +72,7 @@ async function boot(): Promise<void> {
   const idb = openDocumentStore()
   const doc = await readDocument(idb)
   if (doc !== null) applyDocument(store, doc)
-  await applyShareFromLocation(store)
+  await loadFromLocation(store)
   if (storage !== null) startPersisting(store, storage)
   startDocumentPersisting(store, idb)
   render(root, store)
