@@ -27,7 +27,14 @@ export interface EditorHandle {
   revealLine(line: number): void
 }
 
-export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | null> }) {
+/** Spec §3.2: `readOnly` protects the source only; the console's input row still accepts typing. */
+export function Editor({
+  handleRef,
+  readOnly = false,
+}: {
+  handleRef?: RefObject<EditorHandle | null>
+  readOnly?: boolean
+}) {
   const store = useEditorStoreApi()
   const title = useEditorStore((s) => stringsOf(s).app.editor)
   const container = useRef<HTMLDivElement>(null)
@@ -63,12 +70,19 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
       options = { profile: profileOf(state), locale: localeOf(state) }
       const built = createExtensions({
         ...options,
-        readOnly: !canEdit(state.state),
+        readOnly: readOnly || !canEdit(state.state),
         dark: state.theme === 'dark',
         settings: state.settings.editor,
       })
       compartments = built.compartments
-      return EditorState.create({ doc: state.source, extensions: [built.extensions, listener] })
+      // `readOnlyExtension` only marks the state read-only and takes the DOM out of the tab
+      // order; it does not stop a transaction dispatched straight at the view. The `readOnly`
+      // prop needs that harder guarantee, so drop any change a transaction carries while it holds.
+      const guard = EditorState.transactionFilter.of((tr) => (readOnly && tr.docChanged ? [] : tr))
+      return EditorState.create({
+        doc: state.source,
+        extensions: [built.extensions, listener, guard],
+      })
     }
     const view = new EditorView({ parent, state: stateFor(initial) })
     // The stepcode parser is a single-shot, non-incremental `Parser`, so a short document is
@@ -132,7 +146,9 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
       }
       if (canEdit(next.state) !== canEdit(previous.state)) {
         view.dispatch({
-          effects: compartments.readOnly.reconfigure(readOnlyExtension(!canEdit(next.state))),
+          effects: compartments.readOnly.reconfigure(
+            readOnlyExtension(readOnly || !canEdit(next.state)),
+          ),
         })
       }
       if (next.theme !== previous.theme) {
@@ -148,7 +164,7 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
       if (handleRef !== undefined) handleRef.current = null
       view.destroy()
     }
-  }, [store, handleRef])
+  }, [store, handleRef, readOnly])
 
   return (
     <section aria-label={title} className="h-full min-h-0 overflow-hidden bg-bg">

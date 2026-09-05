@@ -158,3 +158,45 @@ describe('Editor', () => {
     expect(dom?.isConnected).toBe(false)
   })
 })
+
+describe('Editor readOnly', () => {
+  function mountReadOnly() {
+    const { store } = storeWith({ source: FINE })
+    const ref = createRef<EditorHandle>()
+    const rendered = renderWithStore(<Editor handleRef={ref} readOnly />, store)
+    return { store, ref, rendered }
+  }
+
+  it('locks the document and takes editing off', () => {
+    const { ref } = mountReadOnly()
+    const view = ref.current?.view
+    expect(view?.state.readOnly).toBe(true)
+    expect(view?.state.facet(EditorView.editable)).toBe(false)
+  })
+
+  it('refuses a transaction that would change the text', () => {
+    const { ref, store } = mountReadOnly()
+    const view = ref.current?.view
+    act(() => {
+      view?.dispatch({ changes: { from: 0, insert: 'X' } })
+    })
+    expect(view?.state.doc.toString()).toBe(FINE)
+    expect(store.getState().source).toBe(FINE)
+  })
+
+  it('stays locked after the store replaces the document', () => {
+    const { ref, store } = mountReadOnly()
+    act(() => {
+      store.setState({ source: BROKEN })
+    })
+    expect(ref.current?.view.state.doc.toString()).toBe(BROKEN)
+    expect(ref.current?.view.state.readOnly).toBe(true)
+  })
+
+  it('leaves an ordinary editor writable', () => {
+    const { store } = storeWith({ source: FINE })
+    const ref = createRef<EditorHandle>()
+    renderWithStore(<Editor handleRef={ref} />, store)
+    expect(ref.current?.view.state.readOnly).toBe(false)
+  })
+})
