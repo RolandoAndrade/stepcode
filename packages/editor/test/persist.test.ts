@@ -5,6 +5,7 @@ import {
   applyDocument,
   applyPersisted,
   documentOf,
+  migrate,
   openDocumentStore,
   persistedOf,
   readDocument,
@@ -27,6 +28,24 @@ class MemoryStorage {
     this.map.set(key, value)
   }
 }
+
+describe('migrate', () => {
+  const steps = [
+    (previous: Record<string, unknown>) => ({ ...previous, version: 1, one: true }),
+    (previous: Record<string, unknown>) => ({ ...previous, version: 2, two: true }),
+  ]
+
+  it('runs `migrations[n]` to go from version n to n + 1', () => {
+    expect(migrate({ version: 0 }, steps, 2)).toEqual({ version: 2, one: true, two: true })
+    expect(migrate({ version: 1 }, steps, 2)).toEqual({ version: 2, two: true })
+    expect(migrate({ version: 2 }, steps, 2)).toEqual({ version: 2 })
+  })
+
+  it('refuses a version no step can upgrade', () => {
+    expect(migrate({ version: 0 }, [], 1)).toBeNull()
+    expect(migrate({ version: 'x' }, steps, 2)).toBeNull()
+  })
+})
 
 describe('localStorage persistence', () => {
   it('round-trips settings, profile, custom profiles and layout', () => {

@@ -181,7 +181,14 @@ export function profileOf(
   if (input === undefined) return profiles.es
   let resolved = resolvedCache.get(input)
   if (resolved === undefined) {
-    resolved = resolveProfile(input, registryWith(state.customProfiles))
+    try {
+      resolved = resolveProfile(input, registryWith(state.customProfiles))
+    } catch (error) {
+      // A custom profile can stop resolving between sessions (a hand-edited store, a base that
+      // is gone). Every caller here is rendering something; none of them can handle a throw.
+      console.warn('stepcode: falling back to es, unresolvable profile', state.profileId, error)
+      return profiles.es
+    }
     resolvedCache.set(input, resolved)
   }
   return resolved
@@ -343,13 +350,20 @@ export function createEditorStore(host: HostApi, options: StoreOptions = {}): Ed
       },
       deleteCustomProfile: (id) => {
         clearResolvedCache()
-        set((s) => ({
-          customProfiles: s.customProfiles.filter((c) => c.id !== id),
-          profileId:
-            s.profileId === id
-              ? ((customProfileOf(s, id) as { extends?: string } | undefined)?.extends ?? 'es')
-              : s.profileId,
-        }))
+        set((s) => {
+          // Whatever the deleted profile itself extended becomes the parent of its children:
+          // a dangling `extends` would leave them unresolvable (spec §6.1).
+          const parent =
+            (customProfileOf(s, id) as { extends?: string } | undefined)?.extends ?? 'es'
+          return {
+            customProfiles: s.customProfiles
+              .filter((c) => c.id !== id)
+              .map((c) =>
+                (c as { extends?: string }).extends === id ? { ...c, extends: parent } : c,
+              ),
+            profileId: s.profileId === id ? parent : s.profileId,
+          }
+        })
       },
       setDiagnostics: (diagnostics) => set({ diagnostics }),
       setBreakpoints: (breakpoints) => {

@@ -1,7 +1,7 @@
 import type { Diagnostic as LintDiagnostic } from '@codemirror/lint'
 import { profiles } from '@stepcode/profiles'
 import { compile, type Frame } from 'stepcode'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { WorkerState } from '../src/runtime/protocol'
 import { DEFAULT_LAYOUT } from '../src/store/layout'
 import { OUTPUT_CAP } from '../src/store/output'
@@ -9,6 +9,7 @@ import { DEFAULT_SETTINGS } from '../src/store/settings'
 import {
   canEdit,
   createEditorStore,
+  customProfileOf,
   DEFAULT_SOURCE,
   hasErrors,
   isDirty,
@@ -329,6 +330,28 @@ describe('store (4b slices)', () => {
     expect(profileNameOf(store.getState(), 'mio')).toBe('mio')
     store.getState().deleteCustomProfile('mio')
     expect(store.getState().profileId).toBe('es')
+  })
+
+  it('falls back to es when a custom profile no longer resolves', () => {
+    const { store } = setup()
+    store.getState().saveCustomProfile({ id: 'huerfano', extends: 'desaparecido' })
+    store.getState().setProfile('huerfano')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(profileOf(store.getState())).toBe(profiles.es)
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('rebases the profiles that extended a deleted one', () => {
+    const { store } = setup()
+    store.getState().saveCustomProfile({ id: 'a', extends: 'en' })
+    store.getState().saveCustomProfile({ id: 'b', extends: 'a', keywords: { write: ['Di'] } })
+    store.getState().setProfile('b')
+    store.getState().deleteCustomProfile('a')
+    const rebased = customProfileOf(store.getState(), 'b') as { extends: string }
+    expect(rebased.extends).toBe('en')
+    expect(profileOf(store.getState()).keywords.write).toEqual(['Di'])
+    expect(localeOf(store.getState())).toBe('en')
   })
 
   it('does not resolve a prototype member for an unknown profile id', () => {

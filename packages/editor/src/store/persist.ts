@@ -35,16 +35,21 @@ export interface StorageLike {
   setItem(key: string, value: string): void
 }
 
-function migrate(raw: Record<string, unknown>): Record<string, unknown> | null {
+/** `steps[n]` upgrades version `n`; a version no step can lift is refused. */
+export function migrate(
+  raw: Record<string, unknown>,
+  steps: ReadonlyArray<(previous: Record<string, unknown>) => Record<string, unknown>> = migrations,
+  target: number = CURRENT_VERSION,
+): Record<string, unknown> | null {
   let current = raw
   let version = typeof current.version === 'number' ? current.version : Number.NaN
-  while (version < CURRENT_VERSION) {
-    const step = migrations[version - 1]
+  while (version < target) {
+    const step = steps[version]
     if (step === undefined) return null
     current = step(current)
     version = typeof current.version === 'number' ? current.version : Number.NaN
   }
-  return version === CURRENT_VERSION ? current : null
+  return version === target ? current : null
 }
 
 /** Never throws (global constraint): garbage, unknown versions and storage errors all yield null. */
