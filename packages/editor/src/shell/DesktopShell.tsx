@@ -15,7 +15,13 @@ import { autoExpandTarget } from './autoExpand'
 import { CollapseController } from './dock/collapse'
 import { applyDefaultLayout, hideEditorHeader, PANEL_TITLES } from './dock/defaultLayout'
 import { HeaderActions } from './dock/HeaderActions'
-import { HIDDEN_PANEL_STATES, panelStatesOf, sidebarActionFor } from './dock/panelStates'
+import {
+  dropPlanFor,
+  HIDDEN_PANEL_STATES,
+  isRightOf,
+  panelStatesOf,
+  sidebarActionFor,
+} from './dock/panelStates'
 import { DockContext, dockComponents } from './dock/panels'
 import { prepareSlide } from './dock/slide'
 import { Tab } from './dock/Tab'
@@ -247,9 +253,9 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
   )
 
   /**
-   * Spec §3.3: dropping a sidebar icon on another strip docks the panel on that edge. A group
-   * that holds nothing else travels whole (dockview makes the new group itself); otherwise only
-   * the dragged panel leaves, into a group created at that edge.
+   * Spec §3.3: dropping a sidebar icon on another cluster docks the panel there. A group that
+   * holds nothing else travels whole (dockview makes the new group itself); otherwise only the
+   * dragged panel leaves, into a group created at that edge.
    */
   const movePanel = useCallback(
     (panel: PanelId, zone: Zone) => {
@@ -269,9 +275,35 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       if (controller.isCollapsed(group.id)) {
         controller.withoutAnimation(() => controller.expand(group.id))
       }
-      const position = zone === 'right' ? 'right' : zone === 'left-top' ? 'top' : 'bottom'
-      if (group.panels.length === 1) group.api.moveTo({ position })
-      else target.api.moveTo({ group: api.addGroup({ direction: positionToDirection(position) }) })
+      // A right drop splits the column already docked there, if there is one; everything else
+      // goes against an edge of the grid itself.
+      const editorBox = api.getPanel('editor')?.group.element.getBoundingClientRect()
+      const beside =
+        editorBox === undefined
+          ? []
+          : api.groups
+              .filter(
+                (other) =>
+                  other.id !== group.id &&
+                  other.api.location.type === 'grid' &&
+                  isRightOf(editorBox, other.element.getBoundingClientRect()),
+              )
+              .map((other) => ({ id: other.id, top: other.element.getBoundingClientRect().top }))
+      const plan = dropPlanFor(zone, beside)
+      const reference = plan.groupId === undefined ? undefined : api.getGroup(plan.groupId)
+      if (group.panels.length === 1) {
+        group.api.moveTo(
+          reference === undefined
+            ? { position: plan.position }
+            : { group: reference as never, position: plan.position },
+        )
+      } else if (reference !== undefined) {
+        target.api.moveTo({ group: reference as never, position: plan.position })
+      } else {
+        target.api.moveTo({
+          group: api.addGroup({ direction: positionToDirection(plan.position) }),
+        })
+      }
       target.api.setActive()
       // The move puts the panel in a group dockview just made, so the editor's group is a new one
       // with none of its rules on it (spec §3.1).

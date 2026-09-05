@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  dropPlanFor,
   editorZoneFor,
   HIDDEN_PANEL_STATES,
   panelStatesOf,
@@ -92,12 +93,31 @@ describe('sidebarActionFor', () => {
 })
 
 describe('zoneFor', () => {
-  it('names the strip a group belongs to from where it sits around the editor', () => {
-    expect(zoneFor(EDITOR, rect(960, 40, 300, 500))).toBe('right')
-    expect(zoneFor(EDITOR, rect(40, 0, 900, 40))).toBe('left-top')
-    expect(zoneFor(EDITOR, rect(40, 540, 900, 200))).toBe('left-bottom')
-    // A group to the left of the editor joins the bottom cluster: there is no left-left strip.
-    expect(zoneFor(EDITOR, rect(0, 40, 40, 500))).toBe('left-bottom')
+  // The layout the user built: editor top-left, Variables under it, Consola and Problemas
+  // stacked in a column on the right.
+  const DOCK = rect(0, 40, 1280, 736)
+  const EDITOR_2X2 = rect(0, 40, 640, 500)
+  const VARIABLES = rect(0, 540, 640, 236)
+  const CONSOLA = rect(640, 40, 640, 360)
+  const PROBLEMAS = rect(640, 400, 640, 376)
+
+  it('names the strip and the half each group belongs to', () => {
+    expect(zoneFor(EDITOR_2X2, CONSOLA, DOCK)).toBe('right-top')
+    expect(zoneFor(EDITOR_2X2, PROBLEMAS, DOCK)).toBe('right-bottom')
+    expect(zoneFor(EDITOR_2X2, VARIABLES, DOCK)).toBe('left-bottom')
+    expect(editorZoneFor(DOCK, EDITOR_2X2)).toBe('left-top')
+  })
+
+  it('puts a group above the editor in the left top cluster', () => {
+    expect(zoneFor(EDITOR, rect(40, 0, 900, 40), DOCK)).toBe('left-top')
+    expect(zoneFor(EDITOR, rect(40, 540, 900, 200), DOCK)).toBe('left-bottom')
+  })
+
+  it('splits a group docked to the left of the editor by its own half of the dock', () => {
+    // There is no left-left strip: a group beside the editor on either side takes a left cluster
+    // unless it is on the right, and its half comes from its centre against the dock's.
+    expect(zoneFor(rect(340, 40, 900, 700), rect(0, 40, 300, 300), DOCK)).toBe('left-top')
+    expect(zoneFor(rect(340, 40, 900, 700), rect(0, 500, 300, 276), DOCK)).toBe('left-bottom')
   })
 
   it('keeps the zone it is given while nothing is measured', () => {
@@ -105,11 +125,11 @@ describe('zoneFor', () => {
     // collapsed group, which is a zero-height box parked at the top of the grid.
     const zero = rect(0, 0, 0, 0)
     const collapsed = rect(40, 40, 900, 0)
-    expect(zoneFor(zero, zero)).toBe('left-bottom')
-    expect(zoneFor(EDITOR, zero)).toBe('left-bottom')
-    expect(zoneFor(EDITOR, collapsed)).toBe('left-bottom')
-    expect(zoneFor(EDITOR, collapsed, 'right')).toBe('right')
-    expect(zoneFor(EDITOR, zero, 'left-top')).toBe('left-top')
+    expect(zoneFor(zero, zero, DOCK)).toBe('left-bottom')
+    expect(zoneFor(EDITOR, zero, DOCK)).toBe('left-bottom')
+    expect(zoneFor(EDITOR, collapsed, DOCK)).toBe('left-bottom')
+    expect(zoneFor(EDITOR, collapsed, DOCK, 'right-top')).toBe('right-top')
+    expect(zoneFor(EDITOR, zero, DOCK, 'left-top')).toBe('left-top')
   })
 })
 
@@ -118,9 +138,9 @@ describe('editorZoneFor', () => {
 
   it('puts the editor on the side of the dock it is docked on', () => {
     expect(editorZoneFor(dock, rect(0, 40, 900, 736))).toBe('left-top')
-    expect(editorZoneFor(dock, rect(700, 40, 580, 736))).toBe('right')
+    expect(editorZoneFor(dock, rect(700, 40, 580, 736))).toBe('right-top')
     // Nothing measured yet: keep whatever it had.
-    expect(editorZoneFor(dock, rect(0, 0, 0, 0), 'right')).toBe('right')
+    expect(editorZoneFor(dock, rect(0, 0, 0, 0), 'right-bottom')).toBe('right-bottom')
   })
 })
 
@@ -135,7 +155,7 @@ describe('panelStatesOf zones', () => {
       }),
       () => false,
     )
-    expect(states.console.zone).toBe('right')
+    expect(states.console.zone).toBe('right-top')
     expect(states.problems.zone).toBe('left-top')
     expect(states.variables.zone).toBe('left-bottom')
   })
@@ -148,7 +168,7 @@ describe('panelStatesOf zones', () => {
       undefined,
       dock,
     )
-    expect(right.editor.zone).toBe('right')
+    expect(right.editor.zone).toBe('right-top')
     const left = panelStatesOf(
       api({ editor: { group: 'main', active: 'editor', box: rect(0, 40, 900, 736) } }),
       () => false,
@@ -176,7 +196,29 @@ describe('panelStatesOf zones', () => {
     expect(panelStatesOf(hidden, () => true, shown).console).toEqual({
       visible: false,
       active: true,
-      zone: 'right',
+      zone: 'right-top',
     })
+  })
+})
+
+describe('dropPlanFor', () => {
+  const beside = [
+    { id: 'top-right', top: 40 },
+    { id: 'bottom-right', top: 400 },
+  ]
+
+  it('docks the left clusters against the edges of the grid', () => {
+    expect(dropPlanFor('left-top', beside)).toEqual({ position: 'top' })
+    expect(dropPlanFor('left-bottom', beside)).toEqual({ position: 'bottom' })
+  })
+
+  it('splits the column already on the right, or opens one when there is none', () => {
+    expect(dropPlanFor('right-top', beside)).toEqual({ position: 'top', groupId: 'top-right' })
+    expect(dropPlanFor('right-bottom', beside)).toEqual({
+      position: 'bottom',
+      groupId: 'bottom-right',
+    })
+    expect(dropPlanFor('right-top', [])).toEqual({ position: 'right' })
+    expect(dropPlanFor('right-bottom', [])).toEqual({ position: 'right' })
   })
 })

@@ -224,7 +224,7 @@ describe('DesktopShell', () => {
         dataTransfer: { setData: () => {} },
       })
     })
-    const right = document.querySelector('[data-zone="right"]') as HTMLElement
+    const right = document.querySelector('[data-zone="right-top"]') as HTMLElement
     await act(async () => {
       fireEvent.drop(right, {
         dataTransfer: {

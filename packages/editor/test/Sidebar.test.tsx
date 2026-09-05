@@ -94,18 +94,20 @@ describe('Sidebar', () => {
     mount(HIDDEN)
     expect(labelsIn('left-top')).toEqual(['Editor'])
     expect(labelsIn('left-bottom')).toEqual(['Consola', 'Problemas', 'Variables'])
-    expect(zone('right')).toBeNull()
+    expect(zone('right-top')).toBeNull()
+    expect(zone('right-bottom')).toBeNull()
     document.body.innerHTML = ''
+    // The layout the user built: a right column split in two, one icon per half of the strip.
     mount({
       ...HIDDEN,
-      editor: { visible: true, active: true, zone: 'right' },
-      console: { visible: true, active: true, zone: 'right' },
-      problems: { visible: false, active: false, zone: 'left-top' },
+      console: { visible: true, active: true, zone: 'right-top' },
+      problems: { visible: true, active: false, zone: 'right-bottom' },
+      variables: { visible: false, active: false, zone: 'left-bottom' },
     })
-    // The editor leads its cluster; on the right strip that puts it at the top, the rest below.
-    expect(labelsIn('right')).toEqual(['Editor', 'Consola'])
-    expect(labelsIn('left-top')).toEqual(['Problemas'])
+    expect(labelsIn('left-top')).toEqual(['Editor'])
     expect(labelsIn('left-bottom')).toEqual(['Variables'])
+    expect(labelsIn('right-top')).toEqual(['Consola'])
+    expect(labelsIn('right-bottom')).toEqual(['Problemas'])
   })
 
   it('takes only a drag that carries a panel', () => {
@@ -128,7 +130,8 @@ describe('Sidebar', () => {
     })
     expect(data.get(PANEL_MIME)).toBe('console')
     // Every zone offers itself while a drag is in flight, the right strip included.
-    expect(zone('right')).not.toBeNull()
+    expect(zone('right-top')).not.toBeNull()
+    expect(zone('right-bottom')).not.toBeNull()
     const target = zone('left-top') as HTMLElement
     fireEvent.drop(target, { dataTransfer: transfer('console') })
     expect(onMove).toHaveBeenCalledWith('console', 'left-top')

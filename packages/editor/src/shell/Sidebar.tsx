@@ -6,8 +6,11 @@ import { stringsOf } from '../store/store'
 import { PANEL_ICONS } from '../ui/panelIcons'
 import { IconButton } from '../ui/Tooltip'
 
-/** Where a panel's button sits: the strip on the side of the editor its group is docked on. */
-export type Zone = 'left-top' | 'left-bottom' | 'right'
+/**
+ * Where a panel's button sits: the strip on the side of the editor its group is docked on, and
+ * the half of that strip its group occupies.
+ */
+export type Zone = 'left-top' | 'left-bottom' | 'right-top' | 'right-bottom'
 
 export interface PanelState {
   /** False while the panel's group is collapsed, i.e. hidden from the grid (spec §3.3). */
@@ -128,8 +131,6 @@ export function Sidebar({
 
   const cluster = (zone: Zone, extra: string): ReactNode => {
     const panels = panelsIn(zone)
-    const lead = panels.filter((id) => id === 'editor')
-    const rest = panels.filter((id) => id !== 'editor')
     return (
       // A drop target for panel icons, not a widget: it has no keyboard behaviour to promise.
       // biome-ignore lint/a11y/noStaticElementInteractions: the buttons inside carry the roles.
@@ -155,24 +156,24 @@ export function Sidebar({
           if (SIDEBAR_PANELS.includes(id)) onMove(id, zone)
         }}
       >
-        <div className="flex flex-col items-center gap-1">{lead.map(button)}</div>
-        <div className="flex flex-col items-center gap-1">{rest.map(button)}</div>
+        {panels.map(button)}
       </div>
     )
   }
 
   // The right strip only exists once something lives there — or while a drag looks for a home.
-  const right = panelsIn('right')
+  const right = panelsIn('right-top').length + panelsIn('right-bottom').length
   return (
     <div className="flex h-full w-full">
       <div className="flex w-10 shrink-0 flex-col border-border border-r bg-surface">
         {cluster('left-top', 'justify-start')}
-        {cluster('left-bottom', 'justify-end')}
+        {cluster('left-bottom', 'mt-auto justify-end')}
       </div>
       {children}
-      {right.length > 0 || dragging ? (
+      {right > 0 || dragging ? (
         <div className="flex w-10 shrink-0 flex-col border-border border-l bg-surface">
-          {cluster('right', 'justify-between')}
+          {cluster('right-top', 'justify-start')}
+          {cluster('right-bottom', 'mt-auto justify-end')}
         </div>
       ) : null}
     </div>

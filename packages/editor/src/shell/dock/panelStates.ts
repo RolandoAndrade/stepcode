@@ -40,22 +40,47 @@ export const HIDDEN_PANEL_STATES: PanelStates = Object.freeze(
   ) as Record<PanelId, { visible: false; active: false; zone: Zone }>,
 )
 
+/** A group beside the editor rather than above or below it: its icon belongs on a side strip. */
+export function isRightOf(editor: RectLike, group: RectLike): boolean {
+  // The sash between two groups is a few pixels wide, so the edges never meet exactly.
+  return group.left >= editor.right - SASH
+}
+
+function isLeftOf(editor: RectLike, group: RectLike): boolean {
+  return group.right <= editor.left + SASH
+}
+
 /**
- * Spec §3.3: a panel's sidebar button lives on the side of the editor its group sits on — to the
- * right of the editor is the right strip, above it the left strip's top cluster, and anything
- * else (below, or to the left) the bottom cluster the default layout uses.
+ * Spec §3.3: a panel's sidebar button lives on the side of the editor its group sits on, in the
+ * half of that strip the group sits in — a right column split in two puts one icon in the right
+ * strip's top cluster and the other in its bottom cluster. A group beside the editor takes its
+ * half from its own centre against the dock's; one above or below the editor takes the obvious
+ * one, and everything else falls to the bottom cluster the default layout uses.
  *
  * A group with no box keeps `fallback` — its previous zone. happy-dom reports zeros, dockview
  * reports zeros before it has laid a group out, and a *collapsed* group is a zero-height box
  * parked at the top of the grid, which would otherwise throw every icon into the top cluster.
  */
-export function zoneFor(editor: RectLike, group: RectLike, fallback: Zone = 'left-bottom'): Zone {
+export function zoneFor(
+  editor: RectLike,
+  group: RectLike,
+  dock: RectLike = ZERO,
+  fallback: Zone = 'left-bottom',
+): Zone {
   const measured = editor.width > 0 && editor.height > 0 && group.width > 0 && group.height > 0
   if (!measured) return fallback
-  // The sash between two groups is a few pixels wide, so the edges never meet exactly.
-  if (group.left >= editor.right - SASH) return 'right'
-  if (group.bottom <= editor.top + SASH) return 'left-top'
-  return 'left-bottom'
+  const beside = isRightOf(editor, group) || isLeftOf(editor, group)
+  if (beside) {
+    const half = inTopHalf(dock, group) ? 'top' : 'bottom'
+    return `${isRightOf(editor, group) ? 'right' : 'left'}-${half}` as Zone
+  }
+  return group.bottom <= editor.top + SASH ? 'left-top' : 'left-bottom'
+}
+
+/** Which half of the dock a group's own centre falls in; an unmeasured dock reads as the top. */
+function inTopHalf(dock: RectLike, group: RectLike): boolean {
+  if (dock.height === 0) return true
+  return group.top + group.height / 2 <= dock.top + dock.height / 2
 }
 
 /**
@@ -65,7 +90,7 @@ export function zoneFor(editor: RectLike, group: RectLike, fallback: Zone = 'lef
  */
 export function editorZoneFor(dock: RectLike, editor: RectLike, fallback: Zone = 'left-top'): Zone {
   if (dock.width === 0 || editor.width === 0) return fallback
-  return editor.left + editor.width / 2 > dock.left + dock.width / 2 ? 'right' : 'left-top'
+  return editor.left + editor.width / 2 > dock.left + dock.width / 2 ? 'right-top' : 'left-top'
 }
 
 /**
@@ -92,7 +117,11 @@ export function panelStatesOf(
     const grid = panel.group.api.location.type === 'grid'
     const box = panel.group.element?.getBoundingClientRect() ?? ZERO
     const zone =
-      id === 'editor' ? editorZoneFor(dock, box, kept) : grid ? zoneFor(editor, box, kept) : kept
+      id === 'editor'
+        ? editorZoneFor(dock, box, kept)
+        : grid
+          ? zoneFor(editor, box, dock, kept)
+          : kept
     states[id] = {
       visible: !isCollapsed(panel.group.id),
       active: panel.group.activePanel?.id === id,
@@ -123,4 +152,29 @@ export function sidebarActionFor(
   if (group.api.location.type !== 'grid') return 'activate'
   if (collapsed) return 'expand'
   return group.activePanel?.id === panel ? 'collapse' : 'activate'
+}
+
+/** Where a drop sends a group: an edge of the whole grid, or a side of a group already there. */
+export interface DropPlan {
+  readonly position: 'top' | 'bottom' | 'right'
+  /** The group to split; absent means the edge of the grid itself. */
+  readonly groupId?: string
+}
+
+/**
+ * Spec §3.3: the left clusters dock against the top and bottom edges of the grid. The right ones
+ * dock against its right edge only while nothing is there yet — once a right column exists, the
+ * drop splits it, above its topmost group or below its bottommost one, so a right column can hold
+ * two groups and each icon keeps its own half of the strip.
+ */
+export function dropPlanFor(
+  zone: Zone,
+  rightGroups: readonly { readonly id: string; readonly top: number }[],
+): DropPlan {
+  if (zone === 'left-top') return { position: 'top' }
+  if (zone === 'left-bottom') return { position: 'bottom' }
+  const ordered = [...rightGroups].sort((a, b) => a.top - b.top)
+  const reference = zone === 'right-top' ? ordered[0] : ordered.at(-1)
+  if (reference === undefined) return { position: 'right' }
+  return { position: zone === 'right-top' ? 'top' : 'bottom', groupId: reference.id }
 }

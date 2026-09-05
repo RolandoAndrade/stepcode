@@ -222,22 +222,28 @@ The button of a panel that is visible *and* in front of its group is accented (`
 Problemas button carries a small `--sc-error` badge with the error count while `diagnostics` holds
 errors, and nothing when it holds none.
 
-**Zones.** A button lives on the side its panel is docked on, derived from the group's box against
-the editor group's: to the right of the editor is the right strip; entirely above it, the top
-cluster of the left strip; anything else (below, or to the left) the bottom cluster, which is
-where the default layout puts all three. The editor is the reference for the others, so it is
-placed against the dock itself: docked in the dock's right half its button joins the right strip,
-otherwise it leads the left strip's top cluster. The right strip only exists while something is in
-it. A group with no box — collapsed, not laid out yet, floating or popped out — keeps the zone its
+**Zones.** Each strip has a top and a bottom cluster, so the four zones are `left-top`,
+`left-bottom`, `right-top` and `right-bottom`. A button's zone comes from its group's box against
+the editor group's (4 px of sash tolerance): entirely to the right of the editor is a `right-*`
+zone, entirely to its left a `left-*` one, and a group above or below the editor is `left-top` or
+`left-bottom` respectively. For a group beside the editor the half comes from its own centre
+against the dock's midpoint — a right column split in two therefore puts one icon in the right
+strip's top cluster and the other in its bottom cluster. The editor is the reference for the
+others, so it is placed against the dock itself: docked in the dock's right half it leads
+`right-top`, otherwise `left-top`. The right strip only exists while something is in it. A group with no box — collapsed, not laid out yet, floating or popped out — keeps the zone its
 panel last had, so hiding a panel never moves its icon. The zones are re-read on every layout
 change *and* on the frame after it, because dockview reports a restored layout and a tab dropped
 on a new edge before it has written the geometry they are measured from.
 
 **Drag to move.** The icons are draggable (`application/x-stepcode-panel`); while a drag is in
-flight all three zones offer themselves in `--sc-accent-soft`, the right strip appearing for the
-duration. Dropping docks the panel on that edge: the whole group travels when the panel is alone
-in it (`group.api.moveTo({ position })`), otherwise the panel alone moves into a group created at
-that edge (`api.addGroup({ direction })` then `panel.api.moveTo({ group })`). A hidden group is
+flight every zone offers itself, the hovered one in `--sc-accent-soft` and the rest fainter, the
+right strip appearing for the duration. A `left-top` drop docks against the top edge of the grid
+and `left-bottom` against its bottom edge; a right drop splits the column already docked there —
+above its topmost group for `right-top`, below its bottommost for `right-bottom` — and falls back
+to the grid's right edge while no such column exists. The whole group travels when the panel is
+alone in it (`group.api.moveTo({ position })`, or `moveTo({ group, position })` to split), and
+otherwise only the panel does (`panel.api.moveTo({ group, position })`, or into a group created at
+that edge with `api.addGroup({ direction })`). A hidden group is
 shown first — there is nothing to dock otherwise — and the zone then follows from the new
 geometry, so the icon lands on its new strip by itself. Dropping an icon on the cluster it already
 lives in changes nothing. Moving the editor's group re-applies its rules (§3.1): the group
