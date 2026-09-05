@@ -16,6 +16,12 @@ describe('symbolKeys', () => {
     expect(symbolKeys(profiles.en).map((k) => k.label)).toContain('If')
   })
 
+  it('gives every key an id of its own, even when two share a label', () => {
+    const keys = symbolKeys(profiles.es)
+    expect(new Set(keys.map((k) => k.id)).size).toBe(keys.length)
+    expect(keys[0]?.id).toBe('op-assign')
+  })
+
   it('inserts keywords with a trailing space and punctuation without', () => {
     const view = new EditorView({ state: EditorState.create({ doc: 'a' }) })
     view.dispatch({ selection: { anchor: 1 } })
