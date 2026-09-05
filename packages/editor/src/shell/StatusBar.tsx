@@ -13,6 +13,7 @@ import {
 } from '../store/store'
 import type { Strings } from '../strings'
 import { Check, ChevronDown, LoaderCircle } from '../ui/icons'
+import { PANEL_ICONS } from '../ui/panelIcons'
 
 export interface ProfileItem {
   readonly id: string
@@ -121,7 +122,13 @@ export function ProfilePopover({
   )
 }
 
-/** Spec §5, and §9 for `compact`: the phone bar carries the profile and the problems only. */
+const ProblemsIcon = PANEL_ICONS.problems
+
+/**
+ * Spec §5, and §9 for `compact`: the phone bar carries the problems and the profile only. What
+ * the program is doing sits on the left with the problems; where the cursor is and which profile
+ * reads it sit on the right, away from the counts that change while you type.
+ */
 export function StatusBar({
   onFocusEditor,
   onFocusConsole,
@@ -148,28 +155,13 @@ export function StatusBar({
 
   return (
     <footer className="flex h-6 items-center gap-1 border-t border-border bg-surface px-2">
-      {compact ? null : (
-        <button
-          type="button"
-          className={ITEM}
-          title={strings.status.cursor}
-          onClick={onFocusEditor}
-        >
-          {strings.status.position(cursor.line, cursor.column)}
-        </button>
-      )}
-      <ProfilePopover disabled={!canEdit(state)}>
-        <button type="button" className={ITEM} title={strings.toolbar.profile}>
-          {profileName}
-          <ChevronDown size={12} />
-        </button>
-      </ProfilePopover>
       <button
         type="button"
         className={`${ITEM} ${clean ? '' : counts.errors > 0 ? 'text-error' : 'text-warning'}`}
         title={strings.problems.title}
         onClick={() => requestPanel('problems')}
       >
+        {clean ? null : <ProblemsIcon size={12} />}
         {clean
           ? strings.status.noProblems
           : strings.status.problems(counts.errors, counts.warnings)}
@@ -177,7 +169,7 @@ export function StatusBar({
       {compact ? null : (
         <button
           type="button"
-          className={`${ITEM} ml-auto`}
+          className={ITEM}
           title={strings.status.state}
           onClick={() => {
             requestPanel('console')
@@ -188,6 +180,26 @@ export function StatusBar({
           {statusText(strings, state, currentLine, error)}
         </button>
       )}
+      {compact ? null : (
+        <button
+          type="button"
+          className={`${ITEM} ml-auto`}
+          title={strings.status.cursor}
+          onClick={onFocusEditor}
+        >
+          {strings.status.position(cursor.line, cursor.column)}
+        </button>
+      )}
+      <ProfilePopover disabled={!canEdit(state)}>
+        <button
+          type="button"
+          className={`${ITEM} ${compact ? 'ml-auto' : ''}`}
+          title={strings.toolbar.profile}
+        >
+          {profileName}
+          <ChevronDown size={12} />
+        </button>
+      </ProfilePopover>
     </footer>
   )
 }

@@ -33,14 +33,35 @@ describe('StatusBar', () => {
     expect(screen.getByRole('button', { name: /Listo/ })).toBeDefined()
   })
 
-  it('shows profile and problems only when compact', () => {
+  it('puts problems and the run state left, cursor and profile right', () => {
+    const { store } = storeWith({ diagnostics: [err, warn] })
+    store.getState().setCursor(12, 4)
+    renderWithStore(<StatusBar />, store)
+    const order = screen.getAllByRole('button').map((b) => b.textContent ?? '')
+    expect(order[0]).toMatch(/✖ 1\s+▲ 1/)
+    expect(order[1]).toMatch(/Listo/)
+    expect(order[2]).toMatch(/Ln 12, Col 4/)
+    expect(order[3]).toMatch(/Español/)
+    expect(screen.getByRole('button', { name: /✖ 1 ▲ 1/ }).querySelector('svg')).not.toBeNull()
+  })
+
+  it('drops the problems icon when there is nothing to report', () => {
+    const { store } = storeWith({})
+    renderWithStore(<StatusBar />, store)
+    expect(
+      screen.getByRole('button', { name: /Sin problemas/ }).querySelector('svg'),
+    ).toBeNull()
+  })
+
+  it('shows problems left and the profile right when compact', () => {
     const { store } = storeWith({ diagnostics: [err] })
     store.getState().setCursor(12, 4)
     renderWithStore(<StatusBar compact />, store)
     expect(screen.queryByRole('button', { name: /Ln 12, Col 4/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Listo/ })).toBeNull()
-    expect(screen.getByRole('button', { name: /Español/ })).toBeDefined()
-    expect(screen.getByRole('button', { name: /✖ 1/ })).toBeDefined()
+    const order = screen.getAllByRole('button').map((b) => b.textContent ?? '')
+    expect(order[0]).toMatch(/✖ 1/)
+    expect(order[1]).toMatch(/Español/)
   })
 
   it('says no problems when clean and requests the Problems panel on click', () => {

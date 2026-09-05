@@ -280,14 +280,16 @@ menu; Radix handles its own). `⌘` replaces Ctrl on macOS.
 
 | Position | Item | Click |
 |---|---|---|
-| left | `Ln 12, Col 4` | focuses the editor |
-| left | profile name with a chevron | profile popover: the same list as Perfil ▸ |
-| left | `✓ Sin problemas` or `✖ 2  ▲ 1` | expands Problemas |
-| right | run state | focuses the console |
+| left | `✓ Sin problemas` or the Problemas icon plus `✖ 2  ▲ 1` | expands Problemas |
+| left | run state | focuses the console |
+| right | `Ln 12, Col 4` | focuses the editor |
+| right | profile name with a chevron | profile popover: the same list as Perfil ▸ |
 
-Run state text by state: `Listo`, `Ejecutando…` with a 12 px spinner, `En pausa en la línea N`,
-`Esperando entrada`, `Esperando…` (wait), `Terminado`, `Error en la línea N`. The bar is hidden in
-the embed route (4c); the phone keeps profile and problems only (§9).
+What the program is doing is grouped with what is wrong with it, on the left; where the cursor is
+and which profile reads the text sit on the right. Run state text by state: `Listo`, `Ejecutando…`
+with a 12 px spinner, `En pausa en la línea N`, `Esperando entrada`, `Esperando…` (wait),
+`Terminado`, `Error en la línea N`. The bar is hidden in the embed route (4c); the phone keeps
+problems on the left and the profile on the right (§9).
 
 ## 6. Settings
 
