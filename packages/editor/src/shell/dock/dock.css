@@ -1,0 +1,42 @@
+/* Spec §3.1: every dockview variable resolves to a token; no literal colors here. */
+.sc-dock {
+  --dv-group-view-background-color: var(--sc-bg);
+  --dv-tabs-and-actions-container-background-color: var(--sc-surface);
+  --dv-tabs-and-actions-container-height: 28px;
+  --dv-tabs-and-actions-container-font-size: 12px;
+  --dv-activegroup-visiblepanel-tab-background-color: var(--sc-surface);
+  --dv-activegroup-visiblepanel-tab-color: var(--sc-fg);
+  --dv-activegroup-hiddenpanel-tab-background-color: var(--sc-surface);
+  --dv-activegroup-hiddenpanel-tab-color: var(--sc-fg-muted);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--sc-surface);
+  --dv-inactivegroup-visiblepanel-tab-color: var(--sc-fg-muted);
+  --dv-inactivegroup-hiddenpanel-tab-background-color: var(--sc-surface);
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--sc-fg-muted);
+  --dv-tab-divider-color: var(--sc-border);
+  --dv-separator-border: var(--sc-border);
+  --dv-paneview-header-border-color: var(--sc-border);
+  --dv-drag-over-background-color: var(--sc-accent-soft);
+  --dv-drag-over-border-color: var(--sc-accent);
+  --dv-floating-box-shadow: 0 8px 24px var(--sc-shadow);
+  --dv-floating-border: 1px solid var(--sc-border);
+  --dv-sash-color: var(--sc-border);
+  --dv-active-sash-color: var(--sc-accent);
+  --dv-icon-hover-background-color: var(--sc-surface-raised);
+  --dv-scrollbar-background-color: var(--sc-border);
+  --dv-tab-border-radius: 0;
+  --dv-border-radius: 8px;
+}
+
+.sc-dock .dv-tab.sc-tab-active::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: var(--sc-accent);
+}
+
+/* Spec §3.3: a side group collapsed to a strip reads bottom to top. */
+.sc-dock .sc-collapsed-vertical .dv-tabs-and-actions-container {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
