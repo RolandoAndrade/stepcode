@@ -46,6 +46,16 @@ export function darkExtension(dark: boolean): Extension {
   return EditorView.darkTheme.of(dark)
 }
 
+/**
+ * Spec §6.2: the font size is one static rule, created once, that reads the `--sc-editor-font-size`
+ * CSS variable — never a fresh `EditorView.theme()` per settings change, which would mount a new
+ * StyleModule on every font-size change without ever unmounting the previous one. The variable's
+ * value is set separately, per instance, through `settingsExtension`'s `editorAttributes`.
+ */
+const fontSizeTheme: Extension = EditorView.theme({
+  '&': { fontSize: 'var(--sc-editor-font-size)' },
+})
+
 /** Spec §6.2: everything the Editor section of settings changes, as one reconfigurable unit. */
 export function settingsExtension(
   settings: EditorSettings,
@@ -57,12 +67,6 @@ export function settingsExtension(
     settings.wordWrap ? EditorView.lineWrapping : [],
     settings.highlightLine ? highlightActiveLine() : [],
     EditorState.tabSize.of(settings.tabSize),
-    EditorView.theme({
-      '&': {
-        '--sc-editor-font-size': `${settings.fontSize}px`,
-        fontSize: 'var(--sc-editor-font-size)',
-      },
-    }),
     EditorView.editorAttributes.of({ style: `--sc-editor-font-size: ${settings.fontSize}px` }),
     languageExtension(profile, locale, settings.autocomplete),
   ]
@@ -92,6 +96,7 @@ export function createExtensions(options: EditorOptions): {
     lintGutter(),
     appHighlighting,
     appEditorTheme,
+    fontSizeTheme,
     compartments.language.of([]),
     compartments.readOnly.of(readOnlyExtension(options.readOnly)),
     compartments.dark.of(darkExtension(options.dark)),

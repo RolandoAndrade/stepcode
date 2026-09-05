@@ -27,11 +27,14 @@ const outer: Frame = {
   ],
 }
 
-function frameWith(value: number): Frame {
+function frameWith(a: number, b: number, line: number): Frame {
   return {
     name: 'p',
-    line: 1,
-    variables: [{ name: 'a', kind: 'variable', type: { kind: 'scalar', name: 'integer' }, value }],
+    line,
+    variables: [
+      { name: 'a', kind: 'variable', type: { kind: 'scalar', name: 'integer' }, value: a },
+      { name: 'b', kind: 'variable', type: { kind: 'scalar', name: 'integer' }, value: b },
+    ],
   }
 }
 
@@ -69,17 +72,35 @@ describe('Variables', () => {
     expect(screen.getByText('Array of Integer')).toBeDefined()
   })
 
-  it('renders frames as open details and flashes changed values', () => {
+  it('renders frames as open details and flashes a changed value but not an unchanged one', () => {
     vi.useFakeTimers()
     const { store, host } = storeWith({ state: 'paused' })
     renderWithStore(<Variables />, store)
-    act(() => host.emit({ kind: 'paused', reason: 'step', line: 2, frames: [frameWith(1)] }))
+    // Consecutive paused snapshots carry different `line` values, as a real run would: the
+    // flash must key off the frame's position, never off `line`.
+    act(() => host.emit({ kind: 'paused', reason: 'step', line: 2, frames: [frameWith(1, 10, 2)] }))
     expect(screen.getAllByRole('group')).toHaveLength(1)
-    act(() => host.emit({ kind: 'paused', reason: 'step', line: 3, frames: [frameWith(2)] }))
-    const cell = screen.getByText('2')
-    expect(cell.getAttribute('data-changed')).toBe('true')
+    act(() => host.emit({ kind: 'paused', reason: 'step', line: 3, frames: [frameWith(2, 10, 3)] }))
+    const changedCell = screen.getByText('2')
+    const unchangedCell = screen.getByText('10')
+    expect(changedCell.getAttribute('data-changed')).toBe('true')
+    expect(unchangedCell.getAttribute('data-changed')).toBeNull()
     act(() => vi.advanceTimersByTime(600))
-    expect(cell.getAttribute('data-changed')).toBeNull()
+    expect(changedCell.getAttribute('data-changed')).toBeNull()
+    vi.useRealTimers()
+  })
+
+  it('clears a stale flash immediately when the next update carries no changes', () => {
+    vi.useFakeTimers()
+    const { store, host } = storeWith({ state: 'paused' })
+    renderWithStore(<Variables />, store)
+    act(() => host.emit({ kind: 'paused', reason: 'step', line: 2, frames: [frameWith(1, 10, 2)] }))
+    act(() => host.emit({ kind: 'paused', reason: 'step', line: 3, frames: [frameWith(2, 10, 3)] }))
+    expect(screen.getByText('2').getAttribute('data-changed')).toBe('true')
+    // A further update with no value changes must clear the flash right away, before its
+    // 600 ms timeout would otherwise have fired.
+    act(() => host.emit({ kind: 'paused', reason: 'step', line: 4, frames: [frameWith(2, 10, 4)] }))
+    expect(document.querySelector('[data-changed="true"]')).toBeNull()
     vi.useRealTimers()
   })
 

@@ -110,12 +110,17 @@ describe('Console', () => {
     expect(reveals).toEqual([1])
   })
 
-  it('stops auto-scrolling when the store says so', () => {
+  it('auto-scrolls to the bottom unless the store turns it off', () => {
     const { store, host } = storeWith({})
     renderWithStore(<Console />, store)
     const pre = screen.getByTestId('console-output')
-    act(() => store.getState().setAutoScroll(false))
+    // happy-dom never lays out real content, so `scrollHeight` stays 0 unless stubbed.
+    Object.defineProperty(pre, 'scrollHeight', { value: 500, configurable: true })
     act(() => host.emit({ kind: 'output', chunks: ['a\n'] }))
+    expect(pre.scrollTop).toBe(500)
+    pre.scrollTop = 0
+    act(() => store.getState().setAutoScroll(false))
+    act(() => host.emit({ kind: 'output', chunks: ['b\n'] }))
     expect(pre.scrollTop).toBe(0)
   })
 })

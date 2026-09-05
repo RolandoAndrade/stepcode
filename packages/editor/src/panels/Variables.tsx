@@ -22,18 +22,20 @@ export function Variables() {
   useEffect(() => {
     const next = new Set<string>()
     const values = new Map<string, string>()
-    for (const frame of frames) {
+    // Keyed by frame position (not `frame.line`, which is the next statement and changes on
+    // every step) plus the variable name, so the same call's variables are compared across steps.
+    frames.forEach((frame, frameIndex) => {
       for (const variable of frame.variables) {
-        const key = `${frame.name}-${frame.line}-${variable.name}`
+        const key = `${frameIndex}-${variable.name}`
         const rendered = valueLabel(variable, profile, strings)
         values.set(key, rendered)
         const before = previous.current.get(key)
         if (before !== undefined && before !== rendered) next.add(key)
       }
-    }
+    })
     previous.current = values
-    if (next.size === 0) return
     setChanged(next)
+    if (next.size === 0) return
     const timeout = setTimeout(() => setChanged(new Set()), FLASH_MILLIS)
     return () => clearTimeout(timeout)
   }, [frames])
@@ -49,8 +51,9 @@ export function Variables() {
             text={state === 'ready' ? strings.variables.empty : strings.variables.pauseToSee}
           />
         ) : (
-          frames.map((frame) => (
-            <details key={`${frame.name}-${frame.line}`} open className="mb-3">
+          frames.map((frame, frameIndex) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: frame position is the identity here — recursive calls can repeat the same name, and only the position stays stable step to step (unlike `frame.line`, which changes on every step).
+            <details key={`${frameIndex}-${frame.name}`} open className="mb-3">
               <summary className="mb-1 cursor-pointer list-none">
                 <h3 className="inline font-semibold">
                   {strings.variables.frameAt(frame.name, frame.line)}
@@ -67,7 +70,7 @@ export function Variables() {
                 </thead>
                 <tbody>
                   {frame.variables.map((variable) => {
-                    const key = `${frame.name}-${frame.line}-${variable.name}`
+                    const key = `${frameIndex}-${variable.name}`
                     const flashing = changed.has(key)
                     return (
                       <tr key={variable.name} className="border-t border-border">

@@ -55,7 +55,8 @@ export function Problems({ onReveal }: { onReveal: (from: number, to: number) =>
             text={strings.problems.empty}
           />
         ) : (
-          <table aria-label={strings.problems.title} className="w-full border-collapse">
+          // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: spec §3.6 — rows inside a grid; `<tr>` keeps its plain, implicit `row` role.
+          <table role="grid" aria-label={strings.problems.title} className="w-full border-collapse">
             <tbody>
               {rows.map((diagnostic, index) => {
                 const position = lines.positionAt(diagnostic.from)
