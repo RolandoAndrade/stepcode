@@ -68,7 +68,7 @@ const templates: Record<DiagnosticCode, string> = {
   E3036: '«{builtin:$builtin}» necesita {expected} argumentos y le diste {found}.',
   E3037: 'El argumento {position} de «{builtin:$builtin}» es {found} y se espera {expected}.',
   W3001: 'Este código nunca se ejecuta.',
-  W3002: '«{name}» se declara pero nunca se lee.',
+  W3002: '«{name}» se declara, pero su valor nunca se usa.',
   W3003: '«{name}» se lee pero nunca recibe un valor.',
   W3004: '«{name}» nunca recibe un valor: la función no devuelve nada.',
   E4001: 'El índice {index} se sale de «{name}»: sus posiciones van del {low} al {high}.',

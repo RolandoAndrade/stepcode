@@ -191,6 +191,18 @@ describe('catalogs', () => {
     expect(Object.keys(es.variants ?? {}).sort()).toEqual(Object.keys(en.variants ?? {}).sort())
   })
 
+  // Newcomers read "nunca se lee" as a claim about the `Leer` statement, so W3002 talks about
+  // the value going unused instead.
+  it('says W3002 in terms of an unused value, not of reading', () => {
+    const diagnostic = createDiagnostic('W3002', { start: 0, end: 1 }, { name: 'total' })
+    expect(formatDiagnostic(diagnostic, 'es', profiles.es)).toBe(
+      '«total» se declara, pero su valor nunca se usa.',
+    )
+    expect(formatDiagnostic(diagnostic, 'en', profiles.en)).toBe(
+      '"total" is declared, but its value is never used.',
+    )
+  })
+
   it('resolves the builtin slot through the profile builtin spellings', () => {
     const diagnostic = createDiagnostic('E3013', { start: 0, end: 1 }, {})
     expect(formatDiagnostic(diagnostic, 'es', profiles.es)).toContain('Subcadena')
