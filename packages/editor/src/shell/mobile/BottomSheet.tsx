@@ -1,8 +1,10 @@
-import { type PointerEvent, type ReactNode, useRef } from 'react'
+import { type ComponentType, type PointerEvent, type ReactNode, useRef } from 'react'
 import type { SheetPosition } from '../../store/layout'
-import { ChevronDown, ChevronUp } from '../../ui/icons'
+import { ChevronDown, ChevronUp, type IconProps } from '../../ui/icons'
 
 const DRAG_THRESHOLD = 40
+/** The 36 px handle is tight: the 16 px default icon crowds the label out. */
+const TAB_ICON_SIZE = 14
 const ORDER: readonly SheetPosition[] = ['collapsed', 'half', 'full']
 
 export function nextPosition(
@@ -34,7 +36,7 @@ export function BottomSheet<T extends string>({
 }: {
   position: SheetPosition
   onPosition: (next: SheetPosition) => void
-  tabs: readonly { id: T; label: string }[]
+  tabs: readonly { id: T; label: string; icon?: ComponentType<IconProps> }[]
   active: T
   onActive: (id: T) => void
   actions: ReactNode
@@ -82,8 +84,9 @@ export function BottomSheet<T extends string>({
                 onActive(tab.id)
                 if (position === 'collapsed') onPosition('half')
               }}
-              className={`h-9 px-3 text-xs ${tab.id === active ? 'border-accent border-b-2 text-fg' : 'text-muted'}`}
+              className={`flex h-9 items-center gap-1.5 px-3 text-xs ${tab.id === active ? 'border-accent border-b-2 text-fg' : 'text-muted'}`}
             >
+              {tab.icon === undefined ? null : <tab.icon size={TAB_ICON_SIZE} />}
               {tab.label}
             </button>
           ))}

@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { BottomSheet, nextPosition } from '../src/shell/mobile/BottomSheet'
 import type { SheetPosition } from '../src/store/layout'
+import { PANEL_ICONS } from '../src/ui/panelIcons'
 
 describe('nextPosition', () => {
   it('cycles on tap and follows drag direction', () => {
@@ -44,6 +45,28 @@ describe('BottomSheet', () => {
     fireEvent.pointerDown(handle, { clientY: 500, pointerId: 1 })
     fireEvent.pointerUp(handle, { clientY: 380, pointerId: 1 })
     expect(onPosition).toHaveBeenLastCalledWith('full')
+  })
+
+  it('draws the panel icon in front of the tab label', () => {
+    render(
+      <BottomSheet
+        position="half"
+        onPosition={vi.fn()}
+        tabs={[
+          { id: 'console', label: 'Consola', icon: PANEL_ICONS.console },
+          { id: 'problems', label: 'Problemas', icon: PANEL_ICONS.problems },
+        ]}
+        active="console"
+        onActive={vi.fn()}
+        actions={null}
+        labels={{ collapse: 'Contraer', expand: 'Expandir', sheet: 'Paneles' }}
+      >
+        {(id) => <div>page {id}</div>}
+      </BottomSheet>,
+    )
+    for (const name of ['Consola', 'Problemas']) {
+      expect(screen.getByRole('tab', { name }).querySelector('svg'), name).not.toBeNull()
+    }
   })
 
   it('cycles the position when the handle is tapped', () => {

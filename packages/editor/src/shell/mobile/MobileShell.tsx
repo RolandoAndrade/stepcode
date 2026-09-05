@@ -8,6 +8,7 @@ import { Variables } from '../../panels/Variables'
 import { useEditorStore, useEditorStoreApi } from '../../store/context'
 import type { PanelId, SheetPosition } from '../../store/layout'
 import { stringsOf } from '../../store/store'
+import { PANEL_ICONS } from '../../ui/panelIcons'
 import { autoExpandTarget } from '../autoExpand'
 import { StatusBar } from '../StatusBar'
 import { BottomSheet } from './BottomSheet'
@@ -106,7 +107,7 @@ export function MobileShell({
       <BottomSheet
         position={sheet}
         onPosition={onPosition}
-        tabs={SHEET_PANELS.map((id) => ({ id, label: strings.panels[id] }))}
+        tabs={SHEET_PANELS.map((id) => ({ id, label: strings.panels[id], icon: PANEL_ICONS[id] }))}
         active={active}
         onActive={setActive}
         actions={<PanelActions panel={active} />}
