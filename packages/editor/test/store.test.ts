@@ -331,6 +331,22 @@ describe('store (4b slices)', () => {
     expect(store.getState().profileId).toBe('es')
   })
 
+  it('does not resolve a prototype member for an unknown profile id', () => {
+    const { store } = setup()
+    store.getState().setProfile('constructor')
+    expect(profileOf(store.getState())).toBe(profiles.es)
+  })
+
+  it('re-resolves a custom profile when a custom profile it extends is edited', () => {
+    const { store } = setup()
+    store.getState().saveCustomProfile({ id: 'a', extends: 'es', keywords: { write: ['DiA'] } })
+    store.getState().saveCustomProfile({ id: 'b', extends: 'a' })
+    store.getState().setProfile('b')
+    expect(profileOf(store.getState()).keywords.write).toEqual(['DiA'])
+    store.getState().saveCustomProfile({ id: 'a', extends: 'es', keywords: { write: ['DiA2'] } })
+    expect(profileOf(store.getState()).keywords.write).toEqual(['DiA2'])
+  })
+
   it('updates and resets settings per section', () => {
     const { store } = setup()
     store.getState().updateSettings('editor', { fontSize: 16 })

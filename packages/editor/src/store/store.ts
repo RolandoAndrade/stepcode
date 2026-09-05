@@ -146,8 +146,17 @@ export const DEFAULT_SOURCE = [
 
 export { isDirty }
 
-/** Resolved custom profiles, memoized by input identity (inputs are replaced, never mutated). */
-const resolvedCache = new WeakMap<ProfileInput, ResolvedProfile>()
+/**
+ * Resolved custom profiles, memoized by input identity (inputs are replaced, never mutated).
+ * Dropped whenever the custom-profile set changes: a profile that `extends` another custom
+ * profile must re-resolve when that other profile is edited, even though its own input object
+ * did not change.
+ */
+let resolvedCache = new WeakMap<ProfileInput, ResolvedProfile>()
+
+function clearResolvedCache(): void {
+  resolvedCache = new WeakMap<ProfileInput, ResolvedProfile>()
+}
 
 function registryWith(customs: readonly ProfileInput[]): ProfileRegistry {
   const registry = new Map(builtinProfiles)
@@ -165,8 +174,9 @@ export function customProfileOf(
 export function profileOf(
   state: Pick<StoreState, 'profileId' | 'customProfiles'>,
 ): ResolvedProfile {
-  const builtin = (profiles as Record<string, ResolvedProfile | undefined>)[state.profileId]
-  if (builtin !== undefined) return builtin
+  if (builtinProfiles.has(state.profileId)) {
+    return (profiles as Record<string, ResolvedProfile>)[state.profileId] as ResolvedProfile
+  }
   const input = customProfileOf(state, state.profileId)
   if (input === undefined) return profiles.es
   let resolved = resolvedCache.get(input)
@@ -325,18 +335,22 @@ export function createEditorStore(host: HostApi, options: StoreOptions = {}): Ed
       },
       cancelReplace: () => set({ pendingReplace: null, dialog: null }),
       setProfile: (profileId) => set({ profileId }),
-      saveCustomProfile: (input) =>
+      saveCustomProfile: (input) => {
+        clearResolvedCache()
         set((s) => ({
           customProfiles: [...s.customProfiles.filter((c) => c.id !== input.id), input],
-        })),
-      deleteCustomProfile: (id) =>
+        }))
+      },
+      deleteCustomProfile: (id) => {
+        clearResolvedCache()
         set((s) => ({
           customProfiles: s.customProfiles.filter((c) => c.id !== id),
           profileId:
             s.profileId === id
               ? ((customProfileOf(s, id) as { extends?: string } | undefined)?.extends ?? 'es')
               : s.profileId,
-        })),
+        }))
+      },
       setDiagnostics: (diagnostics) => set({ diagnostics }),
       setBreakpoints: (breakpoints) => {
         set({ breakpoints })

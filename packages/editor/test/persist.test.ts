@@ -84,6 +84,7 @@ describe('localStorage persistence', () => {
     expect(() =>
       writePersisted(broken, persistedOf(createEditorStore(new FakeHost()).getState())),
     ).not.toThrow()
+    expect(warn).toHaveBeenCalledTimes(2)
     warn.mockRestore()
   })
 

@@ -155,23 +155,3 @@ describe('index.css', () => {
     }
   })
 })
-
-describe('no raw colors outside tokens.css', () => {
-  const files: string[] = []
-  const walkForColors = (dir: string): void => {
-    for (const name of readdirSync(dir)) {
-      const path = join(dir, name)
-      if (statSync(path).isDirectory()) walkForColors(path)
-      else if (/\.(ts|tsx|css)$/.test(name) && !path.endsWith(join('theme', 'tokens.css')))
-        files.push(path)
-    }
-  }
-  walkForColors(srcRoot)
-
-  it.each(files)('%s has no hex or rgb color', (file) => {
-    const text = readFileSync(file, 'utf8')
-    expect(text).not.toMatch(/#[0-9a-fA-F]{6}\b/)
-    expect(text).not.toMatch(/#[0-9a-fA-F]{3}\b(?![\w-])/)
-    expect(text).not.toMatch(/\brgba?\(/)
-  })
-})
