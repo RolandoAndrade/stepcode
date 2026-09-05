@@ -1,0 +1,58 @@
+/*
+ * Spec §8.1: every color the editor uses, once. `:root` is One Light; the dark block is One Dark.
+ * Tailwind reads these through `@theme inline` in index.css; CodeMirror through `var(--sc-…)`.
+ * `--sc-line` and `--sc-current-line` are overlays and stay rgba; everything else is hex.
+ */
+:root {
+  --sc-bg: #fafafa;
+  --sc-surface: #ffffff;
+  --sc-surface-raised: #f0f0f1;
+  --sc-border: #dbdbdc;
+  --sc-fg: #383a42;
+  --sc-fg-muted: #a0a1a7;
+  --sc-accent: #4078f2;
+  --sc-caret: #526fff;
+  --sc-selection: #e5e5e6;
+  --sc-line: rgba(56, 58, 66, 0.05);
+  --sc-error: #e45649;
+  --sc-warning: #c18401;
+  --sc-success: #50a14f;
+  --sc-breakpoint: #e45649;
+  --sc-current-line: rgba(193, 132, 1, 0.18);
+  --sc-syn-keyword: #a626a4;
+  --sc-syn-string: #50a14f;
+  --sc-syn-number: #986801;
+  --sc-syn-comment: #a0a1a7;
+  --sc-syn-type: #c18401;
+  --sc-syn-builtin: #4078f2;
+  --sc-syn-operator: #0184bc;
+  --sc-syn-variable: #e45649;
+  --sc-syn-definition: #4078f2;
+}
+
+:root[data-theme="dark"] {
+  --sc-bg: #282c34;
+  --sc-surface: #21252b;
+  --sc-surface-raised: #2c313a;
+  --sc-border: #181a1f;
+  --sc-fg: #abb2bf;
+  --sc-fg-muted: #5c6370;
+  --sc-accent: #61afef;
+  --sc-caret: #528bff;
+  --sc-selection: #3e4451;
+  --sc-line: rgba(153, 187, 255, 0.04);
+  --sc-error: #e06c75;
+  --sc-warning: #e5c07b;
+  --sc-success: #98c379;
+  --sc-breakpoint: #e06c75;
+  --sc-current-line: rgba(229, 192, 123, 0.18);
+  --sc-syn-keyword: #c678dd;
+  --sc-syn-string: #98c379;
+  --sc-syn-number: #d19a66;
+  --sc-syn-comment: #5c6370;
+  --sc-syn-type: #e5c07b;
+  --sc-syn-builtin: #61afef;
+  --sc-syn-operator: #56b6c2;
+  --sc-syn-variable: #e06c75;
+  --sc-syn-definition: #61afef;
+}

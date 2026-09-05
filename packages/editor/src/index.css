@@ -1,1 +1,31 @@
 @import "tailwindcss";
+@import "./theme/tokens.css";
+
+/* Spec §8.2: chrome colors are the tokens, never a literal. */
+@theme inline {
+  --color-bg: var(--sc-bg);
+  --color-surface: var(--sc-surface);
+  --color-surface-raised: var(--sc-surface-raised);
+  --color-border: var(--sc-border);
+  --color-fg: var(--sc-fg);
+  --color-muted: var(--sc-fg-muted);
+  --color-accent: var(--sc-accent);
+  --color-selection: var(--sc-selection);
+  --color-error: var(--sc-error);
+  --color-warning: var(--sc-warning);
+  --color-success: var(--sc-success);
+  --font-mono: ui-monospace, "Cascadia Code", "Fira Code", Menlo, Consolas, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--sc-bg);
+    color: var(--sc-fg);
+  }
+}
