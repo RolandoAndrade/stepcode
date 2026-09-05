@@ -12,3 +12,6 @@ coverage/
 !.vscode/extensions.json
 .atl/
 .claude/settings.local.json
+playwright-report/
+test-results/
+blob-report/

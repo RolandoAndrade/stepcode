@@ -12,6 +12,7 @@
     "typecheck": "pnpm -r --parallel typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "pnpm --filter @stepcode/editor e2e",
     "build": "pnpm -r build",
     "dev": "pnpm --filter @stepcode/editor dev",
     "changeset": "changeset",
