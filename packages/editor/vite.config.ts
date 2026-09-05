@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -41,9 +42,21 @@ export default defineConfig({
           },
         ],
       },
-      workbox: { globPatterns: ['**/*.{js,css,html,woff2,png,ico,svg}'] },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,woff2,png,ico,svg}'],
+        // The frame must never be answered with the app shell (spec §9).
+        navigateFallbackDenylist: [/^\/embed/],
+      },
     }),
   ],
+  build: {
+    rollupOptions: {
+      input: {
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
+        embed: fileURLToPath(new URL('./embed.html', import.meta.url)),
+      },
+    },
+  },
   test: {
     name: '@stepcode/editor',
     environment: 'node',

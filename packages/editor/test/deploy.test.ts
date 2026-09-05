@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath, URL as NodeURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
@@ -33,5 +34,26 @@ describe('ci.yml', () => {
     const dryRun = ci.indexOf('wrangler deploy --dry-run')
     expect(build).toBeGreaterThan(-1)
     expect(dryRun).toBeGreaterThan(build)
+  })
+})
+
+describe('the embed entry', () => {
+  it('is a second Vite page whose service worker never hijacks it', () => {
+    const config = read('../vite.config.ts')
+    expect(config).toContain('embed.html')
+    expect(config).toContain('navigateFallbackDenylist')
+    expect(config).toContain('/^\\/embed/')
+    expect(read('../embed.html')).toContain('/src/embed/main.tsx')
+  })
+
+  const dist = fileURLToPath(new NodeURL('../dist/', import.meta.url))
+  const built = existsSync(join(dist, 'index.html'))
+
+  // CI runs `pnpm test` before `pnpm build`, so this only asserts against a build that exists;
+  // the repo gate (`… && pnpm build && pnpm test`) always runs it.
+  it.skipIf(!built)('emits embed.html without pulling its chunk into index.html', () => {
+    expect(existsSync(join(dist, 'embed.html'))).toBe(true)
+    expect(readFileSync(join(dist, 'index.html'), 'utf8')).not.toMatch(/assets\/embed-/)
+    expect(readFileSync(join(dist, 'embed.html'), 'utf8')).toMatch(/assets\/embed-/)
   })
 })
