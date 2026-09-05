@@ -43,16 +43,20 @@ export function Problems({ onReveal }: { onReveal: (from: number, to: number) =>
             <tbody>
               {rows.map((diagnostic, index) => {
                 const position = lines.positionAt(diagnostic.from)
+                const isError = diagnostic.severity === 'error'
+                const glyph = isError ? '✖' : '▲'
+                const label = isError ? strings.problems.error : strings.problems.warning
                 return (
                   <tr
                     key={`${diagnostic.from}-${diagnostic.source ?? index}`}
                     onClick={() => onReveal(diagnostic.from, diagnostic.to)}
                     className="cursor-pointer border-t border-border hover:bg-surface-raised"
                   >
-                    <td
-                      className={`px-2 py-1 ${diagnostic.severity === 'error' ? 'text-error' : 'text-warning'}`}
-                    >
-                      {diagnostic.severity}
+                    <td className={`px-2 py-1 ${isError ? 'text-error' : 'text-warning'}`}>
+                      <span aria-hidden="true" title={label}>
+                        {glyph}
+                      </span>
+                      <span className="sr-only">{label}</span>
                     </td>
                     <td className="px-2 py-1 font-mono text-xs text-muted">{`${position.line}:${position.column}`}</td>
                     <td className="px-2 py-1">{diagnostic.message}</td>

@@ -47,6 +47,8 @@ export interface Strings {
     readonly title: string
     readonly empty: string
     readonly summary: (errors: number, warnings: number) => string
+    readonly error: string
+    readonly warning: string
   }
   readonly kinds: Readonly<Record<SymbolKind, string>>
 }
@@ -109,6 +111,8 @@ const es: Strings = {
     empty: 'Sin problemas',
     summary: (errors, warnings) =>
       `${plural(errors, 'error', 'errores')}, ${plural(warnings, 'advertencia', 'advertencias')}`,
+    error: 'error',
+    warning: 'advertencia',
   },
   kinds: {
     variable: 'variable',
@@ -175,6 +179,8 @@ const en: Strings = {
     empty: 'No problems',
     summary: (errors, warnings) =>
       `${plural(errors, 'error', 'errors')}, ${plural(warnings, 'warning', 'warnings')}`,
+    error: 'error',
+    warning: 'warning',
   },
   kinds: {
     variable: 'variable',

@@ -34,10 +34,21 @@ describe('Problems', () => {
         .map((cell) => cell.textContent),
     )
     expect(texts).toEqual([
-      ['error', '2:12', 'x undeclared', 'E3001'],
-      ['warning', '2:12', 'also here', 'W9999'],
-      ['warning', '3:11', 'a never read', 'W3002'],
+      ['✖error', '2:12', 'x undeclared', 'E3001'],
+      ['▲advertencia', '2:12', 'also here', 'W9999'],
+      ['▲advertencia', '3:11', 'a never read', 'W3002'],
     ])
+    expect(
+      within(rows[0] as HTMLElement).getByText('error', { selector: '.sr-only' }),
+    ).toBeDefined()
+    expect(
+      within(rows[1] as HTMLElement).getByText('advertencia', { selector: '.sr-only' }),
+    ).toBeDefined()
+    const glyphs = rows.map(
+      (row) =>
+        within(row).getAllByRole('cell')[0]?.querySelector('[aria-hidden="true"]')?.textContent,
+    )
+    expect(glyphs).toEqual(['✖', '▲', '▲'])
   })
 
   it('reveals the span in a real editor on click', () => {
