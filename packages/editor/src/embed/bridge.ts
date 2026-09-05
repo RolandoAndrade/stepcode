@@ -1,4 +1,4 @@
-import { ProfileInputSchema } from '@stepcode/profiles'
+import { builtinProfiles, ProfileInputSchema } from '@stepcode/profiles'
 import { LineMap } from 'stepcode'
 import { typeLabel } from '../labels'
 import { valueLabel } from '../panels/values'
@@ -84,8 +84,6 @@ export function BRIDGE_SLOTS(state: string): readonly Slot[] {
 }
 
 const RUNNING: ReadonlySet<string> = new Set(['running', 'paused', 'input', 'waiting'])
-
-const BUILTIN_PROFILE_IDS: readonly string[] = ['es', 'en', 'pseint']
 
 function diagnosticsOf(state: StoreState): DiagnosticItem[] {
   const map = new LineMap(state.source)
@@ -212,7 +210,7 @@ export function createBridge(store: EditorStore, io: BridgeIo, debounceMillis = 
             fail('setProfile needs a profileId', id)
             return
           }
-          if (!BUILTIN_PROFILE_IDS.includes(builtin)) {
+          if (!builtinProfiles.has(builtin)) {
             fail(`unknown profile ${builtin}`, id)
             return
           }
@@ -263,8 +261,16 @@ export function createBridge(store: EditorStore, io: BridgeIo, debounceMillis = 
       post({ type: 'state', state: next.state, line: next.currentLine })
     }
     if (next.output !== previous.output) {
-      // A cleared buffer is shorter, not longer: nothing was appended, so nothing is posted.
-      for (const text of next.output.chunks.slice(previous.output.chunks.length)) {
+      // `chunks` stops growing once the buffer hits its cap, so what was appended is counted
+      // against `chunks.length + dropped` and taken from the tail. A cleared buffer counts
+      // down, not up: nothing was appended, so nothing is posted.
+      const appended =
+        next.output.chunks.length +
+        next.output.dropped -
+        (previous.output.chunks.length + previous.output.dropped)
+      for (const text of next.output.chunks.slice(
+        Math.max(0, next.output.chunks.length - appended),
+      )) {
         post({ type: 'output', text })
       }
     }

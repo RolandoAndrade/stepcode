@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+import { profiles } from '@stepcode/profiles'
+import { compile } from 'stepcode'
 import { describe, expect, it, vi } from 'vitest'
 import {
   BRIDGE_SLOTS,
@@ -8,10 +10,12 @@ import {
   PROTOCOL_VERSION,
 } from '../src/embed/bridge'
 import { slotsFor } from '../src/shell/RunControls'
+import { OUTPUT_CAP } from '../src/store/output'
 import { createEditorStore, type EditorStore } from '../src/store/store'
 import { FakeHost } from './fake-host'
 
 const SOURCE = 'Proceso p\n  Escribir 1;\nFinProceso\n'
+const BROKEN = ['Proceso Roto', '  Escribir x;', 'FinProceso'].join('\n')
 
 interface Harness {
   readonly store: EditorStore
@@ -252,10 +256,106 @@ describe('createBridge', () => {
     }
   })
 
+  it('keeps posting output after the buffer starts dropping lines', () => {
+    const bridge = harness()
+    bridge.host.emit({
+      kind: 'output',
+      chunks: Array.from({ length: OUTPUT_CAP }, (_, index) => `${index}\n`),
+    })
+    bridge.posted.length = 0
+    bridge.host.emit({ kind: 'output', chunks: ['tope\n'] })
+    bridge.host.emit({ kind: 'output', chunks: ['otra\n', 'una mas\n'] })
+    expect(bridge.store.getState().output.dropped).toBe(3)
+    expect(bridge.posted).toEqual([
+      { type: 'output', text: 'tope\n' },
+      { type: 'output', text: 'otra\n' },
+      { type: 'output', text: 'una mas\n' },
+    ])
+  })
+
+  it('announces a pending read once, naming the variable it reads into', () => {
+    const bridge = harness()
+    bridge.posted.length = 0
+    bridge.host.emit({ kind: 'state', state: 'input' })
+    bridge.host.emit({
+      kind: 'input',
+      line: 2,
+      target: { name: 'x', type: { kind: 'scalar', name: 'integer' } },
+    })
+    expect(bridge.posted.filter((message) => message.type === 'inputRequest')).toEqual([
+      { type: 'inputRequest', prompt: 'x' },
+    ])
+  })
+
+  it('pushes a runtime error once, with its line, and then done with error', () => {
+    const bridge = harness()
+    bridge.store.getState().setSource(BROKEN)
+    const diagnostic = compile(BROKEN, { profile: profiles.es }).diagnostics[0]
+    if (diagnostic === undefined) throw new Error('BROKEN should not compile clean')
+    bridge.store.getState().setDiagnostics([])
+    bridge.store.getState().run()
+    bridge.posted.length = 0
+    bridge.host.emit({ kind: 'state', state: 'error' })
+    bridge.host.emit({ kind: 'error', diagnostic, frames: [] })
+    const errors = bridge.posted.filter((message) => message.type === 'error')
+    expect(errors.length).toBe(1)
+    expect(errors[0]).toMatchObject({ type: 'error', line: 2 })
+    expect(errors[0]).toHaveProperty('message', expect.any(String))
+    expect(bridge.posted.filter((message) => message.type === 'done')).toEqual([
+      { type: 'done', state: 'error' },
+    ])
+  })
+
   it('posts only structured-cloneable payloads', () => {
     const bridge = harness()
+    bridge.store.setState({
+      diagnostics: [
+        { from: 12, to: 13, severity: 'error', source: 'E3001', message: 'no existe x' },
+      ],
+    })
+    bridge.send({ type: 'getSource' })
+    bridge.send({ type: 'setProfile', profileId: 'en' })
+    bridge.send({ type: 'setTheme', theme: 'dark' })
+    bridge.send({ type: 'setTheme', theme: 'neon' })
     bridge.host.emit({ kind: 'state', state: 'running' })
     bridge.host.emit({ kind: 'output', chunks: ['x\n'] })
+    bridge.host.emit({ kind: 'state', state: 'input' })
+    bridge.host.emit({
+      kind: 'input',
+      line: 2,
+      target: { name: 'x', type: { kind: 'scalar', name: 'integer' } },
+    })
+    bridge.host.emit({ kind: 'state', state: 'paused' })
+    bridge.host.emit({
+      kind: 'paused',
+      reason: 'step',
+      line: 3,
+      frames: [
+        {
+          name: 'p',
+          line: 3,
+          variables: [
+            { name: 'x', kind: 'variable', type: { kind: 'scalar', name: 'integer' }, value: 7 },
+          ],
+        },
+      ],
+    })
+    bridge.host.emit({ kind: 'state', state: 'done' })
+    expect(new Set(types(bridge.posted))).toEqual(
+      new Set([
+        'ready',
+        'source',
+        'diagnostics',
+        'profile',
+        'options',
+        'error',
+        'state',
+        'output',
+        'inputRequest',
+        'paused',
+        'done',
+      ]),
+    )
     for (const message of bridge.posted) {
       expect(() => structuredClone(message)).not.toThrow()
     }
