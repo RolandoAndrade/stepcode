@@ -149,6 +149,36 @@ describe('DesktopShell', () => {
     }
   })
 
+  it('drives the bottom group from the sidebar', async () => {
+    const { store, host } = mount()
+    await panelSection('Problemas')
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    // Hidden: the button shows the group and puts its own panel in front.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Problemas' }))
+    })
+    await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
+    expect(screen.getByRole('tab', { name: 'Problemas', selected: true })).toBeDefined()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Problemas' }).getAttribute('aria-pressed')).toBe(
+        'true',
+      ),
+    )
+    // Visible but another tab in front: the button only activates its panel.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Variables' }))
+    })
+    expect(store.getState().layout.collapsed).toEqual([])
+    expect(screen.getByRole('tab', { name: 'Variables', selected: true })).toBeDefined()
+    // Visible and in front: the button hides the group, and that counts as a manual collapse.
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Variables' }))
+    })
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    act(() => host.emit({ kind: 'paused', reason: 'breakpoint', line: 2, frames: [] }))
+    expect(store.getState().layout.collapsed).toHaveLength(1)
+  })
+
   it('refuses to drag the editor out of its locked group', async () => {
     mount()
     await panelSection('Editor')

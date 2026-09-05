@@ -15,9 +15,11 @@ import { autoExpandTarget } from './autoExpand'
 import { CollapseController } from './dock/collapse'
 import { applyDefaultLayout, hideEditorHeader, PANEL_TITLES } from './dock/defaultLayout'
 import { HeaderActions } from './dock/HeaderActions'
+import { HIDDEN_PANEL_STATES, panelStatesOf } from './dock/panelStates'
 import { DockContext, dockComponents } from './dock/panels'
 import { Tab } from './dock/Tab'
 import { DOCK_THEME } from './dock/theme'
+import { type PanelStates, Sidebar } from './Sidebar'
 
 const tabComponents = { tab: Tab }
 
@@ -27,6 +29,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
   const controllerRef = useRef<CollapseController | null>(null)
   const disposablesRef = useRef<{ dispose(): void }[]>([])
   const [collapsedIds, setCollapsedIds] = useState<readonly string[]>([])
+  const [panelStates, setPanelStates] = useState<PanelStates>(HIDDEN_PANEL_STATES)
   const manuallyCollapsed = useRef(new Set<string>())
   const context = useMemo(() => ({ editor: editorRef }), [editorRef])
 
@@ -43,6 +46,14 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       .setDockLayout(api.toJSON() as unknown as Record<string, unknown>, controller.collapsedIds())
   }, [store])
 
+  /** The sidebar's own view of the dock, recomputed whenever the dock reports a change. */
+  const syncPanelStates = useCallback(() => {
+    const api = apiRef.current
+    const controller = controllerRef.current
+    if (api === null || controller === null) return
+    setPanelStates(panelStatesOf(api, (groupId) => controller.isCollapsed(groupId)))
+  }, [])
+
   const reset = useCallback(() => {
     const api = apiRef.current
     if (api === null) return
@@ -52,6 +63,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     const { bottomGroupId } = applyDefaultLayout(api, PANEL_TITLES(stringsOf(store.getState())))
     const controller = new CollapseController(api, (ids) => {
       setCollapsedIds(ids)
+      syncPanelStates()
       save()
     })
     controllerRef.current = controller
@@ -59,7 +71,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     manuallyCollapsed.current.clear()
     rebuilding.current = false
     save()
-  }, [save, store])
+  }, [save, store, syncPanelStates])
 
   const onReady = useCallback(
     (event: DockviewReadyEvent) => {
@@ -88,6 +100,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         for (const id of Object.keys(titles) as PanelId[]) api.getPanel(id)?.setTitle(titles[id])
         const controller = new CollapseController(api, (ids) => {
           setCollapsedIds(ids)
+          syncPanelStates()
           save()
         })
         controllerRef.current = controller
@@ -96,8 +109,15 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       } else {
         reset()
       }
+      syncPanelStates()
       disposablesRef.current.push(
-        api.onDidLayoutChange(() => save()),
+        api.onDidLayoutChange(() => {
+          syncPanelStates()
+          save()
+        }),
+        // A tab in front of its group is the sidebar's "active"; activating one always makes its
+        // group the active group, so the component-level event covers every group.
+        api.onDidActivePanelChange(() => syncPanelStates()),
         // Spec §3.1: the editor cannot be dragged out of its group. `locked` only refuses drops,
         // so the drag has to be refused at the source.
         api.onWillDragPanel((event) => {
@@ -105,7 +125,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         }),
       )
     },
-    [store, save, reset],
+    [store, save, reset, syncPanelStates],
   )
 
   useEffect(
@@ -126,6 +146,30 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     if (controller.isCollapsed(groupId)) {
       if (respectManual && manuallyCollapsed.current.has(groupId)) return
       controller.expand(groupId)
+    }
+    target.api.setActive()
+  }, [])
+
+  /**
+   * Spec §3.3: the sidebar button shows a hidden group, brings its own tab to the front, or —
+   * when its panel is already in front — hides the group again. That last one is a manual
+   * collapse, exactly like the header chevron, so auto-expand leaves it alone until the next run.
+   */
+  const toggleFromSidebar = useCallback((panel: PanelId) => {
+    const api = apiRef.current
+    const controller = controllerRef.current
+    const target = api?.getPanel(panel)
+    if (controller === null || target === undefined) return
+    const groupId = target.group.id
+    if (controller.isCollapsed(groupId)) {
+      controller.expand(groupId)
+      target.api.setActive()
+      return
+    }
+    if (target.group.activePanel?.id === panel) {
+      manuallyCollapsed.current.add(groupId)
+      controller.collapse(groupId)
+      return
     }
     target.api.setActive()
   }, [])
@@ -174,21 +218,24 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
 
   return (
     <DockContext.Provider value={context}>
-      <DockviewReact
-        className="h-full w-full"
-        theme={DOCK_THEME}
-        components={dockComponents}
-        tabComponents={tabComponents}
-        rightHeaderActionsComponent={rightHeaderActionsComponent}
-        onReady={onReady}
-        // Spec §3.1: no watermark, ever.
-        noPanelsOverlay="emptyGroup"
-        // Spec §3.1/§3.6: every panel stays mounted, so CodeMirror keeps its view and the console
-        // keeps its scroll position while another tab of the group is in front.
-        defaultRenderer="always"
-        singleTabMode="fullwidth"
-        floatingGroupBounds="boundedWithinViewport"
-      />
+      <div className="flex h-full w-full">
+        <Sidebar states={panelStates} onToggle={toggleFromSidebar} />
+        <DockviewReact
+          className="h-full min-w-0 flex-1"
+          theme={DOCK_THEME}
+          components={dockComponents}
+          tabComponents={tabComponents}
+          rightHeaderActionsComponent={rightHeaderActionsComponent}
+          onReady={onReady}
+          // Spec §3.1: no watermark, ever.
+          noPanelsOverlay="emptyGroup"
+          // Spec §3.1/§3.6: every panel stays mounted, so CodeMirror keeps its view and the console
+          // keeps its scroll position while another tab of the group is in front.
+          defaultRenderer="always"
+          singleTabMode="fullwidth"
+          floatingGroupBounds="boundedWithinViewport"
+        />
+      </div>
     </DockContext.Provider>
   )
 }
