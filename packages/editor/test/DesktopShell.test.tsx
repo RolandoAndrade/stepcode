@@ -199,6 +199,33 @@ describe('DesktopShell', () => {
     expect(dock.classList.contains('sc-animating')).toBe(true)
   })
 
+  it('docks a panel on the edge its sidebar icon is dropped on', async () => {
+    const { store } = mount()
+    await panelSection('Consola')
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    const groupOf = (name: string): Element | null =>
+      document.querySelector(`.dv-tab[aria-label="${name}"]`)?.closest('.dv-groupview') ?? null
+    expect(groupOf('Consola')).toBe(groupOf('Problemas'))
+    await act(async () => {
+      fireEvent.dragStart(screen.getByRole('button', { name: 'Consola' }), {
+        dataTransfer: { setData: () => {} },
+      })
+    })
+    const right = document.querySelector('[data-zone="right"]') as HTMLElement
+    await act(async () => {
+      fireEvent.drop(right, {
+        dataTransfer: {
+          types: ['application/x-stepcode-panel'],
+          getData: () => 'console',
+        },
+      })
+    })
+    // Consola leaves its two siblings behind, in a group of its own on the right edge.
+    await waitFor(() => expect(groupOf('Consola')).not.toBe(groupOf('Problemas')))
+    // A move brings a hidden group back: there is nothing to dock otherwise.
+    expect(store.getState().layout.collapsed).toEqual([])
+  })
+
   it('refuses to drag the editor out of its locked group', async () => {
     mount()
     await panelSection('Editor')

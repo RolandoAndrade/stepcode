@@ -19,9 +19,15 @@ import { HIDDEN_PANEL_STATES, panelStatesOf, sidebarActionFor } from './dock/pan
 import { DockContext, dockComponents } from './dock/panels'
 import { Tab } from './dock/Tab'
 import { DOCK_THEME } from './dock/theme'
-import { type PanelStates, Sidebar } from './Sidebar'
+import { type PanelStates, Sidebar, type Zone } from './Sidebar'
 
 const tabComponents = { tab: Tab }
+
+/** dockview's own mapping, spelled out here because it does not export it. */
+function positionToDirection(position: 'top' | 'bottom' | 'right'): 'above' | 'below' | 'right' {
+  if (position === 'top') return 'above'
+  return position === 'bottom' ? 'below' : 'right'
+}
 
 export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle | null> }) {
   const store = useEditorStoreApi()
@@ -200,6 +206,29 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     [collapseManually],
   )
 
+  /**
+   * Spec §3.3: dropping a sidebar icon on another strip docks the panel on that edge. A group
+   * that holds nothing else travels whole (dockview makes the new group itself); otherwise only
+   * the dragged panel leaves, into a group created at that edge.
+   */
+  const movePanel = useCallback(
+    (panel: PanelId, zone: Zone) => {
+      const api = apiRef.current
+      const controller = controllerRef.current
+      const target = api?.getPanel(panel)
+      if (api === null || controller === null || target === undefined) return
+      const group = target.group
+      // A hidden group has nothing to show at its new edge, so the move brings it back first.
+      if (controller.isCollapsed(group.id)) controller.expand(group.id)
+      const position = zone === 'right' ? 'right' : zone === 'left-top' ? 'top' : 'bottom'
+      if (group.panels.length === 1) group.api.moveTo({ position })
+      else target.api.moveTo({ group: api.addGroup({ direction: positionToDirection(position) }) })
+      target.api.setActive()
+      syncPanelStates()
+    },
+    [syncPanelStates],
+  )
+
   useEffect(() => {
     let previous = store.getState()
     return store.subscribe((next) => {
@@ -227,8 +256,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
 
   return (
     <DockContext.Provider value={context}>
-      <div className="flex h-full w-full">
-        <Sidebar states={panelStates} onToggle={toggleFromSidebar} />
+      <Sidebar states={panelStates} onToggle={toggleFromSidebar} onMove={movePanel}>
         <div ref={dockRef} className="h-full min-w-0 flex-1">
           <DockviewReact
             className="h-full w-full"
@@ -246,7 +274,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
             floatingGroupBounds="boundedWithinViewport"
           />
         </div>
-      </div>
+      </Sidebar>
     </DockContext.Provider>
   )
 }
