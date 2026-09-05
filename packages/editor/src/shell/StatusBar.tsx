@@ -55,8 +55,10 @@ export function statusText(
   }
 }
 
+// 20 px inside the 24 px bar: the footer's 1 px border leaves 23 px of content, so a 24 px item
+// would push the document past the viewport and give the shell a scrollbar.
 const ITEM =
-  'flex h-6 items-center gap-1 rounded px-2 text-xs transition-colors duration-150 disabled:cursor-default disabled:hover:bg-transparent'
+  'flex h-5 items-center gap-1 rounded px-2 text-xs transition-colors duration-150 disabled:cursor-default disabled:hover:bg-transparent'
 
 /** Muted on the ordinary bar; on a colored band the band's own foreground already reads. */
 const QUIET_ITEM = 'text-muted hover:bg-surface-raised hover:text-fg'

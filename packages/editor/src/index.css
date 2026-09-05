@@ -69,10 +69,16 @@
     height: 100%;
   }
 
+  /*
+   * The shell owns the viewport: every band is sized to it, dialogs are `fixed`, and the phone
+   * shell scrolls its own sheet. Nothing should ever scroll the document itself.
+   */
   body {
     background-color: var(--sc-bg);
     color: var(--sc-fg);
     font-family: var(--font-sans);
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 
   code,

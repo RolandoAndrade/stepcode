@@ -325,7 +325,10 @@ menu; Radix handles its own). `⌘` replaces Ctrl on macOS.
 
 ## 5. Status bar
 
-24 px, 12 px text in `--sc-fg-muted`, items are buttons with a hover background:
+24 px, 12 px text in `--sc-fg-muted`, items are 20 px buttons with a hover background — 20 and not
+24, because the bar's 1 px top border leaves 23 px of content and a full-height item would push the
+document past the viewport. (`body` is `overflow: hidden` for the same reason: every band is sized
+to the viewport, dialogs are `fixed`, and the phone sheet scrolls itself.)
 
 | Position | Item | Click |
 |---|---|---|

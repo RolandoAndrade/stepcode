@@ -93,6 +93,17 @@ describe('StatusBar', () => {
     expect(screen.getByRole('button', { name: /✖ 1/ }).className).not.toContain('text-error')
   })
 
+  // 24 px buttons inside a 24 px footer whose 1 px border leaves 23 px of content pushed the
+  // document 1 px past the viewport and gave the shell a scrollbar.
+  it('keeps its buttons inside the 24 px bar', () => {
+    const { store } = storeWith({})
+    renderWithStore(<StatusBar />, store)
+    for (const button of screen.getAllByRole('button')) {
+      expect(button.className).toContain('h-5')
+      expect(button.className).not.toContain('h-6')
+    }
+  })
+
   it('says no problems when clean and requests the Problems panel on click', () => {
     const { store } = storeWith({})
     renderWithStore(<StatusBar />, store)
