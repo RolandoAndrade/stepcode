@@ -13,7 +13,7 @@ import type { PanelId } from '../store/layout'
 import { stringsOf } from '../store/store'
 import { autoExpandTarget } from './autoExpand'
 import { CollapseController } from './dock/collapse'
-import { applyDefaultLayout, PANEL_TITLES } from './dock/defaultLayout'
+import { applyDefaultLayout, DEFAULT_BOTTOM_MIN, PANEL_TITLES } from './dock/defaultLayout'
 import { HeaderActions } from './dock/HeaderActions'
 import { DockContext, dockComponents } from './dock/panels'
 import { Tab } from './dock/Tab'
@@ -50,10 +50,15 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     controllerRef.current?.dispose()
     api.clear()
     const { bottomGroupId } = applyDefaultLayout(api, PANEL_TITLES(stringsOf(store.getState())))
-    const controller = new CollapseController(api, HEADER_HEIGHT, (ids) => {
-      setCollapsedIds(ids)
-      save()
-    })
+    const controller = new CollapseController(
+      api,
+      HEADER_HEIGHT,
+      (ids) => {
+        setCollapsedIds(ids)
+        save()
+      },
+      DEFAULT_BOTTOM_MIN,
+    )
     controllerRef.current = controller
     controller.collapse(bottomGroupId)
     manuallyCollapsed.current.clear()
@@ -83,10 +88,15 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         // The serialized titles are whatever locale saved them; re-apply the current ones.
         const titles = PANEL_TITLES(stringsOf(store.getState()))
         for (const id of Object.keys(titles) as PanelId[]) api.getPanel(id)?.setTitle(titles[id])
-        const controller = new CollapseController(api, HEADER_HEIGHT, (ids) => {
-          setCollapsedIds(ids)
-          save()
-        })
+        const controller = new CollapseController(
+          api,
+          HEADER_HEIGHT,
+          (ids) => {
+            setCollapsedIds(ids)
+            save()
+          },
+          DEFAULT_BOTTOM_MIN,
+        )
         controllerRef.current = controller
         controller.restoreFrom(saved.collapsed)
         save()
@@ -139,7 +149,9 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         reveal(next.panelRequest.id, false)
       if (next.runSeq !== before.runSeq) manuallyCollapsed.current.clear()
       const event = autoExpandTarget(before, next, next.settings.layout.showConsoleOnRun)
-      if (event !== null) reveal(event.panel, true)
+      // Spec §3.4: run and pause respect a manual collapse; an input request never does — a
+      // program blocked on a prompt nobody can see is unusable.
+      if (event !== null) reveal(event.panel, event.reason !== 'input')
     })
   }, [store, reset, reveal])
 

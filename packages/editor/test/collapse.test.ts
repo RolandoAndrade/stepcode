@@ -3,6 +3,7 @@ import {
   COLLAPSED_VERTICAL_CLASS,
   CollapseController,
   collapseGroup,
+  DEFAULT_GROUP_MIN,
   edgeOf,
   expandGroup,
   type GroupLike,
@@ -48,7 +49,7 @@ function group(
   }
 }
 
-const CONTAINER = { width: 1000, height: 600 }
+const CONTAINER = { top: 0, left: 0, width: 1000, height: 600 }
 
 describe('edgeOf', () => {
   it('names the edge a docked group sits on', () => {
@@ -57,6 +58,15 @@ describe('edgeOf', () => {
     expect(edgeOf(group('c', { x: 700, y: 0, width: 300, height: 600 }), CONTAINER)).toBe('right')
     expect(edgeOf(group('d', { x: 0, y: 0, width: 300, height: 600 }), CONTAINER)).toBe('left')
   })
+
+  it('measures the group against the container, not the viewport', () => {
+    // The dock sits below the 40 px toolbar, so no group's viewport rect starts at y = 0.
+    const offset = { top: 40, left: 12, width: 1000, height: 600 }
+    expect(edgeOf(group('a', { x: 12, y: 40, width: 1000, height: 180 }), offset)).toBe('top')
+    expect(edgeOf(group('b', { x: 12, y: 460, width: 1000, height: 180 }), offset)).toBe('bottom')
+    expect(edgeOf(group('c', { x: 12, y: 40, width: 300, height: 600 }), offset)).toBe('left')
+    expect(edgeOf(group('d', { x: 712, y: 40, width: 300, height: 600 }), offset)).toBe('right')
+  })
 })
 
 describe('collapseGroup / expandGroup', () => {
@@ -64,22 +74,32 @@ describe('collapseGroup / expandGroup', () => {
     const g = group('a', { x: 0, y: 420, width: 1000, height: 180 })
     const { restore } = collapseGroup(g, 'bottom', 28)
     expect(restore).toBe(180)
-    expect(g.constraints).toEqual([{ maximumHeight: 28 }])
+    // Both ends of the range: dockview clamps to the minimum when the minimum wins, so a
+    // maximum alone leaves the group at its 120 px floor instead of the 28 px header.
+    expect(g.constraints).toEqual([{ minimumHeight: 28, maximumHeight: 28 }])
     expect(g.sizes).toEqual([{ height: 28 }])
-    expandGroup(g, 'bottom', restore)
-    expect(g.constraints.at(-1)).toEqual({ maximumHeight: Number.POSITIVE_INFINITY })
+    expandGroup(g, 'bottom', restore, 120)
+    expect(g.constraints.at(-1)).toEqual({
+      minimumHeight: 120,
+      maximumHeight: Number.POSITIVE_INFINITY,
+    })
     expect(g.sizes.at(-1)).toEqual({ height: 180 })
     expect(g.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(false)
     const side = group('b', { x: 700, y: 0, width: 300, height: 600 })
     collapseGroup(side, 'right', 28)
-    expect(side.constraints).toEqual([{ maximumWidth: 28 }])
+    expect(side.constraints).toEqual([{ minimumWidth: 28, maximumWidth: 28 }])
+    expandGroup(side, 'right', 300, 100)
+    expect(side.constraints.at(-1)).toEqual({
+      minimumWidth: 100,
+      maximumWidth: Number.POSITIVE_INFINITY,
+    })
   })
 
   it('marks a side group as a vertical strip and unmarks it on expand', () => {
     const side = group('b', { x: 700, y: 0, width: 300, height: 600 })
     collapseGroup(side, 'right', 28)
     expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(true)
-    expandGroup(side, 'right', 300)
+    expandGroup(side, 'right', 300, 100)
     expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(false)
   })
 })
@@ -116,6 +136,33 @@ describe('CollapseController', () => {
     expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(true)
     controller.toggle('side')
     expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(false)
+  })
+
+  it('gives the minimum back when it expands a group', () => {
+    const bottom = group('bottom', { x: 0, y: 420, width: 1000, height: 180 })
+    const controller = new CollapseController(api([bottom]), 28, () => {}, 120)
+    controller.collapse('bottom')
+    expect(bottom.constraints.at(-1)).toEqual({ minimumHeight: 28, maximumHeight: 28 })
+    controller.expand('bottom')
+    expect(bottom.constraints.at(-1)).toEqual({
+      minimumHeight: 120,
+      maximumHeight: Number.POSITIVE_INFINITY,
+    })
+  })
+
+  it('frees the groups a restored layout does not list as collapsed', () => {
+    // A layout saved while the bottom group was collapsed carries its 28 px constraints;
+    // restoring it with an empty collapsed list must not leave the group frozen there.
+    const bottom = group('bottom', { x: 0, y: 572, width: 1000, height: 28 })
+    const controller = new CollapseController(api([bottom]), 28, () => {}, 120)
+    controller.restoreFrom([])
+    expect(controller.collapsedIds()).toEqual([])
+    expect(bottom.constraints.at(-1)).toEqual({
+      minimumHeight: 120,
+      minimumWidth: DEFAULT_GROUP_MIN,
+      maximumHeight: Number.POSITIVE_INFINITY,
+      maximumWidth: Number.POSITIVE_INFINITY,
+    })
   })
 
   it('refuses floating groups and expands idempotently', () => {

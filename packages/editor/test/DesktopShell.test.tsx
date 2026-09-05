@@ -55,6 +55,35 @@ describe('DesktopShell', () => {
     expect(screen.getByRole('tab', { name: 'Consola', selected: true })).toBeDefined()
   })
 
+  it('expands the console for an input request even after a manual collapse', async () => {
+    const { store, host } = mount()
+    await panelSection('Consola')
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    act(() => store.getState().run())
+    await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Contraer' }))
+    })
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    // Spec §3.4: a program blocked on a prompt the user cannot see is unusable.
+    act(() => host.emit({ kind: 'input', line: 2, target: null }))
+    await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
+  })
+
+  it('leaves a manually collapsed group alone when a pause wants the variables', async () => {
+    const { store, host } = mount()
+    await panelSection('Consola')
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    act(() => store.getState().run())
+    await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Contraer' }))
+    })
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    act(() => host.emit({ kind: 'paused', reason: 'breakpoint', line: 2, frames: [] }))
+    expect(store.getState().layout.collapsed).toHaveLength(1)
+  })
+
   it('honours a panel request and a reset', async () => {
     const { store } = mount()
     await panelSection('Problemas')
