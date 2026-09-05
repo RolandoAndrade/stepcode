@@ -1,4 +1,5 @@
 import * as Dropdown from '@radix-ui/react-dropdown-menu'
+import { useMemo } from 'react'
 import { type FileEnvironment, newDocument, openFile, saveFile, saveFileAs } from '../files/actions'
 import { useEditorStore, useEditorStoreApi } from '../store/context'
 import { PANEL_IDS } from '../store/layout'
@@ -6,7 +7,7 @@ import { type EditorStore, stringsOf } from '../store/store'
 import type { Strings } from '../strings'
 import { Check, Hexagon } from '../ui/icons'
 import { isMac, keyLabel } from '../ui/keys'
-import { Tooltip } from '../ui/Tooltip'
+import { IconButton } from '../ui/Tooltip'
 import { profileItems } from './StatusBar'
 import { SHORTCUTS } from './shortcuts'
 
@@ -111,19 +112,28 @@ function Entries({ entries }: { entries: MenuEntry[] }) {
 export function Menu({ env }: { env: FileEnvironment }) {
   const store = useEditorStoreApi()
   const strings = useEditorStore(stringsOf)
-  // Recomputed per render so profile checkmarks and names stay current.
-  const entries = menuModel(store, env, strings)
+  // menuModel reads profileId/customProfiles/settings off the store too (for the Perfil check
+  // and list), but Menu only re-renders on its own selected values — so those raw fields are
+  // selected here as well (as StatusBar's ProfilePopover does), or a profile switch that keeps
+  // the same UI locale would leave the model stale.
+  const profileId = useEditorStore((s) => s.profileId)
+  const customProfiles = useEditorStore((s) => s.customProfiles)
+  const settings = useEditorStore((s) => s.settings)
+  // profileId/customProfiles/settings aren't read directly in the callback below — they're the
+  // store fields that menuModel's own store.getState() call reads, so they belong in the
+  // recompute trigger even though the callback body never names them.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
+  const entries = useMemo(
+    () => menuModel(store, env, strings),
+    [store, env, strings, profileId, customProfiles, settings],
+  )
   return (
     <Dropdown.Root modal={false}>
-      <Tooltip label={strings.toolbar.menu}>
-        <Dropdown.Trigger
-          type="button"
-          aria-label={strings.toolbar.menu}
-          className="inline-flex h-7 w-7 items-center justify-center rounded text-fg transition-colors duration-150 hover:bg-surface-raised"
-        >
+      <Dropdown.Trigger asChild>
+        <IconButton label={strings.toolbar.menu} onClick={() => {}}>
           <Hexagon size={20} />
-        </Dropdown.Trigger>
-      </Tooltip>
+        </IconButton>
+      </Dropdown.Trigger>
       <Dropdown.Portal>
         <Dropdown.Content
           align="start"

@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useState } from 'react'
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useEditorStore } from '../store/context'
 import { nameWithExtension } from '../store/document'
 import { isDirty, stringsOf } from '../store/store'
@@ -11,7 +11,16 @@ export function Filename() {
   const setName = useEditorStore((s) => s.setName)
   const [draft, setDraft] = useState(name)
   useEffect(() => setDraft(name), [name])
+  // Enter and Escape both call `blur()` synchronously, which fires the input's own onBlur
+  // (commit) before React applies the state update they just queued. This flag makes that
+  // blur-triggered commit a no-op: Enter already committed explicitly, and Escape's revert
+  // must not be overwritten by a commit still reading the pre-revert draft.
+  const skipNextCommitRef = useRef(false)
   const commit = (): void => {
+    if (skipNextCommitRef.current) {
+      skipNextCommitRef.current = false
+      return
+    }
     const next = nameWithExtension(draft)
     if (next === '') setDraft(name)
     else if (next !== name) setName(next)
@@ -20,10 +29,12 @@ export function Filename() {
     if (event.key === 'Enter') {
       event.preventDefault()
       commit()
+      skipNextCommitRef.current = true
       event.currentTarget.blur()
     }
     if (event.key === 'Escape') {
       setDraft(name)
+      skipNextCommitRef.current = true
       event.currentTarget.blur()
     }
   }

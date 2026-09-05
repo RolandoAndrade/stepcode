@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { fireEvent, screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { WorkerState } from '../src/runtime/protocol'
 import { RunControls } from '../src/shell/RunControls'
@@ -30,7 +30,7 @@ describe('RunControls', () => {
     expect(visible()).toEqual(expected)
   })
 
-  it('Depurar starts in step mode; Ejecutar in run mode', () => {
+  it('Depurar starts in step mode', () => {
     const { store, host } = storeWith({})
     renderWithStore(
       <TooltipProvider>
@@ -39,8 +39,35 @@ describe('RunControls', () => {
       store,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Depurar' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Ejecutar' }))
     expect(host.calls).toEqual(['start:step'])
+  })
+
+  it('Ejecutar starts in run mode', () => {
+    const { store, host } = storeWith({})
+    renderWithStore(
+      <TooltipProvider>
+        <RunControls />
+      </TooltipProvider>,
+      store,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Ejecutar' }))
+    expect(host.calls).toEqual(['start:run'])
+  })
+
+  it('keeps working after Depurar starts and the worker reports paused', () => {
+    const { store, host } = storeWith({})
+    renderWithStore(
+      <TooltipProvider>
+        <RunControls />
+      </TooltipProvider>,
+      store,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Depurar' }))
+    act(() => {
+      host.emit({ kind: 'state', state: 'paused' })
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))
+    expect(host.calls).toEqual(['start:step', 'continue'])
   })
 
   it('shows Ejecutar enabled with errors but opens Problemas instead of running', () => {

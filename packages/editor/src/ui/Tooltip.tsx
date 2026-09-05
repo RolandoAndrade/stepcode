@@ -1,5 +1,5 @@
 import * as RadixTooltip from '@radix-ui/react-tooltip'
-import type { ReactNode } from 'react'
+import { type ComponentPropsWithoutRef, forwardRef, type ReactNode } from 'react'
 import { isMac, keyLabel } from './keys'
 
 export function TooltipProvider({ children }: { children: ReactNode }) {
@@ -38,15 +38,7 @@ export function Tooltip({
 
 const SIZES = { toolbar: 'h-7 w-7', dialog: 'h-8 w-8' } as const
 
-export function IconButton({
-  label,
-  shortcut,
-  onClick,
-  disabled = false,
-  active = false,
-  size = 'toolbar',
-  children,
-}: {
+type IconButtonOwnProps = {
   label: string
   shortcut?: string
   onClick: () => void
@@ -54,9 +46,33 @@ export function IconButton({
   active?: boolean
   size?: keyof typeof SIZES
   children: ReactNode
-}) {
+}
+
+export type IconButtonProps = IconButtonOwnProps &
+  Omit<ComponentPropsWithoutRef<'button'>, keyof IconButtonOwnProps | 'type' | 'className'>
+
+/**
+ * Forwards its ref and spreads unknown props onto the inner `<button>` so a Radix `asChild`
+ * trigger (which clones its own ref/handlers/aria-* onto its single child) can compose with
+ * this component instead of having them silently dropped.
+ */
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
+  {
+    label,
+    shortcut,
+    onClick,
+    disabled = false,
+    active = false,
+    size = 'toolbar',
+    children,
+    ...rest
+  },
+  ref,
+) {
   const button = (
     <button
+      {...rest}
+      ref={ref}
       type="button"
       aria-label={label}
       aria-pressed={active ? true : undefined}
@@ -74,4 +90,4 @@ export function IconButton({
       {button}
     </Tooltip>
   )
-}
+})

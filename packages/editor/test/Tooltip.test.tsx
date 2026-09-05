@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
+
 import { fireEvent, render, screen } from '@testing-library/react'
+import { createRef } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { Play } from '../src/ui/icons'
 import { IconButton, TooltipProvider } from '../src/ui/Tooltip'
@@ -33,5 +35,20 @@ describe('IconButton', () => {
     )
     fireEvent.focus(screen.getByRole('button', { name: 'Ejecutar' }))
     expect(await screen.findByRole('tooltip')).toHaveProperty('textContent', 'Ejecutar · F5')
+  })
+
+  it('forwards its ref and spreads unknown props onto the button, for a Radix asChild trigger', () => {
+    const ref = createRef<HTMLButtonElement>()
+    render(
+      <TooltipProvider>
+        <IconButton ref={ref} label="Menú" onClick={() => {}} data-x="1" aria-haspopup="menu">
+          <Play />
+        </IconButton>
+      </TooltipProvider>,
+    )
+    const button = screen.getByRole('button', { name: 'Menú' })
+    expect(ref.current).toBe(button)
+    expect(button.getAttribute('data-x')).toBe('1')
+    expect(button.getAttribute('aria-haspopup')).toBe('menu')
   })
 })

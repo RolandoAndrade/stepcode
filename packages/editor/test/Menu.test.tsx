@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { Menu, menuModel } from '../src/shell/Menu'
+import type { EditorStore } from '../src/store/store'
 import { stringsFor } from '../src/strings'
 import { TooltipProvider } from '../src/ui/Tooltip'
 import { renderWithStore, storeWith } from './render'
@@ -35,9 +36,9 @@ describe('menuModel', () => {
 })
 
 describe('Menu', () => {
-  async function open() {
+  async function open(existing?: EditorStore) {
     cleanup()
-    const { store } = storeWith({})
+    const store = existing ?? storeWith({}).store
     renderWithStore(
       <TooltipProvider>
         <Menu env={env} />
@@ -53,8 +54,9 @@ describe('Menu', () => {
     const store = await open()
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Ajustes…' }))
     expect(store.getState().dialog).toBe('settings')
-    await open()
+    await open(store)
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Acerca de' }))
+    expect(store.getState().dialog).toBe('about')
   })
 
   it('Vista items request panels; reset resets the layout', async () => {
@@ -64,5 +66,27 @@ describe('Menu', () => {
     fireEvent.keyDown(vista, { key: 'ArrowRight' })
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Problemas' }))
     expect(store.getState().panelRequest?.id).toBe('problems')
+    await open(store)
+    const resetLayout = store.getState().layoutReset
+    const vista2 = await screen.findByRole('menuitem', { name: 'Vista' })
+    fireEvent.pointerMove(vista2)
+    fireEvent.keyDown(vista2, { key: 'ArrowRight' })
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Restablecer diseño' }))
+    expect(store.getState().layoutReset).toBe(resetLayout + 1)
+  })
+
+  it('stays current when the profile changes without changing the UI locale', async () => {
+    const store = await open()
+    const profile = await screen.findByRole('menuitem', { name: 'Perfil' })
+    fireEvent.pointerMove(profile)
+    fireEvent.keyDown(profile, { key: 'ArrowRight' })
+    expect(
+      (await screen.findByRole('menuitem', { name: 'Español' })).querySelector('svg'),
+    ).not.toBeNull()
+    expect(screen.getByRole('menuitem', { name: 'PSeInt' }).querySelector('svg')).toBeNull()
+    // Same mount, no remount: the model must recompute on its own without a UI-locale change.
+    act(() => store.getState().setProfile('pseint'))
+    expect(screen.getByRole('menuitem', { name: 'PSeInt' }).querySelector('svg')).not.toBeNull()
+    expect(screen.getByRole('menuitem', { name: 'Español' }).querySelector('svg')).toBeNull()
   })
 })

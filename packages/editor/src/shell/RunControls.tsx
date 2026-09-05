@@ -1,4 +1,4 @@
-import { type JSX, useRef } from 'react'
+import type { JSX } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '../store/context'
 import { canEdit, hasErrors, stringsOf } from '../store/store'
@@ -50,23 +50,6 @@ export function RunControls({ compact = false }: { compact?: boolean }) {
     })),
   )
   const t = strings.toolbar
-  // Guards against a double click firing a second `start` before the worker's first
-  // state message arrives: one dispatch per state, released the moment the state changes.
-  // (Adjusted during render, per React's "you can call the set function while rendering"
-  // pattern, rather than an effect — there is nothing to synchronize with the outside world.)
-  const dispatchingRef = useRef(false)
-  const lastStateRef = useRef(state)
-  if (lastStateRef.current !== state) {
-    lastStateRef.current = state
-    dispatchingRef.current = false
-  }
-  const dispatch = (action: () => void): (() => void) => {
-    return () => {
-      if (dispatchingRef.current) return
-      dispatchingRef.current = true
-      action()
-    }
-  }
   const shown = new Set(
     compact
       ? slotsFor(state).filter(
@@ -83,13 +66,13 @@ export function RunControls({ compact = false }: { compact?: boolean }) {
       label: t.run,
       shortcut: SHORTCUTS.runOrContinue,
       icon: <Play />,
-      onClick: dispatch(runOrProblems),
+      onClick: runOrProblems,
     },
     debug: {
       label: t.debug,
       shortcut: SHORTCUTS.stepInto,
       icon: <Bug />,
-      onClick: dispatch(() => (errors ? a.requestPanel('problems') : a.stepInto())),
+      onClick: () => (errors ? a.requestPanel('problems') : a.stepInto()),
     },
     continue: {
       label: t.continue,
