@@ -30,6 +30,28 @@ describe('RunControls', () => {
     expect(visible()).toEqual(expected)
   })
 
+  it('compact renders no placeholder spans, so the phone bar keeps no gap for hidden slots', () => {
+    const { store } = storeWith({ state: 'ready' })
+    const { container } = renderWithStore(
+      <TooltipProvider>
+        <RunControls compact />
+      </TooltipProvider>,
+      store,
+    )
+    expect(container.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(0)
+  })
+
+  it('keeps the placeholders on the desktop toolbar', () => {
+    const { store } = storeWith({ state: 'ready' })
+    const { container } = renderWithStore(
+      <TooltipProvider>
+        <RunControls />
+      </TooltipProvider>,
+      store,
+    )
+    expect(container.querySelectorAll('span[aria-hidden="true"]').length).toBeGreaterThan(0)
+  })
+
   it('Depurar starts in step mode', () => {
     const { store, host } = storeWith({})
     renderWithStore(
