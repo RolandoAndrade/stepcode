@@ -22,9 +22,17 @@ export function Share({ clipboard, base }: { clipboard?: Clipboard; base?: strin
   useEffect(() => {
     if (!open) return
     let cancelled = false
-    encodeShare({ source, profileId }).then((next) => {
-      if (!cancelled) setHash(next)
-    })
+    encodeShare({ source, profileId })
+      .then((next) => {
+        if (!cancelled) setHash(next)
+      })
+      .catch((error: unknown) => {
+        // Compression can fail or be torn down mid-flight; an empty field is the honest
+        // result, and an unhandled rejection would take the page (or a test run) with it.
+        if (cancelled) return
+        console.warn('stepcode: could not build the share link', error)
+        setHash('')
+      })
     return () => {
       cancelled = true
     }

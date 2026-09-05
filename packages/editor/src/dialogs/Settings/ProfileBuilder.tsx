@@ -121,6 +121,10 @@ export function ProfileBuilder({
     options: seed?.options ?? {},
     ...(seed?.locale === undefined ? {} : { locale: seed.locale }),
   }))
+  // What each spelling field literally holds, keyed `<section>.<key>`. The parsed lists in
+  // `form` are a lossy view of it ("Escribir," parses to one spelling), so the field can never
+  // be rendered from them: the comma the author just typed would vanish under the cursor.
+  const [texts, setTexts] = useState<Record<string, string>>({})
   const id = editing?.id ?? slugify(name)
   // A custom profile may extend another custom profile; only `profileOf` knows how to resolve
   // that chain, and a chain that no longer resolves must not take the builder down with it.
@@ -144,7 +148,8 @@ export function ProfileBuilder({
   const preview = result.ok ? starterProgram(result.profile) : ''
   const t = strings.settings.language
 
-  const setSpellings = (section: SectionKey, key: string, text: string): void =>
+  const setSpellings = (section: SectionKey, key: string, text: string): void => {
+    setTexts((previous) => ({ ...previous, [`${section}.${key}`]: text }))
     setForm((f) => {
       const next: Record<string, readonly string[]> = { ...f[section] }
       const list = textToSpellings(text)
@@ -155,6 +160,13 @@ export function ProfileBuilder({
       else next[key] = list
       return { ...f, [section]: next }
     })
+  }
+
+  /** A new base means new spellings everywhere: nothing typed against the old one is kept. */
+  const setBase = (next: string): void => {
+    setTexts({})
+    setForm((f) => ({ ...f, base: next }))
+  }
 
   const table = (section: SectionKey, keys: readonly string[], title: string) => (
     <details className="mt-2" open={section === 'keywords'}>
@@ -165,9 +177,10 @@ export function ProfileBuilder({
             <span className="w-32 truncate font-mono text-muted">{key}</span>
             <input
               aria-label={key}
-              value={spellingsToText(
-                form[section][key] ?? sectionOf(baseProfile, section)[key] ?? [],
-              )}
+              value={
+                texts[`${section}.${key}`] ??
+                spellingsToText(form[section][key] ?? sectionOf(baseProfile, section)[key] ?? [])
+              }
               onChange={(event) => setSpellings(section, key, event.target.value)}
               className="h-7 min-w-0 flex-1 rounded border border-border bg-surface px-2 font-mono text-fg"
             />
@@ -201,12 +214,7 @@ export function ProfileBuilder({
       <p className="mt-1 text-muted text-xs">
         {t.nameHint} · {t.spellingsHint}
       </p>
-      <Select
-        label={t.base}
-        value={form.base}
-        options={baseOptions}
-        onChange={(next) => setForm((f) => ({ ...f, base: next }))}
-      />
+      <Select label={t.base} value={form.base} options={baseOptions} onChange={setBase} />
       {table('keywords', KEYWORD_KEYS, t.keywords)}
       {table('types', TYPE_KEYS, t.types)}
       {table('operators', OPERATOR_KEYS, t.operators)}

@@ -116,6 +116,28 @@ export function expandGroup(group: GroupLike, edge: Edge, restore: number, minim
   }
 }
 
+/**
+ * The dock's box: dockview reports its size, and its grid groups give away its origin. Only grid
+ * groups count — a floating group can sit anywhere, including above the dock's own top edge.
+ */
+export function containerRectOf(api: ApiLike): ContainerRect {
+  let top = Number.POSITIVE_INFINITY
+  let left = Number.POSITIVE_INFINITY
+  for (const group of api.groups) {
+    if (group.api.location.type !== 'grid') continue
+    const box = group.element?.getBoundingClientRect()
+    if (box === undefined) continue
+    top = Math.min(top, box.top)
+    left = Math.min(left, box.left)
+  }
+  return {
+    top: Number.isFinite(top) ? top : 0,
+    left: Number.isFinite(left) ? left : 0,
+    width: api.width,
+    height: api.height,
+  }
+}
+
 export class CollapseController {
   private readonly collapsed = new Map<string, { edge: Edge; restore: number; minimum: number }>()
 
@@ -130,24 +152,6 @@ export class CollapseController {
     private readonly minimum: number = DEFAULT_GROUP_MIN,
   ) {}
 
-  /** The dock's box: dockview reports its size, and the group rects give away its origin. */
-  private containerRect(): ContainerRect {
-    let top = Number.POSITIVE_INFINITY
-    let left = Number.POSITIVE_INFINITY
-    for (const group of this.api.groups) {
-      const box = group.element?.getBoundingClientRect()
-      if (box === undefined) continue
-      top = Math.min(top, box.top)
-      left = Math.min(left, box.left)
-    }
-    return {
-      top: Number.isFinite(top) ? top : 0,
-      left: Number.isFinite(left) ? left : 0,
-      width: this.api.width,
-      height: this.api.height,
-    }
-  }
-
   isCollapsed(id: string): boolean {
     return this.collapsed.has(id)
   }
@@ -159,7 +163,7 @@ export class CollapseController {
   collapse(id: string): void {
     const group = this.api.getGroup(id)
     if (group === undefined || group.api.location.type !== 'grid' || this.collapsed.has(id)) return
-    const edge = edgeOf(group, this.containerRect())
+    const edge = edgeOf(group, containerRectOf(this.api))
     const { restore } = collapseGroup(group, edge, this.headerSize)
     const fallback =
       (edge === 'top' || edge === 'bottom' ? this.api.height : this.api.width) *

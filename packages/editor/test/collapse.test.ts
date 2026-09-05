@@ -3,6 +3,7 @@ import {
   COLLAPSED_VERTICAL_CLASS,
   CollapseController,
   collapseGroup,
+  containerRectOf,
   DEFAULT_GROUP_MIN,
   edgeOf,
   expandGroup,
@@ -136,6 +137,18 @@ describe('CollapseController', () => {
     expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(true)
     controller.toggle('side')
     expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(false)
+  })
+
+  it('locates the dock from its grid groups only', () => {
+    // A floating group can sit anywhere, including above the dock's own top edge; letting it
+    // set the origin would read the dock as starting higher than it does, and every edge with it.
+    const floating = group('f', { x: 0, y: 0, width: 300, height: 200 }, 'floating')
+    const editor = group('editor', { x: 12, y: 40, width: 1000, height: 420 })
+    const bottom = group('bottom', { x: 12, y: 460, width: 1000, height: 180 })
+    const rect = containerRectOf(api([floating, editor, bottom]))
+    expect(rect).toEqual({ top: 40, left: 12, width: 1000, height: 600 })
+    expect(edgeOf(editor, rect)).toBe('top')
+    expect(edgeOf(bottom, rect)).toBe('bottom')
   })
 
   it('gives the minimum back when it expands a group', () => {

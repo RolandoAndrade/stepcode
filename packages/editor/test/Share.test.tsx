@@ -5,7 +5,7 @@ import { Share } from '../src/dialogs/Share'
 import { decodeShare } from '../src/share/link'
 import { renderWithStore, storeWith } from './render'
 
-const encodes = vi.hoisted(() => ({ count: 0 }))
+const encodes = vi.hoisted(() => ({ count: 0, fail: false }))
 
 vi.mock('../src/share/link', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/share/link')>()
@@ -13,6 +13,7 @@ vi.mock('../src/share/link', async (importOriginal) => {
     ...actual,
     encodeShare: async (payload: Parameters<typeof actual.encodeShare>[0]) => {
       encodes.count += 1
+      if (encodes.fail) throw new DOMException('Failed to read response body', 'AbortError')
       return actual.encodeShare(payload)
     },
   }
@@ -20,6 +21,7 @@ vi.mock('../src/share/link', async (importOriginal) => {
 
 beforeEach(() => {
   encodes.count = 0
+  encodes.fail = false
 })
 
 describe('Share', () => {
@@ -61,6 +63,19 @@ describe('Share', () => {
     act(() => store.getState().openDialog('share'))
     await screen.findByRole('textbox', { name: 'Enlace' })
     await waitFor(() => expect(encodes.count).toBe(1))
+  })
+
+  it('leaves the link empty when the encode fails, without an unhandled rejection', async () => {
+    encodes.fail = true
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { store } = storeWith({ dialog: 'share' })
+    renderWithStore(<Share base="https://x.test/" />, store)
+    const field = (await screen.findByRole('textbox', { name: 'Enlace' })) as HTMLInputElement
+    await act(async () => {})
+    expect(field.value).toBe('')
+    expect(warn).toHaveBeenCalled()
+    expect(store.getState().dialog).toBe('share')
+    warn.mockRestore()
   })
 
   it('warns when the link is very long', async () => {

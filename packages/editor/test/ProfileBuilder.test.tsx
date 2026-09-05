@@ -89,6 +89,25 @@ describe('ProfileBuilder', () => {
     expect(write.value).toBe('Write, Print')
   })
 
+  it('shows a spelling list exactly as it is typed, comma by comma', async () => {
+    const { store } = storeWith({})
+    renderWithStore(<ProfileBuilder base="es" onDone={() => {}} />, store)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Nombre' }), { target: { value: 'Mio' } })
+    const write = screen.getByRole('textbox', { name: 'write' }) as HTMLInputElement
+    // A trailing comma is how a second spelling starts; it must survive the keystroke.
+    fireEvent.change(write, { target: { value: 'Escribir,' } })
+    expect(write.value).toBe('Escribir,')
+    fireEvent.change(write, { target: { value: 'Escribir, Mostrar' } })
+    expect(write.value).toBe('Escribir, Mostrar')
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Guardar perfil' }))
+    })
+    const saved = store.getState().customProfiles[0] as unknown as {
+      keywords?: Record<string, readonly string[]>
+    }
+    expect(saved.keywords?.write).toEqual(['Escribir', 'Mostrar'])
+  })
+
   it('diffs the spellings one by one, not as one joined string', async () => {
     const { store } = storeWith({})
     renderWithStore(<ProfileBuilder base="es" onDone={() => {}} />, store)
