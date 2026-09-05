@@ -24,6 +24,6 @@ describe('About', () => {
   it('shows the StepCode logo', () => {
     const { store } = storeWith({ dialog: 'about' })
     renderWithStore(<About />, store)
-    expect(document.body.querySelector('img')?.getAttribute('src')).toBe('/logo.png')
+    expect(document.body.querySelector('img')?.getAttribute('src')).toBe('/pwa-64x64.png')
   })
 })

@@ -131,7 +131,7 @@ export function Menu({ env }: { env: FileEnvironment }) {
     <Dropdown.Root modal={false}>
       <Dropdown.Trigger asChild>
         <IconButton label={strings.toolbar.menu} onClick={() => {}}>
-          <img src="/logo.png" alt="" width={20} height={20} />
+          <img src="/pwa-64x64.png" alt="" width={20} height={20} />
         </IconButton>
       </Dropdown.Trigger>
       <Dropdown.Portal>

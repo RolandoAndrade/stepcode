@@ -46,7 +46,7 @@ describe('Menu', () => {
       store,
     )
     const trigger = screen.getByRole('button', { name: 'Menú' })
-    expect(trigger.querySelector('img')?.getAttribute('src')).toBe('/logo.png')
+    expect(trigger.querySelector('img')?.getAttribute('src')).toBe('/pwa-64x64.png')
   })
 
   async function open(existing?: EditorStore) {

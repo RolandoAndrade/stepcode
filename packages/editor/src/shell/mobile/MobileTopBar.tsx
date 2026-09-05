@@ -81,7 +81,7 @@ function MenuSheet({ env }: { env: FileEnvironment }) {
           aria-label={strings.toolbar.menu}
           className="inline-flex h-11 w-11 items-center justify-center rounded text-fg"
         >
-          <img src="/logo.png" alt="" width={20} height={20} />
+          <img src="/pwa-64x64.png" alt="" width={20} height={20} />
         </button>
       </RadixDialog.Trigger>
       <RadixDialog.Portal>
