@@ -159,7 +159,7 @@ other panels; it accepts panels docked beside it. Dragging the editor tab does n
 │  ├────────────────────────────────────┤
 │▌▪│ Consola │ Problemas │ Variables ⌄  │  ← bottom group, hidden when collapsed
 └──┴────────────────────────────────────┘
-   ↑ sidebar, 40 px
+   ↑ sidebar, 40 px (a right strip appears when a panel is docked there)
 ```
 
 One bottom group with the three panels as tabs, collapsed. Its expanded height is 30 % of the
@@ -176,18 +176,26 @@ strip**.
   shell remembers no sizes; its JSON carries the hidden state (`visible: false`) across a reload.
 - Floating and popped-out groups do not collapse; their chevron is absent. (Dockview would hide a
   floating group's overlay and only warn for a popped-out one — the shell refuses both.)
+- A hidden group is a zero-sized box, not a removed one, so it is also made `inert`: its tabs,
+  chevron and panel actions leave the tab order and the accessibility tree with it.
 - Hiding and showing are animated: the shell marks the dock root `.sc-animating` just before the
   call, and `dock.css` transitions the inline `top`/`left`/`width`/`height` dockview writes on
-  `.dv-view` and `.dv-sash` for 180 ms. The mark is cleared by the first `transitionend` on the
-  root or by a 250 ms fallback, so it is never on while the user drags a sash, and
-  `prefers-reduced-motion: reduce` turns it off.
+  `.dv-view` and `.dv-sash` for 180 ms. The mark is cleared by the first `transitionend` *of a
+  grid view* on the root or by a 250 ms fallback, so it is never on while the user drags a sash,
+  and `prefers-reduced-motion: reduce` turns it off. Building, resetting or restoring a layout is
+  not animated: it lands on its geometry in one pass.
+- While the mark is on, the shell forces a dockview relayout every frame, and once more after it
+  comes off. `defaultRenderer="always"` positions each panel's content in an overlay measured
+  from its group's rect one frame after a size change; mid-transition that rect is the old one,
+  so without the per-frame pass the panels keep their old size and an expanded group renders
+  blank behind the editor's overlay.
 
 The set of collapsed group ids is stored next to dockview's JSON (§7). It stays the shell's own
 truth rather than being read back from `api.isVisible`, because `fromJSON` restores a hidden view
 without firing the visibility event that field is fed from.
 
-**Sidebar.** A 40 px strip on the left of the layout area, full height between toolbar and status
-bar, `--sc-surface` with a `--sc-border` right edge. Pinned to its bottom, one icon button per
+**Sidebar.** 40 px strips down the sides of the layout area, full height between toolbar and
+status bar, `--sc-surface` with a `--sc-border` edge against the dock. One icon button per
 non-editor panel — Consola, Problemas, Variables — with the panel name as tooltip and accessible
 name. Given the panel's group, a click:
 
@@ -197,10 +205,28 @@ name. Given the panel's group, a click:
 | visible | the tab in front | hide the group (counts as a manual collapse, §3.4) |
 | visible | another tab | activate that panel |
 
+A floating or popped-out group never collapses, so for one of those the click only brings the
+panel forward.
+
 The button of a panel that is visible *and* in front of its group is accented (`--sc-accent`, a
 2 px accent bar on its left edge, `aria-pressed="true"`); every other button is muted. The
 Problemas button carries a small `--sc-error` badge with the error count while `diagnostics` holds
 errors, and nothing when it holds none.
+
+**Zones.** A button lives on the side its panel is docked on, derived from the group's box against
+the editor group's: to the right of the editor is the right strip; entirely above it, the top
+cluster of the left strip; anything else (below, or to the left) the bottom cluster, which is
+where the default layout puts all three. The right strip only exists while something is in it. A
+group with no box — collapsed, not laid out yet, floating or popped out — keeps the zone its
+panel last had, so hiding a panel never moves its icon.
+
+**Drag to move.** The icons are draggable (`application/x-stepcode-panel`); while a drag is in
+flight all three zones offer themselves in `--sc-accent-soft`, the right strip appearing for the
+duration. Dropping docks the panel on that edge: the whole group travels when the panel is alone
+in it (`group.api.moveTo({ position })`), otherwise the panel alone moves into a group created at
+that edge (`api.addGroup({ direction })` then `panel.api.moveTo({ group })`). A hidden group is
+shown first — there is nothing to dock otherwise — and the zone then follows from the new
+geometry, so the icon lands on its new strip by itself.
 
 ### 3.4 Auto-expand
 
