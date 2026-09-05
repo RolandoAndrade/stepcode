@@ -136,6 +136,37 @@ export interface Strings {
     readonly note: string
     readonly tooLong: string
     readonly unknownProfile: string
+    readonly tabs: {
+      readonly link: string
+      readonly embed: string
+    }
+    readonly readOnly: string
+    readonly autorun: string
+    readonly debug: string
+    readonly showProfile: string
+    readonly theme: string
+    readonly height: string
+    readonly copyCode: string
+    readonly copyUrl: string
+    readonly preview: string
+    readonly codeCopied: string
+  }
+  readonly embed: {
+    /** The accessible name of the embedded shell as a whole. */
+    readonly title: string
+    readonly readOnly: string
+    readonly openInStepCode: string
+    readonly loadFailed: (reason: string) => string
+  }
+  /** Why a program could not be loaded from the URL, keyed by `LoadReason`. */
+  readonly src: {
+    readonly refused: string
+    readonly status: string
+    readonly type: string
+    readonly size: string
+    readonly network: string
+    readonly example: string
+    readonly hash: string
   }
   readonly about: {
     readonly title: string
@@ -373,6 +404,32 @@ const es: Strings = {
     note: 'El programa viaja dentro del enlace; no se guarda en ningún servidor.',
     tooLong: 'El enlace es muy largo; algunas aplicaciones lo recortan.',
     unknownProfile: 'El enlace usa un perfil que no existe aquí; se abrió con Español.',
+    tabs: { link: 'Enlace', embed: 'Insertar' },
+    readOnly: 'Solo lectura',
+    autorun: 'Ejecutar al abrir',
+    debug: 'Depuración',
+    showProfile: 'Mostrar perfil',
+    theme: 'Tema',
+    height: 'Alto (px)',
+    copyCode: 'Copiar código',
+    copyUrl: 'Copiar URL',
+    preview: 'Vista previa',
+    codeCopied: 'Código copiado',
+  },
+  embed: {
+    title: 'Editor incrustado',
+    readOnly: 'Solo lectura',
+    openInStepCode: 'Abrir en StepCode',
+    loadFailed: (reason) => `No se pudo cargar el programa: ${reason}`,
+  },
+  src: {
+    refused: 'el enlace no es de GitHub ni de Gist',
+    status: 'el servidor respondió con un error',
+    type: 'el archivo no es de texto',
+    size: 'el archivo es demasiado grande',
+    network: 'no se pudo conectar',
+    example: 'no existe ese ejemplo',
+    hash: 'el enlace está dañado',
   },
   about: {
     title: 'Acerca de',
@@ -600,6 +657,32 @@ const en: Strings = {
     note: 'The program travels inside the link; nothing is stored on a server.',
     tooLong: 'The link is very long; some apps truncate it.',
     unknownProfile: 'The link uses a profile that does not exist here; opened with Español.',
+    tabs: { link: 'Link', embed: 'Embed' },
+    readOnly: 'Read only',
+    autorun: 'Run on open',
+    debug: 'Debugging',
+    showProfile: 'Show profile',
+    theme: 'Theme',
+    height: 'Height (px)',
+    copyCode: 'Copy code',
+    copyUrl: 'Copy URL',
+    preview: 'Preview',
+    codeCopied: 'Code copied',
+  },
+  embed: {
+    title: 'Embedded editor',
+    readOnly: 'Read only',
+    openInStepCode: 'Open in StepCode',
+    loadFailed: (reason) => `The program could not be loaded: ${reason}`,
+  },
+  src: {
+    refused: 'the link is not from GitHub or Gist',
+    status: 'the server answered with an error',
+    type: 'the file is not text',
+    size: 'the file is too large',
+    network: 'could not connect',
+    example: 'no such example',
+    hash: 'the link is damaged',
   },
   about: {
     title: 'About',
