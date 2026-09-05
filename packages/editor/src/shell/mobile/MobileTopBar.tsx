@@ -91,8 +91,8 @@ function MenuSheet({ env }: { env: FileEnvironment }) {
         </button>
       </RadixDialog.Trigger>
       <RadixDialog.Portal>
-        <RadixDialog.Overlay className="fixed inset-0 z-40 bg-overlay" />
-        <RadixDialog.Content className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col overflow-y-auto bg-surface p-1 text-fg shadow-panel">
+        <RadixDialog.Overlay className="fixed inset-0 z-modal bg-overlay" />
+        <RadixDialog.Content className="fixed inset-y-0 left-0 z-modal flex w-72 flex-col overflow-y-auto bg-surface p-1 text-fg shadow-panel">
           <RadixDialog.Title className="px-3 py-2 font-semibold text-sm">
             {strings.toolbar.menu}
           </RadixDialog.Title>
@@ -131,7 +131,7 @@ function MoreActions() {
         <Popover.Content
           align="end"
           sideOffset={4}
-          className="z-50 flex items-center gap-1 rounded-md bg-surface p-1 text-fg shadow-panel"
+          className="z-modal flex items-center gap-1 rounded-md bg-surface p-1 text-fg shadow-panel"
         >
           <IconButton
             label={t.debug}

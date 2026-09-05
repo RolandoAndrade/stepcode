@@ -20,8 +20,8 @@ export function ConfirmSave({ env }: { env: FileEnvironment }) {
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && store.getState().cancelReplace()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-overlay" />
-        <Dialog.Content className="fixed top-1/2 left-1/2 z-50 w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-surface p-4 text-fg shadow-panel">
+        <Dialog.Overlay className="fixed inset-0 z-modal bg-overlay" />
+        <Dialog.Content className="fixed top-1/2 left-1/2 z-modal w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-surface p-4 text-fg shadow-panel">
           <Dialog.Title className="text-base font-semibold">
             {strings.confirmSave.title(name)}
           </Dialog.Title>
