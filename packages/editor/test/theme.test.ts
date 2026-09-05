@@ -31,7 +31,7 @@ describe('tokens.css (4b)', () => {
 
   // Dockview's own stylesheet stacks sashes and overlays up to 9999, so every overlay of ours
   // that must cover the layout sits above that, through one token.
-  it('defines the modal stacking token above dockview\'s own', () => {
+  it("defines the modal stacking token above dockview's own", () => {
     const match = /--sc-z-modal:\s*(\d+);/.exec(tokensCss)
     expect(match).not.toBeNull()
     expect(Number(match?.[1])).toBeGreaterThan(9999)
