@@ -1,18 +1,18 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { profiles } from '@stepcode/profiles'
 import { compile } from 'stepcode'
 import { describe, expect, it } from 'vitest'
 import { EXAMPLES, exampleSource, findExample, TOPICS } from '../src/examples/index'
 
+const topicsJsonPath = fileURLToPath(new URL('../examples/topics.json', import.meta.url))
+const topicsJson: readonly string[] = JSON.parse(readFileSync(topicsJsonPath, 'utf8'))
+
 describe('examples', () => {
   it('lists every topic in order and at least two examples per topic', () => {
-    expect(TOPICS).toEqual([
-      'primeros-pasos',
-      'condicionales',
-      'ciclos',
-      'arreglos',
-      'funciones',
-      'un-poco-mas',
-    ])
+    // TOPICS is a literal in index.ts (browser code cannot read files at runtime); this
+    // compares it against topics.json, the single source of truth, so drift fails here.
+    expect(TOPICS).toEqual(topicsJson)
     for (const topic of TOPICS) {
       expect(EXAMPLES.filter((example) => example.topic === topic).length).toBeGreaterThanOrEqual(2)
     }
