@@ -23,7 +23,7 @@ export function Toggle({
         className={`relative h-5 w-9 rounded-full transition-colors duration-150 ${checked ? 'bg-accent' : 'bg-border'}`}
       >
         <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-surface transition-transform duration-150 ${checked ? 'translate-x-4' : 'translate-x-0.5'}`}
+          className={`absolute top-0.5 left-0 h-4 w-4 rounded-full bg-surface transition-transform duration-150 ${checked ? 'translate-x-4' : 'translate-x-0.5'}`}
         />
       </button>
     </div>

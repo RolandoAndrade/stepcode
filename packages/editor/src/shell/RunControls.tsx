@@ -118,29 +118,17 @@ export function RunControls({ compact = false }: { compact?: boolean }) {
   }
   return (
     <div className="flex items-center gap-1" data-state={state} data-editable={canEdit(state)}>
-      {ORDER.map((slot) => {
-        if (shown.has(slot))
-          return (
-            <IconButton
-              key={slot}
-              label={buttons[slot].label}
-              shortcut={buttons[slot].shortcut}
-              onClick={buttons[slot].onClick}
-              {...(buttons[slot].tone === undefined ? {} : { tone: buttons[slot].tone })}
-            >
-              {buttons[slot].icon}
-            </IconButton>
-          )
-        // The desktop toolbar keeps a zero-width placeholder so the buttons stay put across run
-        // states; on the phone bar those placeholders would each eat a flex gap, so drop them.
-        return compact ? null : (
-          <span
-            key={slot}
-            aria-hidden="true"
-            className="inline-block w-0 transition-[width] duration-150"
-          />
-        )
-      })}
+      {ORDER.filter((slot) => shown.has(slot)).map((slot) => (
+        <IconButton
+          key={slot}
+          label={buttons[slot].label}
+          shortcut={buttons[slot].shortcut}
+          onClick={buttons[slot].onClick}
+          {...(buttons[slot].tone === undefined ? {} : { tone: buttons[slot].tone })}
+        >
+          {buttons[slot].icon}
+        </IconButton>
+      ))}
     </div>
   )
 }

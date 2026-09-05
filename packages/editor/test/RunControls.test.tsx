@@ -60,7 +60,7 @@ describe('RunControls', () => {
     expect(container.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(0)
   })
 
-  it('keeps the placeholders on the desktop toolbar', () => {
+  it('renders no placeholder spans on the desktop toolbar either, so no gap is left for hidden slots', () => {
     const { store } = storeWith({ state: 'ready' })
     const { container } = renderWithStore(
       <TooltipProvider>
@@ -68,7 +68,7 @@ describe('RunControls', () => {
       </TooltipProvider>,
       store,
     )
-    expect(container.querySelectorAll('span[aria-hidden="true"]').length).toBeGreaterThan(0)
+    expect(container.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(0)
   })
 
   it('Depurar starts in step mode', () => {
