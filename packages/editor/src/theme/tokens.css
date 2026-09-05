@@ -3,17 +3,15 @@
  * Tailwind reads these through `@theme inline` in index.css; CodeMirror through `var(--sc-…)`.
  * `--sc-line` and `--sc-current-line` are overlays and stay rgba; everything else is hex.
  */
-/*
- * Not a color and not theme-dependent, so it stays out of the two token blocks below: dockview's
- * stylesheet stacks sashes and drop overlays up to 9999, and anything of ours that must cover the
- * whole layout — dialogs, menus, tooltips, toasts — goes above that. Mapped to Tailwind's
- * `z-modal` in index.css.
- */
-html {
-  --sc-z-modal: 10000;
-}
-
 :root {
+  /*
+   * Not a color: dockview's stylesheet stacks sashes and drop overlays up to 9999, and anything
+   * of ours that must cover the whole layout — dialogs, menus, tooltips, toasts — goes above
+   * that. Mapped to Tailwind's `z-modal` in index.css. `--sc-z-*` is the prefix `parseTokens`
+   * skips, so it never joins the color model.
+   */
+  --sc-z-modal: 10000;
+
   --sc-bg: #fafafa;
   --sc-surface: #ffffff;
   --sc-surface-raised: #f0f0f1;
@@ -44,6 +42,18 @@ html {
   --sc-overlay: rgba(56, 58, 66, 0.4);
   --sc-shadow: rgba(56, 58, 66, 0.2);
   --sc-changed: #fdf3c7;
+
+  /*
+   * Filled bands (the running status bar, the sidebar's error badge) carry 10–12 px text, which
+   * needs 4.5:1 — `--sc-accent` behind `--sc-bg` reaches only 3.9:1. These are the same hues,
+   * darkened until white sits on them safely; they are never used as foreground colors.
+   */
+  --sc-accent-strong: #2f62d8;
+  --sc-warning-strong: #8a5d00;
+  --sc-error-strong: #c0342a;
+  --sc-on-accent: #ffffff;
+  --sc-on-warning: #ffffff;
+  --sc-on-error: #ffffff;
 }
 
 :root[data-theme="dark"] {
@@ -76,4 +86,12 @@ html {
   --sc-overlay: rgba(24, 26, 31, 0.6);
   --sc-shadow: rgba(0, 0, 0, 0.45);
   --sc-changed: #4a4321;
+
+  /* Dark keeps the hues as they are and puts the surface color on top of them instead. */
+  --sc-accent-strong: #61afef;
+  --sc-warning-strong: #e5c07b;
+  --sc-error-strong: #e06c75;
+  --sc-on-accent: #21252b;
+  --sc-on-warning: #21252b;
+  --sc-on-error: #21252b;
 }

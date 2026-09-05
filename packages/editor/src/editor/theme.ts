@@ -47,8 +47,9 @@ export const EDITOR_THEME_SPEC: Readonly<Record<string, EditorThemeSpec>> = {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // `@codemirror/lint` paints its markers with `content: url(<svg fill="#f87">)`, which makes the
-  // element replaced: a background color would never show and `::after` would never be generated.
+  // `@codemirror/lint` paints its markers with `content: url(<svg>)` in its own literal colors,
+  // which makes the element replaced: a background color would never show and `::after` would
+  // never be generated.
   // `content: none` takes the image away and hands the box back, and the extra `.cm-gutter-lint`
   // in the selector outranks the vendor rules instead of relying on stylesheet order.
   '.cm-gutter-lint .cm-lint-marker': {

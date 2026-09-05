@@ -60,7 +60,7 @@ const ITEM =
 
 /** Muted on the ordinary bar; on a colored band the band's own foreground already reads. */
 const QUIET_ITEM = 'text-muted hover:bg-surface-raised hover:text-fg'
-const BAND_ITEM = 'hover:bg-bg/20'
+const BAND_ITEM = 'hover:bg-surface/25'
 
 /**
  * Spec §5: the bar itself reports the run state. A live program tints it accent, a paused one
@@ -168,7 +168,11 @@ export function StatusBar({
   const tone = barTone(state)
   const item = `${ITEM} ${tone === null ? QUIET_ITEM : BAND_ITEM}`
   const band =
-    tone === null ? 'bg-surface' : tone === 'accent' ? 'bg-accent text-bg' : 'bg-warning text-bg'
+    tone === null
+      ? 'bg-surface'
+      : tone === 'accent'
+        ? 'bg-accent-strong text-on-accent'
+        : 'bg-warning-strong text-on-warning'
 
   return (
     <footer

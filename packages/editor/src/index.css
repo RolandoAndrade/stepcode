@@ -33,6 +33,12 @@
   --color-success: var(--sc-success);
   --color-overlay: var(--sc-overlay);
   --color-changed: var(--sc-changed);
+  --color-accent-strong: var(--sc-accent-strong);
+  --color-warning-strong: var(--sc-warning-strong);
+  --color-error-strong: var(--sc-error-strong);
+  --color-on-accent: var(--sc-on-accent);
+  --color-on-warning: var(--sc-on-warning);
+  --color-on-error: var(--sc-on-error);
   --shadow-panel: 0 8px 24px var(--sc-shadow);
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;

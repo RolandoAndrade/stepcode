@@ -127,9 +127,9 @@ describe('gutters', () => {
   })
 
   // The whole point of the rules above: `@codemirror/lint` paints its markers with
-  // `content: url(<svg fill="#f87">)`, which is a replaced element — a background color would
-  // never show and `::after` would never be generated. Only a mounted view proves the override
-  // wins, so this test dispatches a real diagnostic and reads the cascade back.
+  // `content: url(<svg>)` in its own literal colors, which is a replaced element — a background
+  // color would never show and `::after` would never be generated. Only a mounted view proves
+  // the override wins, so this test dispatches a real diagnostic and reads the cascade back.
   it('replaces the vendor lint SVG with a token-colored dot', () => {
     const { view } = viewFor()
     view.dispatch(

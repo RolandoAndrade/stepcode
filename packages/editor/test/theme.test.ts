@@ -22,7 +22,7 @@ const NEW_TOKENS = ['accent-soft', 'overlay', 'shadow', 'changed'] as const
 
 describe('tokens.css (4b)', () => {
   it('defines the four shell tokens in both themes', () => {
-    expect(TOKEN_NAMES).toHaveLength(28)
+    expect(TOKEN_NAMES).toHaveLength(34)
     for (const theme of THEMES) {
       for (const name of NEW_TOKENS) expect(tokens[theme][name], `${theme} ${name}`).toBeDefined()
       expect(Object.keys(tokens[theme]).sort()).toEqual([...TOKEN_NAMES].sort())
@@ -68,6 +68,18 @@ describe('tokens.css (4b)', () => {
       }
       for (const name of ['error', 'warning', 'success', 'accent'] as const) {
         expect(contrastRatio(t[name] ?? '', surface), `${theme} ${name}`).toBeGreaterThanOrEqual(3)
+      }
+      // The filled bands the shell composes: 12 px text on a solid fill is body text, so the
+      // pair has to clear 4.5:1 on its own — `--sc-accent` behind `--sc-bg` does not.
+      for (const [fill, text] of [
+        ['accent-strong', 'on-accent'],
+        ['warning-strong', 'on-warning'],
+        ['error-strong', 'on-error'],
+      ] as const) {
+        expect(
+          contrastRatio(t[fill] ?? '', t[text] ?? ''),
+          `${theme} ${text} on ${fill}`,
+        ).toBeGreaterThanOrEqual(4.5)
       }
     }
   })

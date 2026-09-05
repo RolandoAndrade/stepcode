@@ -1,6 +1,9 @@
 import type { Theme, ThemePreference } from './types'
 
-/** Every `--sc-*` custom property, without the prefix. Both blocks of tokens.css define all. */
+/**
+ * Every `--sc-*` color custom property, without the prefix. Both blocks of tokens.css define all.
+ * Non-color tokens live under a reserved prefix (`--sc-z-*`) and stay out of this list.
+ */
 export const TOKEN_NAMES = [
   'bg',
   'surface',
@@ -30,6 +33,12 @@ export const TOKEN_NAMES = [
   'overlay',
   'shadow',
   'changed',
+  'accent-strong',
+  'warning-strong',
+  'error-strong',
+  'on-accent',
+  'on-warning',
+  'on-error',
 ] as const
 
 export type TokenName = (typeof TOKEN_NAMES)[number]
@@ -58,7 +67,9 @@ export function parseTokens(css: string): Record<Theme, Record<string, string>> 
     for (const declaration of (block[2] ?? '').matchAll(DECLARATION)) {
       const name = declaration[1]
       const value = declaration[2]
-      if (name !== undefined && value !== undefined) out[theme][name] = value.trim()
+      // `--sc-z-*` is a stacking level, not a color; the color model would only mis-measure it.
+      if (name === undefined || value === undefined || name.startsWith('z-')) continue
+      out[theme][name] = value.trim()
     }
   }
   return out

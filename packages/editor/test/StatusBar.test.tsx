@@ -70,14 +70,17 @@ describe('StatusBar', () => {
       if (found === null) throw new Error('no status bar')
       return found
     }
-    expect(footer().className).not.toContain('bg-accent')
-    expect(footer().className).not.toContain('bg-warning')
+    expect(footer().className).not.toContain('bg-accent-strong')
+    expect(footer().className).not.toContain('bg-warning-strong')
     for (const state of ['running', 'input', 'waiting'] as const) {
       act(() => store.setState({ state }))
-      expect(footer().className, state).toContain('bg-accent')
+      // The -strong pair, not bg-accent: 12 px text on a plain accent fill misses 4.5:1.
+      expect(footer().className, state).toContain('bg-accent-strong')
+      expect(footer().className, state).toContain('text-on-accent')
     }
     act(() => store.setState({ state: 'paused' }))
-    expect(footer().className).toContain('bg-warning')
+    expect(footer().className).toContain('bg-warning-strong')
+    expect(footer().className).toContain('text-on-warning')
     act(() => store.setState({ state: 'done' }))
     expect(footer().className).toContain('bg-surface')
   })

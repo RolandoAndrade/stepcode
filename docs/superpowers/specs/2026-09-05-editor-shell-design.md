@@ -71,6 +71,13 @@ The toolbar and status bar use `--sc-surface`; the layout area uses `--sc-bg`; g
 dockview use `--sc-surface` for headers and `--sc-bg` for bodies. A 1 px hairline in
 `--sc-border` separates bands. No other borders; shadows only on floating groups and dialogs.
 
+**Filled bands.** A solid fill under 10–12 px text has to clear 4.5:1, and `--sc-accent` behind
+`--sc-bg` reaches only 3.9:1 in the light theme. Three pairs exist for this and nothing else:
+`--sc-accent-strong` / `--sc-on-accent` (the running status bar), `--sc-warning-strong` /
+`--sc-on-warning` (paused), `--sc-error-strong` / `--sc-on-error` (the sidebar's error badge).
+Light darkens the hue and puts white on it; dark keeps the hue and puts `--sc-surface` on it. A
+contrast test asserts every pair.
+
 **Stacking.** Dockview's stylesheet uses z-index up to 9999 for sashes and drop overlays, so a
 Tailwind `z-50` overlay of ours paints *under* a resize sash. One token settles it:
 `--sc-z-modal: 10000` in tokens.css, mapped in `@theme inline` as `--z-index-modal`, and used as
@@ -327,8 +334,9 @@ menu; Radix handles its own). `⌘` replaces Ctrl on macOS.
 | right | `Ln 12, Col 4` | focuses the editor |
 | right | profile name with a chevron | profile popover: the same list as Perfil ▸ |
 
-The bar itself reports the run state: `running`, `input` and `waiting` tint it `--sc-accent` with
-`--sc-bg` text, `paused` tints it `--sc-warning` (the debugger colour), and every other state
+The bar itself reports the run state: `running`, `input` and `waiting` tint it
+`--sc-accent-strong` with `--sc-on-accent` text, `paused` tints it `--sc-warning-strong` with
+`--sc-on-warning` (the debugger colour), and every other state
 leaves it on `--sc-surface`, with a 150 ms colour transition; on a tinted band the problem counts
 drop their error/warning colours, which the band already carries. The run cluster colours its
 actions too: Ejecutar, Depurar and Continuar in `--sc-success`, Detener in `--sc-error`.
