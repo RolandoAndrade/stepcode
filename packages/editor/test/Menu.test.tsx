@@ -36,6 +36,19 @@ describe('menuModel', () => {
 })
 
 describe('Menu', () => {
+  it('shows the StepCode logo on the trigger', () => {
+    cleanup()
+    const { store } = storeWith({})
+    renderWithStore(
+      <TooltipProvider>
+        <Menu env={env} />
+      </TooltipProvider>,
+      store,
+    )
+    const trigger = screen.getByRole('button', { name: 'Menú' })
+    expect(trigger.querySelector('img')?.getAttribute('src')).toBe('/logo.png')
+  })
+
   async function open(existing?: EditorStore) {
     cleanup()
     const store = existing ?? storeWith({}).store

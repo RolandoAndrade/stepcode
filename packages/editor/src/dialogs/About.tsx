@@ -18,7 +18,7 @@ export function About({
   return (
     <Dialog name="about" title={strings.about.title}>
       <div className="flex flex-col items-center gap-2 text-center">
-        <img src="/pwa-192x192.png" alt="" width={48} height={48} />
+        <img src="/logo.png" alt="" width={48} height={48} />
         <div className="font-semibold text-sm">{strings.app.title}</div>
         <p className="text-muted text-sm">{strings.about.tagline}</p>
         <p className="text-muted text-xs">{strings.about.version(APP_VERSION)}</p>

@@ -4,15 +4,7 @@ import { useMemo, useState } from 'react'
 import type { FileEnvironment } from '../../files/actions'
 import { useEditorStore, useEditorStoreApi } from '../../store/context'
 import { hasErrors, stringsOf } from '../../store/store'
-import {
-  ArrowDownToDot,
-  ArrowUpFromDot,
-  Bug,
-  Check,
-  Ellipsis,
-  Hexagon,
-  StepForward,
-} from '../../ui/icons'
+import { ArrowDownToDot, ArrowUpFromDot, Bug, Check, Ellipsis, StepForward } from '../../ui/icons'
 import { isMac, keyLabel } from '../../ui/keys'
 import { IconButton } from '../../ui/Tooltip'
 import { Filename } from '../Filename'
@@ -89,7 +81,7 @@ function MenuSheet({ env }: { env: FileEnvironment }) {
           aria-label={strings.toolbar.menu}
           className="inline-flex h-11 w-11 items-center justify-center rounded text-fg"
         >
-          <Hexagon size={20} />
+          <img src="/logo.png" alt="" width={20} height={20} />
         </button>
       </RadixDialog.Trigger>
       <RadixDialog.Portal>

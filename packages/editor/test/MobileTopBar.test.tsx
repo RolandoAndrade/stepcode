@@ -8,6 +8,18 @@ import { renderWithStore, storeWith } from './render'
 const env = { pickers: {}, download: vi.fn(), pickFallback: async () => null }
 
 describe('MobileTopBar', () => {
+  it('shows the StepCode logo on the menu trigger', () => {
+    const { store } = storeWith({})
+    renderWithStore(
+      <TooltipProvider>
+        <MobileTopBar env={env} />
+      </TooltipProvider>,
+      store,
+    )
+    const trigger = screen.getByRole('button', { name: 'Menú' })
+    expect(trigger.querySelector('img')?.getAttribute('src')).toBe('/logo.png')
+  })
+
   it('marks the active profile in the menu sheet', () => {
     const { store } = storeWith({ profileId: 'pseint' })
     renderWithStore(

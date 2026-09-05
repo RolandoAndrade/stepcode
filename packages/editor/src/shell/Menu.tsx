@@ -5,7 +5,7 @@ import { useEditorStore, useEditorStoreApi } from '../store/context'
 import { PANEL_IDS } from '../store/layout'
 import { type EditorStore, stringsOf } from '../store/store'
 import type { Strings } from '../strings'
-import { Check, Hexagon } from '../ui/icons'
+import { Check } from '../ui/icons'
 import { isMac, keyLabel } from '../ui/keys'
 import { IconButton } from '../ui/Tooltip'
 import { profileItems } from './StatusBar'
@@ -131,7 +131,7 @@ export function Menu({ env }: { env: FileEnvironment }) {
     <Dropdown.Root modal={false}>
       <Dropdown.Trigger asChild>
         <IconButton label={strings.toolbar.menu} onClick={() => {}}>
-          <Hexagon size={20} />
+          <img src="/logo.png" alt="" width={20} height={20} />
         </IconButton>
       </Dropdown.Trigger>
       <Dropdown.Portal>
