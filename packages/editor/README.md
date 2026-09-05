@@ -11,6 +11,86 @@ pnpm --filter @stepcode/editor build      # production bundle in packages/editor
 pnpm vitest run --project @stepcode/editor
 ```
 
+## Programs by URL and embedding
+
+Both entries — the editor at `/` and the embed at `/embed` — read the same URL contract. The
+program comes from the first of these that yields one, and a failure falls through to the next:
+
+1. `#code=<base64url(deflate-raw)>&profile=<id>&name=<name>` — a share link, made by Compartir.
+2. `?example=<topic>/<slug>` — a bundled example, transposed to the active profile.
+3. `?src=<url>` — a text file from GitHub or a Gist.
+
+`?src=` accepts `https://github.com/<user>/<repo>/blob/<ref>/<path>`,
+`https://gist.github.com/<user>/<id>`, and the two raw hosts
+(`raw.githubusercontent.com`, `gist.githubusercontent.com`); a browsing URL is rewritten to its
+raw form, so you can paste what you are looking at. Anything else is refused. The file must be
+text and under 5 MB.
+
+### Flags
+
+| Flag | Values | `/` | `/embed` |
+|---|---|---|---|
+| `profile` | `es`, `en`, `pseint` | switches the profile for the session | same |
+| `lang` | `es`, `en` | UI language for the session | same |
+| `autorun` | flag | runs the program after it loads | same |
+| `title` | text | ignored | the top-bar title |
+| `readonly` | flag | ignored | locks the source (input still accepts typing) |
+| `showProfile` | flag | ignored | shows the profile name |
+| `debug` | flag | ignored | adds Variables and the stepping buttons |
+| `theme` | `light`, `dark`, `system` | ignored | the frame's theme (default `system`) |
+
+A flag is on when it is present with no value, `1`, or `true`; anything else is off. A `#code=`
+hash carries its own profile and beats `?profile=`.
+
+### Embedding
+
+Compartir → Insertar builds the snippet for you, with a live preview:
+
+```html
+<iframe src="https://stepcode.example/embed?readonly&autorun#code=…&profile=es&name=tarea.stepcode"
+        width="100%" height="480" style="border:0" loading="lazy" title="tarea"></iframe>
+```
+
+Width is always `100%`; you choose the height. The frame stores nothing — no `localStorage`, no
+service worker — and it never resizes itself, so give it the height your page needs.
+
+### Talking to the frame
+
+The frame posts to `window.parent` with `'*'` and listens for messages from any origin. Every
+message is a plain object with a `type`; add an `id` and the reply echoes it.
+
+Send:
+
+| Type | Payload | Reply |
+|---|---|---|
+| `setSource` | `{ source }` | `source` |
+| `getSource` | — | `source { source }` |
+| `run`, `debug`, `continue`, `stepOver`, `stepInto`, `stepOut`, `pause`, `stop` | — | `state`, or `error` when the current state does not offer it |
+| `input` | `{ value }` | `state`, or `error` when nothing is pending |
+| `setProfile` | `{ profileId }` or `{ profile }` | `profile { profileId }` |
+| `setTheme` | `{ theme }` | `options { theme }` |
+
+Receive:
+
+| Type | When | Payload |
+|---|---|---|
+| `ready` | once, after the program loads | `{ protocol: 1, version }` |
+| `source` | on edits, debounced 300 ms | `{ source }` |
+| `diagnostics` | when the problems change | `{ items: [{ severity, code, message, line, column }] }` |
+| `state` | on every run-state change | `{ state, line }` |
+| `paused` | on entering `paused` | `{ line, variables: [{ name, type, value }] }` |
+| `inputRequest` | when the program asks for input | `{ prompt }` |
+| `output` | per console line | `{ text }` |
+| `done` | when a run ends | `{ state: 'done' \| 'error' \| 'stopped' }` |
+| `error` | on a runtime error | `{ message, line }` |
+
+```js
+const frame = document.querySelector('iframe').contentWindow
+addEventListener('message', (event) => {
+  if (event.data?.type === 'ready') frame.postMessage({ type: 'run' }, '*')
+})
+```
+
 ## How it is put together
 
 - `src/runtime/` — the Web Worker owns execution. `driver.ts` is a state machine over the
