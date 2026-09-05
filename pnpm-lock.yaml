@@ -235,6 +235,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.11(@types/node@24.13.3)(happy-dom@20.13.2)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.0))
+      workbox-window:
+        specifier: 7.4.1
+        version: 7.4.1
       wrangler:
         specifier: 4.129.0
         version: 4.129.0
