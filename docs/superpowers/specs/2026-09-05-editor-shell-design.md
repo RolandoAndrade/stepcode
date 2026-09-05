@@ -297,8 +297,13 @@ Ajustes…                 Ctrl+,
 Acerca de
 ```
 
-Perfil items show a check on the active one. Vista items focus and expand (§3.4). Ctrl+N is
-intercepted only while the editor has focus; browsers reserve it otherwise.
+Every entry carries an icon in a fixed 16 px slot at its left, so labels line up whether or not
+an entry has one: FilePlus, FolderOpen, Save, FilePen, BookOpen, Share2, Languages (Perfil),
+PanelBottom (Vista), Settings, Info; Vista's panel items use `PANEL_ICONS`, and Restablecer
+diseño uses RotateCcw. Perfil items show a check on the active one in that same slot and carry no
+icon of their own. The phone sheet renders the same model, icons included. Vista items focus and
+expand (§3.4). Ctrl+N is intercepted only while the editor has focus; browsers reserve it
+otherwise.
 
 ### 4.5 Shortcuts
 

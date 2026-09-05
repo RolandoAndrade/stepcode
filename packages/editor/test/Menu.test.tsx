@@ -1,9 +1,11 @@
 // @vitest-environment happy-dom
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { Menu, menuModel } from '../src/shell/Menu'
+import { Menu, type MenuEntry, menuModel } from '../src/shell/Menu'
 import type { EditorStore } from '../src/store/store'
 import { stringsFor } from '../src/strings'
+import { FilePlus, PanelBottom, RotateCcw, Settings } from '../src/ui/icons'
+import { PANEL_ICONS } from '../src/ui/panelIcons'
 import { TooltipProvider } from '../src/ui/Tooltip'
 import { renderWithStore, storeWith } from './render'
 
@@ -32,6 +34,25 @@ describe('menuModel', () => {
     expect(
       view?.kind === 'submenu' && view.items.map((i) => (i.kind === 'item' ? i.label : '—')),
     ).toEqual(['Consola', 'Problemas', 'Variables', '—', 'Restablecer diseño'])
+  })
+
+  it('carries an icon per entry, the panel icons under Vista, and none per profile', () => {
+    const { store } = storeWith({})
+    const model = menuModel(store, env, stringsFor('es'))
+    const iconOf = (entries: MenuEntry[], label: string): unknown => {
+      const found = entries.find((e) => e.kind !== 'separator' && e.label === label)
+      return found === undefined || found.kind === 'separator' ? undefined : found.icon
+    }
+    expect(iconOf(model, 'Nuevo')).toBe(FilePlus)
+    expect(iconOf(model, 'Ajustes…')).toBe(Settings)
+    expect(iconOf(model, 'Vista')).toBe(PanelBottom)
+    const view = model.find((e) => e.kind === 'submenu' && e.label === 'Vista')
+    const items = view?.kind === 'submenu' ? view.items : []
+    expect(iconOf(items, 'Problemas')).toBe(PANEL_ICONS.problems)
+    expect(iconOf(items, 'Restablecer diseño')).toBe(RotateCcw)
+    const profile = model.find((e) => e.kind === 'submenu' && e.label === 'Perfil')
+    const profiles = profile?.kind === 'submenu' ? profile.items : []
+    expect(iconOf(profiles, 'Español')).toBeUndefined()
   })
 })
 
@@ -86,6 +107,14 @@ describe('Menu', () => {
     fireEvent.keyDown(vista2, { key: 'ArrowRight' })
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Restablecer diseño' }))
     expect(store.getState().layoutReset).toBe(resetLayout + 1)
+  })
+
+  it('draws an icon in every item, so the labels line up', async () => {
+    await open()
+    expect(
+      (await screen.findByRole('menuitem', { name: 'Nuevo' })).querySelector('svg'),
+    ).not.toBeNull()
+    expect(screen.getByRole('menuitem', { name: 'Vista' }).querySelector('svg')).not.toBeNull()
   })
 
   it('stays current when the profile changes without changing the UI locale', async () => {

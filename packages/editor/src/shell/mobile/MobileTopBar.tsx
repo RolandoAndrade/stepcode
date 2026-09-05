@@ -4,11 +4,11 @@ import { useMemo, useState } from 'react'
 import type { FileEnvironment } from '../../files/actions'
 import { useEditorStore, useEditorStoreApi } from '../../store/context'
 import { hasErrors, stringsOf } from '../../store/store'
-import { ArrowDownToDot, ArrowUpFromDot, Bug, Check, Ellipsis, StepForward } from '../../ui/icons'
+import { ArrowDownToDot, ArrowUpFromDot, Bug, Ellipsis, StepForward } from '../../ui/icons'
 import { isMac, keyLabel } from '../../ui/keys'
 import { IconButton } from '../../ui/Tooltip'
 import { Filename } from '../Filename'
-import { type MenuEntry, menuModel } from '../Menu'
+import { type MenuEntry, MenuSlot, menuModel } from '../Menu'
 import { RunControls } from '../RunControls'
 import { SHORTCUTS } from '../shortcuts'
 
@@ -28,7 +28,10 @@ function SheetEntries({ entries, onDone }: { entries: MenuEntry[]; onDone: () =>
         if (entry.kind === 'submenu')
           return (
             <div key={entry.label}>
-              <p className="px-3 pt-2 pb-1 text-muted text-xs">{entry.label}</p>
+              <p className="flex items-center gap-2 px-3 pt-2 pb-1 text-muted text-xs">
+                <MenuSlot {...(entry.icon === undefined ? {} : { icon: entry.icon })} />
+                {entry.label}
+              </p>
               <SheetEntries entries={entry.items} onDone={onDone} />
             </div>
           )
@@ -45,7 +48,10 @@ function SheetEntries({ entries, onDone }: { entries: MenuEntry[]; onDone: () =>
             }}
             className={SHEET_ITEM}
           >
-            <span className="w-4">{entry.checked === true ? <Check /> : null}</span>
+            <MenuSlot
+              {...(entry.icon === undefined ? {} : { icon: entry.icon })}
+              {...(entry.checked === undefined ? {} : { checked: entry.checked })}
+            />
             {entry.label}
             {entry.shortcut !== undefined ? (
               <span aria-hidden="true" className="ml-auto pl-4 text-muted text-xs">
