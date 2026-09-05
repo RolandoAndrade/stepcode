@@ -62,7 +62,14 @@ function values(spec: unknown): string[] {
 }
 
 /** Non-color CSS keywords a colorish-named property may legitimately hold instead of a token. */
-const COLOR_KEYWORDS = new Set(['none', 'transparent', 'unset', 'inherit'])
+const COLOR_KEYWORDS = new Set(['none', 'transparent', 'unset', 'inherit', 'currentColor'])
+
+/** Properties a colorish name catches that carry no color at all (`borderRadius`, `minWidth`). */
+const COLORLESS = /radius|width|spacing|position|inset|collapse/i
+
+/** `currentColor` is a color the rule inherits from a token set on the same element. */
+const carriesAColor = (property: string, value: string): boolean =>
+  !COLORLESS.test(property) && !COLOR_KEYWORDS.has(value) && !value.includes('currentColor')
 
 describe('tokens only', () => {
   it('colors the highlight style and the editor theme through var(--sc-…)', () => {
@@ -78,8 +85,7 @@ describe('tokens only', () => {
     }
     for (const [selector, rules] of Object.entries(EDITOR_THEME_SPEC)) {
       for (const [property, value] of Object.entries(rules)) {
-        if (colorish.test(property)) {
-          if (COLOR_KEYWORDS.has(String(value))) continue
+        if (colorish.test(property) && carriesAColor(property, String(value))) {
           expect(String(value), `${selector} ${property}`).toContain('var(--sc-')
         }
       }
@@ -92,6 +98,38 @@ describe('tokens only', () => {
   it('clears the vendor lint squiggle so lint marks stay token-driven', () => {
     expect(EDITOR_THEME_SPEC['.cm-lintRange-error']?.backgroundImage).toBe('none')
     expect(EDITOR_THEME_SPEC['.cm-lintRange-warning']?.backgroundImage).toBe('none')
+  })
+})
+
+describe('gutters', () => {
+  const rule = (selector: string): Readonly<Record<string, unknown>> => {
+    const found = EDITOR_THEME_SPEC[selector]
+    if (found === undefined || typeof found === 'string') throw new Error(`no rule for ${selector}`)
+    return found
+  }
+
+  it('reserves three digits for the line number and centers the fold chevron', () => {
+    expect(rule('.cm-lineNumbers .cm-gutterElement').minWidth).toBe('3ch')
+    expect(rule('.cm-foldGutter .cm-gutterElement').display).toBe('flex')
+    expect(rule('.cm-foldGutter .cm-gutterElement').alignItems).toBe('center')
+    expect(rule('.cm-foldGutter .cm-gutterElement').justifyContent).toBe('center')
+  })
+
+  it('narrows the lint gutter and paints its markers from the tokens', () => {
+    expect(rule('.cm-gutter.cm-gutter-lint').minWidth).toBe('0.8em')
+    expect(rule('.cm-gutter-lint .cm-gutterElement').padding).toBe('0 0.1em')
+    expect(rule('.cm-lint-marker').width).toBe('0.6em')
+    expect(rule('.cm-lint-marker').height).toBe('0.6em')
+    expect(rule('.cm-lint-marker').backgroundImage).toBe('none')
+    expect(rule('.cm-lint-marker-error').color).toBe('var(--sc-error)')
+    expect(rule('.cm-lint-marker-warning').color).toBe('var(--sc-warning)')
+  })
+
+  it('pulses the marker with a ring, and holds still under reduced motion', () => {
+    expect(rule('.cm-lint-marker::after').animation).toContain('sc-lint-pulse')
+    expect(EDITOR_THEME_SPEC['@keyframes sc-lint-pulse']).toBeDefined()
+    const reduced = rule('@media (prefers-reduced-motion: reduce)')['.cm-lint-marker::after']
+    expect(reduced).toEqual({ animation: 'none' })
   })
 })
 
