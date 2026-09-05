@@ -5,7 +5,7 @@ import { BUILTIN_KEYS, KEYWORD_KEYS, type ResolvedProfile, TYPE_KEYS } from '@st
 import { BUILTIN_SIGNATURES, type CompileResult, typeToString } from 'stepcode'
 import type { StepcodeOptions } from './options'
 import { stepcodeLanguage, treeDataAt } from './parser'
-import { blockSnippets } from './snippets'
+import { keywordSnippets } from './snippets'
 import type { Strings } from './strings'
 import { stringsFor } from './strings'
 import { builtinSignatureParts, signatureText, symbolLabel, visibleSymbols } from './symbols'
@@ -57,6 +57,7 @@ function builtinCompletions(profile: ResolvedProfile, strings: Strings): Complet
         label,
         type: 'function',
         detail,
+        info: strings.descriptions.builtins[key],
         boost: BOOST.builtin,
       }),
     )
@@ -64,24 +65,32 @@ function builtinCompletions(profile: ResolvedProfile, strings: Strings): Complet
   return out
 }
 
-function typeCompletions(profile: ResolvedProfile): Completion[] {
+function typeCompletions(profile: ResolvedProfile, strings: Strings): Completion[] {
   const out: Completion[] = []
   for (const key of TYPE_KEYS) {
     const label = profile.types[key]?.[0]
-    if (label !== undefined) out.push({ label, type: 'type', boost: BOOST.type })
+    if (label !== undefined)
+      out.push({ label, type: 'type', info: strings.descriptions.types[key], boost: BOOST.type })
   }
   return out
 }
 
 /** Every keyword with a spelling; the block openers apply their snippet (spec §5.7). */
 export function keywordCompletions(profile: ResolvedProfile, strings: Strings): Completion[] {
-  const snippets = blockSnippets(profile, strings)
+  const snippets = keywordSnippets(profile, strings)
   const out: Completion[] = []
   for (const key of KEYWORD_KEYS) {
     const label = profile.keywords[key]?.[0]
     if (label === undefined || label.length === 0) continue
     const snippet = (snippets as ReadonlyMap<string, Completion>).get(key)
-    out.push(snippet ?? { label, type: 'keyword', boost: BOOST.keyword })
+    out.push(
+      snippet ?? {
+        label,
+        type: 'keyword',
+        info: strings.descriptions.keywords[key],
+        boost: BOOST.keyword,
+      },
+    )
   }
   return out
 }
@@ -92,7 +101,7 @@ export function completionSourceFor(options: StepcodeOptions): CompletionSource 
   const strings = stringsFor(options.locale)
   const fixed = [
     ...builtinCompletions(profile, strings),
-    ...typeCompletions(profile),
+    ...typeCompletions(profile, strings),
     ...keywordCompletions(profile, strings),
   ]
   return (context) => {

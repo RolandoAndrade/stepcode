@@ -1,6 +1,7 @@
 import { syntaxTree } from '@codemirror/language'
 import type { EditorState, Extension } from '@codemirror/state'
 import { type HoverTooltipSource, hoverTooltip } from '@codemirror/view'
+import { KEYWORD_KEYS, type KeywordKey } from '@stepcode/profiles'
 import {
   arrayOf,
   type CompileResult,
@@ -12,6 +13,7 @@ import {
   typeToString,
   UNKNOWN,
 } from 'stepcode'
+import { keywordNodeName } from './nodes'
 import type { StepcodeOptions } from './options'
 import { treeDataAt } from './parser'
 import { type Strings, stringsFor } from './strings'
@@ -22,6 +24,10 @@ import {
   symbolAt,
   symbolLabel,
 } from './symbols'
+
+const KEYWORD_BY_NODE: ReadonlyMap<string, KeywordKey> = new Map(
+  KEYWORD_KEYS.map((key) => [keywordNodeName(key), key]),
+)
 
 export interface HoverInfo {
   readonly from: number
@@ -81,11 +87,24 @@ export function hoverInfoAt(
     }
   }
   const node = syntaxTree(state).resolveInner(pos, side)
+  // A keyword has no signature to show, so its own spelling stands in as the first line.
+  const keyword = KEYWORD_BY_NODE.get(node.name)
+  if (keyword !== undefined) {
+    return {
+      from: node.from,
+      to: node.to,
+      lines: [state.doc.sliceString(node.from, node.to), strings.descriptions.keywords[keyword]],
+    }
+  }
   if (node.name !== 'BuiltinName') return null
   const key = builtinKeyAt(options.profile, state.doc.sliceString(node.from, node.to))
   if (key === null) return null
   const parts = builtinSignatureParts(key, options.profile, strings)
-  return { from: node.from, to: node.to, lines: [signatureText(parts)] }
+  return {
+    from: node.from,
+    to: node.to,
+    lines: [signatureText(parts), strings.descriptions.builtins[key]],
+  }
 }
 
 export function hoverSource(options: StepcodeOptions): HoverTooltipSource {

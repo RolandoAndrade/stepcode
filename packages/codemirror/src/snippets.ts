@@ -16,6 +16,22 @@ export const OPENER_KEYS = [
 
 export type OpenerKey = (typeof OPENER_KEYS)[number]
 
+/** The keywords whose completion inserts a whole statement rather than the bare word. */
+export const STATEMENT_KEYS = [
+  'define',
+  'dimension',
+  'write',
+  'writeNoNewline',
+  'read',
+  'return',
+  'break',
+  'continue',
+  'else',
+  'elseIf',
+] as const
+
+export type StatementKey = (typeof STATEMENT_KEYS)[number]
+
 const CURSOR = '${}'
 const field = (name: string): string => `\${${name}}`
 
@@ -77,6 +93,32 @@ export function blockTemplates(
   ])
 }
 
+/**
+ * The one-line statements, spelled per profile. The trailing `;` is written only where the
+ * profile requires terminators, so a PSeInt-style program never gains one it would reject.
+ */
+export function statementTemplates(
+  profile: ResolvedProfile,
+  strings: Strings,
+): ReadonlyMap<StatementKey, string> {
+  const kw = (key: KeywordKey): string => profile.keywords[key]?.[0] ?? key
+  const p = strings.placeholders
+  const end = profile.options.requireSemicolons ? ';' : ''
+  const stmt = (text: string): string => `${text}${end}${CURSOR}`
+  return new Map<StatementKey, string>([
+    ['define', stmt(`${kw('define')} ${field(p.variable)} ${kw('as')} ${field(p.type)}`)],
+    ['dimension', stmt(`${kw('dimension')} ${field(p.variable)}[${field(p.size)}]`)],
+    ['write', stmt(`${kw('write')} ${field(p.message)}`)],
+    ['writeNoNewline', stmt(`${kw('writeNoNewline')} ${field(p.message)}`)],
+    ['read', stmt(`${kw('read')} ${field(p.variable)}`)],
+    ['return', stmt(`${kw('return')} ${field(p.value)}`)],
+    ['break', stmt(kw('break'))],
+    ['continue', stmt(kw('continue'))],
+    ['else', `${kw('else')}\n\t${CURSOR}`],
+    ['elseIf', `${kw('elseIf')} ${field(p.condition)} ${kw('then')}\n\t${CURSOR}`],
+  ])
+}
+
 /** One keyword completion per opener, applying its template. */
 export function blockSnippets(
   profile: ResolvedProfile,
@@ -86,7 +128,37 @@ export function blockSnippets(
   for (const [key, template] of blockTemplates(profile, strings)) {
     const label = profile.keywords[key]?.[0]
     if (label === undefined || label.length === 0) continue
-    out.set(key, snippetCompletion(template, { label, type: 'keyword', boost: 0 }))
+    out.set(
+      key,
+      snippetCompletion(template, {
+        label,
+        type: 'keyword',
+        info: strings.descriptions.keywords[key],
+        boost: 0,
+      }),
+    )
+  }
+  return out
+}
+
+/** Every keyword whose completion applies a template: the block openers and the statements. */
+export function keywordSnippets(
+  profile: ResolvedProfile,
+  strings: Strings,
+): ReadonlyMap<KeywordKey, Completion> {
+  const out = new Map<KeywordKey, Completion>(blockSnippets(profile, strings))
+  for (const [key, template] of statementTemplates(profile, strings)) {
+    const label = profile.keywords[key]?.[0]
+    if (label === undefined || label.length === 0) continue
+    out.set(
+      key,
+      snippetCompletion(template, {
+        label,
+        type: 'keyword',
+        info: strings.descriptions.keywords[key],
+        boost: 0,
+      }),
+    )
   }
   return out
 }

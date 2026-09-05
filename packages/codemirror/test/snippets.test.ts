@@ -1,8 +1,15 @@
 import { snippet } from '@codemirror/autocomplete'
 import { EditorState, type Transaction } from '@codemirror/state'
-import { builtinProfiles, resolveProfile } from '@stepcode/profiles'
+import { builtinProfiles, profiles, resolveProfile } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
-import { blockSnippets, blockTemplates, OPENER_KEYS } from '../src/snippets'
+import {
+  blockSnippets,
+  blockTemplates,
+  keywordSnippets,
+  OPENER_KEYS,
+  STATEMENT_KEYS,
+  statementTemplates,
+} from '../src/snippets'
 import { stringsFor } from '../src/strings'
 import { en, es } from './helpers'
 
@@ -75,5 +82,59 @@ describe('block snippets', () => {
     expect(snippets.get('if')?.label).toBe('Si')
     expect(snippets.get('if')?.type).toBe('keyword')
     expect(typeof snippets.get('if')?.apply).toBe('function')
+  })
+})
+
+const pseint = profiles.pseint
+
+const st = (key: (typeof STATEMENT_KEYS)[number], profile = es, locale = 'es'): string => {
+  const found = statementTemplates(profile, stringsFor(locale)).get(key)
+  if (found === undefined) throw new Error(`no template for ${key}`)
+  return found
+}
+
+describe('statement templates', () => {
+  it('spell the es statements with their semicolon', () => {
+    expect(st('define')).toBe('Definir ${variable} Como ${tipo};${}')
+    expect(st('dimension')).toBe('Dimension ${variable}[${tamano}];${}')
+    expect(st('write')).toBe('Escribir ${mensaje};${}')
+    expect(st('writeNoNewline')).toBe('Escribir Sin Saltar ${mensaje};${}')
+    expect(st('read')).toBe('Leer ${variable};${}')
+    expect(st('return')).toBe('Retornar ${valor};${}')
+    expect(st('break')).toBe('Romper;${}')
+    expect(st('continue')).toBe('Continuar;${}')
+    expect(st('else')).toBe('Sino\n\t${}')
+    expect(st('elseIf')).toBe('Sino Si ${condicion} Entonces\n\t${}')
+  })
+
+  it('spell the en statements in English', () => {
+    expect(st('define', en, 'en')).toBe('Define ${variable} As ${type};${}')
+    expect(st('write', en, 'en')).toBe('Write ${message};${}')
+    expect(st('elseIf', en, 'en')).toBe('ElseIf ${condition} Then\n\t${}')
+  })
+
+  it('drop the semicolon where the profile does not require one', () => {
+    expect(statementTemplates(pseint, stringsFor('es')).get('write')).toBe('Escribir ${mensaje}${}')
+    expect(statementTemplates(pseint, stringsFor('es')).get('break')).toBe('Romper${}')
+    expect(statementTemplates(pseint, stringsFor('es')).get('else')).toBe('Sino\n\t${}')
+  })
+
+  it('cover exactly the statement keys, none of them an opener', () => {
+    expect([...statementTemplates(es, stringsFor('es')).keys()]).toEqual([...STATEMENT_KEYS])
+    for (const key of STATEMENT_KEYS) expect(OPENER_KEYS).not.toContain(key)
+  })
+})
+
+describe('keywordSnippets', () => {
+  it('carry both the openers and the statements, described and applied', () => {
+    const all = keywordSnippets(es, stringsFor('es'))
+    expect(all.get('if')?.label).toBe('Si')
+    expect(all.get('write')?.label).toBe('Escribir')
+    expect(all.get('write')?.info).toBe('Muestra un valor en la consola.')
+    expect(typeof all.get('write')?.apply).toBe('function')
+  })
+
+  it('insert the statement at the cursor', () => {
+    expect(applied(st('write'), 'Escr', 0, 4)).toBe('Escribir mensaje;')
   })
 })

@@ -125,6 +125,25 @@ describe('completion', () => {
     expect(option(result, 'Sqrt')?.detail).toBe('(number) : Real')
   })
 
+  it('carries the beginner description as info, in the active locale', () => {
+    const result = complete(program, '1;')
+    expect(option(result, 'Escribir')?.info).toBe('Muestra un valor en la consola.')
+    expect(option(result, 'RC')?.info).toBe('Da la raíz cuadrada de un número.')
+    expect(option(result, 'Entero')?.info).toBe('Números sin decimales.')
+    const english = complete(
+      'Program p\n  Define total As Integer;\n  total <- 1;\nEndProgram',
+      '1;',
+      { profile: en, locale: 'en' },
+    )
+    expect(option(english, 'Write')?.info).toBe('Shows a value in the console.')
+  })
+
+  it('applies a statement keyword as a snippet', () => {
+    const result = complete(program, '1;')
+    const write = option(result, 'Escribir')
+    expect(typeof write?.apply).toBe('function')
+  })
+
   it('applies a block opener as a snippet', () => {
     const result = complete(program, '1;')
     expect(typeof option(result, 'Si')?.apply).toBe('function')

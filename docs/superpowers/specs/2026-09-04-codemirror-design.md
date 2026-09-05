@@ -330,6 +330,15 @@ The `for` template's step clause is omitted; the assign operator, `to`, and `do`
 profile's first spellings. Under `assignWithEquals` the `for` and `function` templates use
 `=`. Placeholder names come from the string table per locale.
 
+`define`, `dimension`, `write`, `writeNoNewline`, `read`, `return`, `break`, `continue`,
+`else`, and `elseIf` apply one-line statement snippets built the same way — `Definir
+${variable} Como ${tipo};${}`, `Escribir ${mensaje};${}`, `Sino Si ${condicion}
+Entonces\n\t${}` and so on — with the trailing `;` written only when the profile's
+`requireSemicolons` is set. Every keyword, type, and builtin completion also carries
+`Completion.info`: one plain sentence per key from the string table's `descriptions`, written
+for a first-time reader in the locale's language, which the hover tooltip (§5.9) repeats under
+the signature.
+
 ### 5.8 Signature help
 
 `stepcodeSignatureHelp` is a `StateField<readonly Tooltip[]>` provided to `showTooltip`,

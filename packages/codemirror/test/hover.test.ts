@@ -67,8 +67,16 @@ describe('hoverInfoAt', () => {
     expect(at('sumar();')).toEqual(['función sumar: Entero', 'declarada en la línea 1'])
   })
 
-  it('describes a builtin by its signature', () => {
-    expect(linesAt('Abs(')).toEqual(['Abs(número) : igual al argumento'])
+  it('describes a builtin by its signature, with the description under it', () => {
+    expect(linesAt('Abs(')).toEqual([
+      'Abs(número) : igual al argumento',
+      'Da el valor de un número sin su signo.',
+    ])
+  })
+
+  it('describes a keyword by its spelling and what it does', () => {
+    expect(linesAt('Proceso p')).toEqual(['Proceso', 'Marca donde empieza el programa principal.'])
+    expect(linesAt('Escribir Abs')).toEqual(['Escribir', 'Muestra un valor en la consola.'])
   })
 
   it('renders in the requested locale', () => {
@@ -85,8 +93,7 @@ describe('hoverInfoAt', () => {
     expect(info?.to).toBe(program.indexOf('MAX);') + 3)
   })
 
-  it('has nothing to say on a keyword, a number or an unresolved name', () => {
-    expect(linesAt('Proceso p')).toBeNull()
+  it('has nothing to say on a number or an unresolved name', () => {
     expect(linesAt('10;')).toBeNull()
     const broken = 'Proceso p\n  Escribir nope;\nFinProceso'
     expect(hoverInfoAt(stateFor(broken), broken.indexOf('nope'), 1, options)).toBeNull()
