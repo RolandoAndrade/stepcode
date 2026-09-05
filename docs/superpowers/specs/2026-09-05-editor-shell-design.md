@@ -135,8 +135,8 @@ All dockview chrome is replaced by custom components:
 
 - **Tab:** the panel's icon (14 px, `PANEL_ICONS`) then its label, 12 px, muted; the active tab of
   a multi-tab group has `--sc-fg` and a 2 px accent underline. No close button.
-- **Group header:** the tabs on the left; on the right a collapse chevron and, for the console,
-  panel-owned actions (clear, auto-scroll). A single-panel group renders its label like a heading
+- **Group header:** the tabs on the left; on the right a collapse chevron and, for the console, its
+  panel-owned clear action. A single-panel group renders its label like a heading
   rather than a tab. Height 28 px. **The editor group has no header at all**
   (`group.header.hidden = true`, applied after the default layout and after `fromJSON`, followed by
   `group.relayout()` so the editor claims the freed 28 px): it holds one panel that can never leave
@@ -261,8 +261,9 @@ are deferred to 4c's Playwright pass.
 
 Changes to the 4a panels, all inside the panel files:
 
-- **Consola.** Header actions: Limpiar (trash icon) and Desplazamiento automático (toggle). A
-  finished run appends a muted line "— Programa terminado —"; an error run appends the formatted
+- **Consola.** Header action: Limpiar (trash icon). Output sticks to the bottom on new lines
+  unless the reader has scrolled up. A finished run appends a muted line
+  "— Programa terminado —"; an error run appends the formatted
   diagnostic in `--sc-error` with a "ver línea N" button that reveals the span. The input field
   shows a `↵` hint on the right. Output text uses the code font.
 - **Problemas.** Rows are focusable (`role="row"`, arrow keys move, Enter reveals). Empty state:

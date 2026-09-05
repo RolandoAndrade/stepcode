@@ -74,15 +74,14 @@ export function Console({ onReveal }: { onReveal?: (line: number) => void }) {
   const wait = useEditorStore((s) => s.wait)
   const error = useEditorStore((s) => s.error)
   const state = useEditorStore((s) => s.state)
-  const autoScroll = useEditorStore((s) => s.autoScroll)
   const submitInput = useEditorStore((s) => s.submitInput)
   const pre = useRef<HTMLPreElement>(null)
   const stickToBottom = useRef(true)
 
-  // Auto-scroll unless the reader scrolled up, or the setting turns it off (spec §7.2).
+  // Auto-scroll unless the reader scrolled up (spec §7.2).
   useEffect(() => {
     const element = pre.current
-    if (element !== null && stickToBottom.current && autoScroll) {
+    if (element !== null && stickToBottom.current) {
       element.scrollTop = element.scrollHeight
     }
   })

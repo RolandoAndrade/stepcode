@@ -80,7 +80,6 @@ export interface StoreState {
   readonly error: RuntimeError | null
   readonly runSeq: number
   readonly pausedInRun: boolean
-  readonly autoScroll: boolean
   // layout + ui
   readonly layout: LayoutState
   readonly layoutReset: number
@@ -115,7 +114,6 @@ export interface StoreState {
   stop(): void
   submitInput(text: string): void
   clearOutput(): void
-  setAutoScroll(on: boolean): void
   setDockLayout(dockview: Record<string, unknown>, collapsed: readonly string[]): void
   setSheet(position: SheetPosition): void
   resetLayout(): void
@@ -321,7 +319,6 @@ export function createEditorStore(host: HostApi, options: StoreOptions = {}): Ed
       error: null,
       runSeq: 0,
       pausedInRun: false,
-      autoScroll: true,
       layout: DEFAULT_LAYOUT,
       layoutReset: 0,
       panelRequest: null,
@@ -421,7 +418,6 @@ export function createEditorStore(host: HostApi, options: StoreOptions = {}): Ed
         if (get().state === 'input') host.input(text)
       },
       clearOutput: () => set({ output: emptyOutput }),
-      setAutoScroll: (autoScroll) => set({ autoScroll }),
       setDockLayout: (dockview, collapsed) =>
         set((s) => ({ layout: { ...s.layout, dockview, collapsed } })),
       setSheet: (sheet) => set((s) => ({ layout: { ...s.layout, sheet } })),

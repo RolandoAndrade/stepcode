@@ -72,7 +72,6 @@ export interface Strings {
   readonly console: {
     readonly title: string
     readonly clear: string
-    readonly autoScroll: string
     readonly read: (name: string, type: string) => string
     readonly pressKey: string
     readonly placeholder: string
@@ -298,7 +297,6 @@ const es: Strings = {
   console: {
     title: 'Consola',
     clear: 'Limpiar',
-    autoScroll: 'Desplazamiento automático',
     read: (name, type) => `Leer ${name} (${type})`,
     pressKey: 'Presiona una tecla',
     placeholder: 'Escribe y presiona Enter',
@@ -526,7 +524,6 @@ const en: Strings = {
   console: {
     title: 'Console',
     clear: 'Clear',
-    autoScroll: 'Auto-scroll',
     read: (name, type) => `Read ${name} (${type})`,
     pressKey: 'Press a key',
     placeholder: 'Type and press Enter',

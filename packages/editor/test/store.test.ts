@@ -448,7 +448,5 @@ describe('store (4b slices)', () => {
     expect(store.getState().toasts).toEqual([])
     store.getState().setCursor(3, 4)
     expect(store.getState().cursor).toEqual({ line: 3, column: 4 })
-    store.getState().setAutoScroll(false)
-    expect(store.getState().autoScroll).toBe(false)
   })
 })

@@ -110,7 +110,7 @@ describe('Console', () => {
     expect(reveals).toEqual([1])
   })
 
-  it('auto-scrolls to the bottom unless the store turns it off', () => {
+  it('sticks to the bottom on new output unless the reader has scrolled up', () => {
     const { store, host } = storeWith({})
     renderWithStore(<Console />, store)
     const pre = screen.getByTestId('console-output')
@@ -118,8 +118,10 @@ describe('Console', () => {
     Object.defineProperty(pre, 'scrollHeight', { value: 500, configurable: true })
     act(() => host.emit({ kind: 'output', chunks: ['a\n'] }))
     expect(pre.scrollTop).toBe(500)
+    // The reader scrolls up: scrollTop + clientHeight (0 in happy-dom) is now far from the
+    // bottom, so the scroll handler should mark the reader as no longer stuck.
     pre.scrollTop = 0
-    act(() => store.getState().setAutoScroll(false))
+    fireEvent.scroll(pre)
     act(() => host.emit({ kind: 'output', chunks: ['b\n'] }))
     expect(pre.scrollTop).toBe(0)
   })

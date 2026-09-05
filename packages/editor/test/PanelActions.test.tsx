@@ -9,7 +9,7 @@ import { renderWithStore, storeWith } from './render'
 const err: Diagnostic = { from: 0, to: 1, severity: 'error', message: 'x' }
 
 describe('PanelActions', () => {
-  it('console: clear and auto-scroll toggle', () => {
+  it('console: clear', () => {
     const { store, host } = storeWith({})
     host.emit({ kind: 'output', chunks: ['x'] })
     renderWithStore(
@@ -20,10 +20,7 @@ describe('PanelActions', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar' }))
     expect(store.getState().output.chunks).toEqual([])
-    const toggle = screen.getByRole('button', { name: 'Desplazamiento automático' })
-    expect(toggle.getAttribute('aria-pressed')).toBe('true')
-    fireEvent.click(toggle)
-    expect(store.getState().autoScroll).toBe(false)
+    expect(screen.queryByRole('button', { name: 'Desplazamiento automático' })).toBeNull()
   })
 
   it('problems: the counts', () => {
