@@ -38,6 +38,9 @@ export function Tooltip({
 
 const SIZES = { toolbar: 'h-7 w-7', dialog: 'h-8 w-8' } as const
 
+/** What the action does, in color: go, stop, or nothing in particular. */
+const TONES = { neutral: 'text-fg', success: 'text-success', error: 'text-error' } as const
+
 type IconButtonOwnProps = {
   label: string
   shortcut?: string
@@ -45,6 +48,7 @@ type IconButtonOwnProps = {
   disabled?: boolean
   active?: boolean
   size?: keyof typeof SIZES
+  tone?: keyof typeof TONES
   children: ReactNode
 }
 
@@ -64,6 +68,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     disabled = false,
     active = false,
     size = 'toolbar',
+    tone = 'neutral',
     children,
     ...rest
   },
@@ -78,7 +83,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       aria-pressed={active ? true : undefined}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex ${SIZES[size]} items-center justify-center rounded text-fg transition-colors duration-150 hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40 ${active ? 'bg-accent-soft text-accent' : ''}`}
+      className={`inline-flex ${SIZES[size]} ${TONES[tone]} items-center justify-center rounded transition-colors duration-150 hover:bg-surface-raised disabled:cursor-not-allowed disabled:opacity-40 ${active ? 'bg-accent-soft text-accent' : ''}`}
     >
       {children}
     </button>

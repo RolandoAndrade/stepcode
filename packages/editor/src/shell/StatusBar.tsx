@@ -56,7 +56,20 @@ export function statusText(
 }
 
 const ITEM =
-  'flex h-6 items-center gap-1 rounded px-2 text-xs text-muted transition-colors duration-150 hover:bg-surface-raised hover:text-fg disabled:cursor-default disabled:hover:bg-transparent'
+  'flex h-6 items-center gap-1 rounded px-2 text-xs transition-colors duration-150 disabled:cursor-default disabled:hover:bg-transparent'
+
+/** Muted on the ordinary bar; on a colored band the band's own foreground already reads. */
+const QUIET_ITEM = 'text-muted hover:bg-surface-raised hover:text-fg'
+const BAND_ITEM = 'hover:bg-bg/20'
+
+/**
+ * Spec §5: the bar itself reports the run state. A live program tints it accent, a paused one
+ * warning (the debugger colour), and everything else leaves it the surface it sits on.
+ */
+export function barTone(state: WorkerState): 'accent' | 'warning' | null {
+  if (state === 'running' || state === 'input' || state === 'waiting') return 'accent'
+  return state === 'paused' ? 'warning' : null
+}
 
 /** The profile list as a popover; `children` is the trigger. Reused by the Menu's Perfil submenu. */
 export function ProfilePopover({
@@ -152,12 +165,20 @@ export function StatusBar({
   const error = useEditorStore((s) => s.error)
   const requestPanel = useEditorStore((s) => s.requestPanel)
   const clean = counts.errors === 0 && counts.warnings === 0
+  const tone = barTone(state)
+  const item = `${ITEM} ${tone === null ? QUIET_ITEM : BAND_ITEM}`
+  const band =
+    tone === null ? 'bg-surface' : tone === 'accent' ? 'bg-accent text-bg' : 'bg-warning text-bg'
 
   return (
-    <footer className="flex h-6 items-center gap-1 border-t border-border bg-surface px-2">
+    <footer
+      className={`flex h-6 items-center gap-1 border-t border-border px-2 transition-colors duration-150 ${band}`}
+    >
       <button
         type="button"
-        className={`${ITEM} ${clean ? '' : counts.errors > 0 ? 'text-error' : 'text-warning'}`}
+        className={`${item} ${
+          clean || tone !== null ? '' : counts.errors > 0 ? 'text-error' : 'text-warning'
+        }`}
         title={strings.problems.title}
         onClick={() => requestPanel('problems')}
       >
@@ -169,7 +190,7 @@ export function StatusBar({
       {compact ? null : (
         <button
           type="button"
-          className={ITEM}
+          className={item}
           title={strings.status.state}
           onClick={() => {
             requestPanel('console')
@@ -183,7 +204,7 @@ export function StatusBar({
       {compact ? null : (
         <button
           type="button"
-          className={`${ITEM} ml-auto`}
+          className={`${item} ml-auto`}
           title={strings.status.cursor}
           onClick={onFocusEditor}
         >
@@ -193,7 +214,7 @@ export function StatusBar({
       <ProfilePopover disabled={!canEdit(state)}>
         <button
           type="button"
-          className={`${ITEM} ${compact ? 'ml-auto' : ''}`}
+          className={`${item} ${compact ? 'ml-auto' : ''}`}
           title={strings.toolbar.profile}
         >
           {profileName}

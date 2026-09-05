@@ -322,6 +322,12 @@ menu; Radix handles its own). `⌘` replaces Ctrl on macOS.
 | right | `Ln 12, Col 4` | focuses the editor |
 | right | profile name with a chevron | profile popover: the same list as Perfil ▸ |
 
+The bar itself reports the run state: `running`, `input` and `waiting` tint it `--sc-accent` with
+`--sc-bg` text, `paused` tints it `--sc-warning` (the debugger colour), and every other state
+leaves it on `--sc-surface`, with a 150 ms colour transition; on a tinted band the problem counts
+drop their error/warning colours, which the band already carries. The run cluster colours its
+actions too: Ejecutar, Depurar and Continuar in `--sc-success`, Detener in `--sc-error`.
+
 What the program is doing is grouped with what is wrong with it, on the left; where the cursor is
 and which profile reads the text sit on the right. Run state text by state: `Listo`, `Ejecutando…`
 with a 12 px spinner, `En pausa en la línea N`, `Esperando entrada`, `Esperando…` (wait),

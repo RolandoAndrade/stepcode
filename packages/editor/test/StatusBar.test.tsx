@@ -62,6 +62,34 @@ describe('StatusBar', () => {
     expect(order[1]).toMatch(/Español/)
   })
 
+  it('paints itself accent while the program runs and warning while it is paused', () => {
+    const { store } = storeWith({})
+    const { container } = renderWithStore(<StatusBar />, store)
+    const footer = (): Element => {
+      const found = container.querySelector('footer')
+      if (found === null) throw new Error('no status bar')
+      return found
+    }
+    expect(footer().className).not.toContain('bg-accent')
+    expect(footer().className).not.toContain('bg-warning')
+    for (const state of ['running', 'input', 'waiting'] as const) {
+      act(() => store.setState({ state }))
+      expect(footer().className, state).toContain('bg-accent')
+    }
+    act(() => store.setState({ state: 'paused' }))
+    expect(footer().className).toContain('bg-warning')
+    act(() => store.setState({ state: 'done' }))
+    expect(footer().className).toContain('bg-surface')
+  })
+
+  it('drops the problems colors while running, where the accent band carries them', () => {
+    const { store } = storeWith({ diagnostics: [err] })
+    renderWithStore(<StatusBar />, store)
+    expect(screen.getByRole('button', { name: /✖ 1/ }).className).toContain('text-error')
+    act(() => store.setState({ state: 'running' }))
+    expect(screen.getByRole('button', { name: /✖ 1/ }).className).not.toContain('text-error')
+  })
+
   it('says no problems when clean and requests the Problems panel on click', () => {
     const { store } = storeWith({})
     renderWithStore(<StatusBar />, store)

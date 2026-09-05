@@ -30,6 +30,25 @@ describe('RunControls', () => {
     expect(visible()).toEqual(expected)
   })
 
+  it('colors the go actions green and the stop action red, compact too', () => {
+    for (const compact of [false, true]) {
+      const { store } = storeWith({ state: 'ready' })
+      const { unmount } = renderWithStore(
+        <TooltipProvider>
+          <RunControls compact={compact} />
+        </TooltipProvider>,
+        store,
+      )
+      expect(screen.getByRole('button', { name: 'Ejecutar' }).className).toContain('text-success')
+      if (!compact) {
+        expect(screen.getByRole('button', { name: 'Depurar' }).className).toContain('text-success')
+      }
+      act(() => store.setState({ state: 'running' }))
+      expect(screen.getByRole('button', { name: 'Detener' }).className).toContain('text-error')
+      unmount()
+    }
+  })
+
   it('compact renders no placeholder spans, so the phone bar keeps no gap for hidden slots', () => {
     const { store } = storeWith({ state: 'ready' })
     const { container } = renderWithStore(
