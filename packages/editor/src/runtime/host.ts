@@ -1,5 +1,6 @@
 import type { ProfileInput } from '@stepcode/profiles'
 import { createDiagnostic } from 'stepcode'
+import { stringsFor } from '../strings'
 import type { HostApi, HostListener } from './host-api'
 import type { HostMessage, RunMode, WorkerMessage } from './protocol'
 
@@ -103,7 +104,7 @@ export class RuntimeHost implements HostApi {
         diagnostic: createDiagnostic(
           'E4009',
           { start: 0, end: 0 },
-          { message: event.message ?? 'worker error' },
+          { message: event.message ?? stringsFor('es').host.workerError },
         ),
         frames: [],
       })

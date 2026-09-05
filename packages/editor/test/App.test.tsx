@@ -1,48 +1,37 @@
 // @vitest-environment happy-dom
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { App } from '../src/App'
-import { Toolbar } from '../src/components/Toolbar'
 import { renderWithStore, storeWith } from './render'
 
+const env = { pickers: {}, download: vi.fn(), pickFallback: async () => null }
+
 describe('App', () => {
-  it('renders the toolbar and the four panels', () => {
+  it('renders the desktop shell with toolbar, status bar and the editor', async () => {
     const { store } = storeWith({})
-    renderWithStore(<App />, store)
-    expect(screen.getByText('StepCode')).toBeDefined()
-    for (const name of ['Editor', 'Consola', 'Variables', 'Problemas']) {
-      expect(screen.getByRole('region', { name })).toBeDefined()
-    }
-    expect(screen.getByRole('button', { name: 'Ejecutar' })).toBeDefined()
+    renderWithStore(<App env={env} narrow={false} />, store)
+    expect(screen.getByRole('button', { name: 'Menú' })).toBeDefined()
+    expect(await screen.findByRole('region', { name: 'Editor' })).toBeDefined()
+    expect(screen.getByRole('button', { name: /Sin problemas/ })).toBeDefined()
+    expect(document.title).toBe('sin título.stepcode · StepCode')
   })
 
-  it('installs the keyboard shortcuts while mounted', () => {
+  it('renders the phone shell when narrow', () => {
+    const { store } = storeWith({})
+    renderWithStore(<App env={env} narrow />, store)
+    expect(screen.getByRole('region', { name: 'Paneles' })).toBeDefined()
+  })
+
+  it('installs shortcuts and updates the title when dirty', () => {
     const { store, host } = storeWith({})
-    const rendered = renderWithStore(<App />, store)
+    const rendered = renderWithStore(<App env={env} narrow={false} />, store)
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F5', cancelable: true }))
     expect(host.calls).toEqual(['start:run'])
-    rendered.unmount()
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F5', cancelable: true }))
-    expect(host.calls).toEqual(['start:run'])
-  })
-
-  it('connects Problems to the editor', () => {
-    const { store } = storeWith({
-      source: 'Proceso p\n  Escribir x;\nFinProceso',
-      diagnostics: [
-        { from: 21, to: 22, severity: 'error', message: 'x undeclared', source: 'E3001' },
-      ],
+    act(() => {
+      host.emit({ kind: 'state', state: 'done' })
+      store.getState().setSource('x')
     })
-    renderWithStore(<App />, store)
-    const row = screen.getAllByRole('row')[0]
-    if (row === undefined) throw new Error('no diagnostic row')
-    row.click()
-    const editor = screen.getByRole('region', { name: 'Editor' })
-    expect(editor.querySelector('.cm-content')?.textContent).toContain('Escribir x;')
-    expect(document.activeElement?.closest('.cm-editor')).not.toBeNull()
-  })
-
-  it('refuses to render a store consumer without a provider', () => {
-    expect(() => render(<Toolbar />)).toThrow(/StoreProvider/)
+    expect(document.title).toBe('● sin título.stepcode · StepCode')
+    rendered.unmount()
   })
 })

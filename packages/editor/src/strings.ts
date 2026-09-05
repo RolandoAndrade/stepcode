@@ -20,7 +20,6 @@ export interface Strings {
     readonly run: string
     readonly debug: string
     readonly continue: string
-    readonly step: string
     readonly stepOver: string
     readonly stepInto: string
     readonly stepOut: string
@@ -249,7 +248,6 @@ const es: Strings = {
     run: 'Ejecutar',
     debug: 'Depurar',
     continue: 'Continuar',
-    step: 'Paso',
     stepOver: 'Paso',
     stepInto: 'Entrar',
     stepOut: 'Salir',
@@ -479,7 +477,6 @@ const en: Strings = {
     run: 'Run',
     debug: 'Debug',
     continue: 'Continue',
-    step: 'Step',
     stepOver: 'Step over',
     stepInto: 'Step into',
     stepOut: 'Step out',
