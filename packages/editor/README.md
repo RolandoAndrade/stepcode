@@ -30,8 +30,8 @@ text and under 5 MB.
 
 | Flag | Values | `/` | `/embed` |
 |---|---|---|---|
-| `profile` | `es`, `en`, `pseint` | switches the profile for the session | same |
-| `lang` | `es`, `en` | UI language for the session | same |
+| `profile` | `es`, `en`, `pseint` | switches the profile for the session, unless the reader then changes a setting, which also saves the session's profile and language | same |
+| `lang` | `es`, `en` | UI language for the session, unless the reader then changes a setting, which also saves the session's profile and language | same |
 | `autorun` | flag | runs the program after it loads | same |
 | `title` | text | ignored | the top-bar title |
 | `readonly` | flag | ignored | locks the source (input still accepts typing) |
@@ -57,7 +57,9 @@ service worker — and it never resizes itself, so give it the height your page 
 ### Talking to the frame
 
 The frame posts to `window.parent` with `'*'` and listens for messages from any origin. Every
-message is a plain object with a `type`; add an `id` and the reply echoes it.
+message is a plain object with a `type`; add an `id` and the reply echoes it. A `type` the frame
+does not know is ignored without a reply, on purpose: the frame's window also receives traffic
+that has nothing to do with StepCode, and answering it would be noise.
 
 Send:
 
@@ -85,11 +87,21 @@ Receive:
 | `error` | on a runtime error | `{ message, line }` |
 
 ```js
-const frame = document.querySelector('iframe').contentWindow
+const frame = document.querySelector('iframe')
 addEventListener('message', (event) => {
-  if (event.data?.type === 'ready') frame.postMessage({ type: 'run' }, '*')
+  // Any page — an ad, another frame, an extension — can post here, so check the sender before
+  // trusting `ready` or a reply.
+  if (event.source !== frame.contentWindow) return
+  if (event.data?.type === 'ready') frame.contentWindow.postMessage({ type: 'run' }, '*')
 })
 ```
+
+`pause` and `stepInto` work without `debug`: a frame the host pauses shows Continuar and Detener
+and nothing else, because the stepping buttons and Variables are what `debug` adds.
+
+A profile the host installs through `setProfile` does not travel through "Abrir en StepCode":
+the share hash carries the profile's id, not its definition, so a full editor opened from a frame
+running a custom profile falls back to the builtin the id names (or reports it as unknown).
 
 ## How it is put together
 
