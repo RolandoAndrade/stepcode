@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { FileEnvironment } from '../src/files/actions'
-import { newDocument, openFile, saveFile, saveFileAs } from '../src/files/actions'
+import {
+  browserEnvironment,
+  newDocument,
+  openFile,
+  saveFile,
+  saveFileAs,
+} from '../src/files/actions'
 import { isAbort, pickersFrom } from '../src/files/fsa'
 import { createEditorStore } from '../src/store/store'
 import { FakeHost } from './fake-host'
@@ -47,6 +53,39 @@ describe('pickersFrom', () => {
   it('recognises an abort', () => {
     expect(isAbort(new DOMException('x', 'AbortError'))).toBe(true)
     expect(isAbort(new Error('x'))).toBe(false)
+  })
+})
+
+describe('browserEnvironment', () => {
+  it('downloads through an anchor in the document and cleans up after the click', async () => {
+    const revoked: string[] = []
+    vi.stubGlobal('URL', {
+      createObjectURL: () => 'blob:stepcode',
+      revokeObjectURL: (url: string) => revoked.push(url),
+    })
+    const events: string[] = []
+    const anchor = {
+      href: '',
+      download: '',
+      click: () => events.push('click'),
+      remove: () => events.push('remove'),
+    }
+    const win = {
+      document: {
+        createElement: () => anchor,
+        body: { appendChild: () => events.push('append') },
+      },
+    } as unknown as Window
+    browserEnvironment(win).download('mi.stepcode', 'Proceso X')
+    // Firefox ignores a click on an anchor that is not in the document, and revoking the URL
+    // before the browser has read it cancels the download.
+    expect(events).toEqual(['append', 'click'])
+    expect(revoked).toEqual([])
+    expect(anchor.download).toBe('mi.stepcode')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(events).toEqual(['append', 'click', 'remove'])
+    expect(revoked).toEqual(['blob:stepcode'])
+    vi.unstubAllGlobals()
   })
 })
 
@@ -111,7 +150,7 @@ describe('saveFile / saveFileAs', () => {
     const { handle, written } = fakeHandle('mi.stepcode')
     store.getState().markSaved(store.getState().source, handle)
     store.getState().setSource('Proceso X\nFinProceso\n')
-    await saveFile(store, env())
+    expect(await saveFile(store, env())).toBe(true)
     expect(written).toEqual(['Proceso X\nFinProceso\n'])
     expect(store.getState().savedSource).toBe('Proceso X\nFinProceso\n')
     expect(store.getState().toasts.at(-1)?.message).toBe('Guardado')
@@ -122,7 +161,7 @@ describe('saveFile / saveFileAs', () => {
     store.getState().setSource('Proceso Y\nFinProceso\n')
     const { handle, written } = fakeHandle('nuevo.stepcode')
     const e = env({ pickers: { save: async () => handle } })
-    await saveFile(store, e)
+    expect(await saveFile(store, e)).toBe(true)
     expect(written).toEqual(['Proceso Y\nFinProceso\n'])
     expect(store.getState().name).toBe('nuevo.stepcode')
     expect(store.getState().handle).toBe(handle)
@@ -130,15 +169,15 @@ describe('saveFile / saveFileAs', () => {
     const other = createEditorStore(new FakeHost())
     other.getState().setSource('Proceso Z\nFinProceso\n')
     const fallback = env()
-    await saveFileAs(other, fallback)
+    expect(await saveFileAs(other, fallback)).toBe(true)
     expect(fallback.download).toHaveBeenCalledWith('sin título.stepcode', 'Proceso Z\nFinProceso\n')
     expect(other.getState().savedSource).toBe('Proceso Z\nFinProceso\n')
     expect(other.getState().toasts.at(-1)?.message).toBe('Descargado')
   })
 
-  it('is silent on abort and toasts on failure', async () => {
+  it('is silent on abort and toasts on failure, and reports neither as a save', async () => {
     const store = createEditorStore(new FakeHost())
-    await saveFileAs(
+    const aborted = await saveFileAs(
       store,
       env({
         pickers: {
@@ -148,8 +187,9 @@ describe('saveFile / saveFileAs', () => {
         },
       }),
     )
+    expect(aborted).toBe(false)
     expect(store.getState().toasts).toEqual([])
-    await saveFileAs(
+    const failed = await saveFileAs(
       store,
       env({
         pickers: {
@@ -159,6 +199,20 @@ describe('saveFile / saveFileAs', () => {
         },
       }),
     )
+    expect(failed).toBe(false)
     expect(store.getState().toasts[0]?.message).toBe('No se pudo guardar el archivo')
+  })
+
+  it('reports a failed write through the held handle too', async () => {
+    const store = createEditorStore(new FakeHost())
+    store.getState().markSaved(store.getState().source, {
+      name: 'mi.stepcode',
+      createWritable: async () => {
+        throw new Error('boom')
+      },
+    } as never)
+    store.getState().setSource('Proceso X\nFinProceso\n')
+    expect(await saveFile(store, env())).toBe(false)
+    expect(store.getState().savedSource).not.toBe('Proceso X\nFinProceso\n')
   })
 })

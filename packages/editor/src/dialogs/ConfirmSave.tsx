@@ -12,9 +12,10 @@ export function ConfirmSave({ env }: { env: FileEnvironment }) {
   const strings = useEditorStore(stringsOf)
   const open = useEditorStore((s) => s.dialog === 'confirmSave' && s.pendingReplace !== null)
   const name = useEditorStore((s) => s.name)
+  // Spec §8.1: only a document that really reached a file may be replaced — a cancelled OS
+  // dialog or a failed write leaves the question standing, with the program still in the editor.
   const save = async (): Promise<void> => {
-    await saveFile(store, env)
-    store.getState().applyReplace()
+    if (await saveFile(store, env)) store.getState().applyReplace()
   }
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && store.getState().cancelReplace()}>

@@ -2,14 +2,20 @@
 import { act, fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { ConfirmSave } from '../src/dialogs/ConfirmSave'
+import type { FileEnvironment } from '../src/files/actions'
 import { renderWithStore, storeWith } from './render'
 
-function setup() {
+function setup(overrides: Partial<FileEnvironment> = {}) {
   const { store } = storeWith({})
   store.getState().setSource('Proceso Cambiado\nFinProceso\n')
   store.getState().requestReplace({ name: 'otro.stepcode', source: 'x' })
   const download = vi.fn()
-  const env = { pickers: {}, download, pickFallback: async () => null }
+  const env: FileEnvironment = {
+    pickers: {},
+    download,
+    pickFallback: async () => null,
+    ...overrides,
+  }
   renderWithStore(<ConfirmSave env={env} />, store)
   return { store, download }
 }
@@ -46,5 +52,21 @@ describe('ConfirmSave', () => {
     })
     expect(download).toHaveBeenCalledWith('sin título.stepcode', 'Proceso Cambiado\nFinProceso\n')
     expect(store.getState().source).toBe('x')
+  })
+
+  it('keeps the document and the question when the save is cancelled', async () => {
+    const { store } = setup({
+      pickers: {
+        save: async () => {
+          throw new DOMException('x', 'AbortError')
+        },
+      },
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Guardar' }))
+    })
+    expect(store.getState().source).toBe('Proceso Cambiado\nFinProceso\n')
+    expect(store.getState().pendingReplace).not.toBeNull()
+    expect(screen.getByRole('button', { name: 'Guardar' })).toBeDefined()
   })
 })

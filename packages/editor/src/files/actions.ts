@@ -23,8 +23,14 @@ export function browserEnvironment(win: Window = window): FileEnvironment {
       const anchor = win.document.createElement('a')
       anchor.href = url
       anchor.download = name
+      // The anchor has to be in the document for Firefox to honour the click, and the object URL
+      // has to outlive the click for the browser to read the blob behind it.
+      win.document.body.appendChild(anchor)
       anchor.click()
-      URL.revokeObjectURL(url)
+      setTimeout(() => {
+        anchor.remove()
+        URL.revokeObjectURL(url)
+      }, 0)
     },
     pickFallback: () =>
       new Promise((resolve) => {
@@ -84,7 +90,8 @@ async function writeTo(handle: FileSystemFileHandleLike, text: string): Promise<
   await writable.close()
 }
 
-export async function saveFile(store: EditorStore, env: FileEnvironment): Promise<void> {
+/** True only when the text reached a file: a cancelled picker and a failed write both say false. */
+export async function saveFile(store: EditorStore, env: FileEnvironment): Promise<boolean> {
   const s = store.getState()
   const handle = s.handle as FileSystemFileHandleLike | null
   if (handle === null || typeof handle.createWritable !== 'function') return saveFileAs(store, env)
@@ -92,12 +99,15 @@ export async function saveFile(store: EditorStore, env: FileEnvironment): Promis
     await writeTo(handle, s.source)
     s.markSaved(s.source, handle)
     s.notify(stringsOf(s).files.saved)
+    return true
   } catch (error) {
     if (!isAbort(error)) s.notify(stringsOf(s).files.saveFailed)
+    return false
   }
 }
 
-export async function saveFileAs(store: EditorStore, env: FileEnvironment): Promise<void> {
+/** See {@link saveFile} for what the result means. */
+export async function saveFileAs(store: EditorStore, env: FileEnvironment): Promise<boolean> {
   const s = store.getState()
   const suggested = nameWithExtension(s.name) || stringsOf(s).app.untitled
   try {
@@ -110,12 +120,14 @@ export async function saveFileAs(store: EditorStore, env: FileEnvironment): Prom
       s.setName(handle.name)
       s.markSaved(s.source, handle)
       s.notify(stringsOf(s).files.saved)
-      return
+      return true
     }
     env.download(suggested, s.source)
     s.markSaved(s.source, null)
     s.notify(stringsOf(s).files.downloaded)
+    return true
   } catch (error) {
     if (!isAbort(error)) s.notify(stringsOf(s).files.saveFailed)
+    return false
   }
 }
