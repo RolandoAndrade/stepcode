@@ -4,6 +4,7 @@ import { EditorView } from '@codemirror/view'
 import {
   breakpointLines,
   breakpointsChanged,
+  setBreakpoints,
   setCurrentLine,
   stepcodeDiagnostics,
 } from '@stepcode/codemirror'
@@ -68,6 +69,11 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
     // exists for the update listener above to observe a tree transition on. Push whatever the
     // initial tree already produced once, here, so the store's diagnostics reflect it too.
     store.getState().setDiagnostics(stepcodeDiagnostics(view.state, options))
+    // A new view starts with an empty gutter, and the store outlives it: crossing the phone
+    // breakpoint remounts the editor with the breakpoints the user set before the switch.
+    if (initial.breakpoints.length > 0) {
+      view.dispatch({ effects: setBreakpoints.of(initial.breakpoints) })
+    }
     const handle: EditorHandle = {
       view,
       revealSpan: (from, to) => {

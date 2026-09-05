@@ -13,6 +13,7 @@ import {
   openDocumentStore,
   readDocument,
   readPersisted,
+  type StorageLike,
   startDocumentPersisting,
   startPersisting,
 } from './store/persist'
@@ -20,13 +21,39 @@ import { createEditorStore, type EditorStore } from './store/store'
 import { applyTheme, watchSystemTheme } from './theme/theme'
 import './index.css'
 
+// One environment for the whole session: a new object on every render would reinstall the
+// shortcuts and re-render the toolbar every time the update prompt changes.
+const env = browserEnvironment()
+
 function Root({ store }: { store: EditorStore }) {
   const { needRefresh, update } = useUpdatePrompt()
   return (
     <StoreProvider store={store}>
-      <App env={browserEnvironment()} />
+      <App env={env} />
       <UpdateToast needRefresh={needRefresh} update={update} />
     </StoreProvider>
+  )
+}
+
+/**
+ * Reading `localStorage` — the property itself, before any call — throws where the user agent
+ * blocks storage: third-party cookies off, a sandboxed iframe, private browsing on some
+ * platforms. The editor still runs there; it just does not remember anything.
+ */
+function storageOrNull(): StorageLike | null {
+  try {
+    return window.localStorage
+  } catch (error) {
+    console.warn('Storage is unavailable; settings will not be remembered', error)
+    return null
+  }
+}
+
+function render(root: HTMLElement, store: EditorStore): void {
+  createRoot(root).render(
+    <StrictMode>
+      <Root store={store} />
+    </StrictMode>,
   )
 }
 
@@ -34,7 +61,8 @@ function Root({ store }: { store: EditorStore }) {
 async function boot(): Promise<void> {
   const root = document.getElementById('root')
   if (!root) throw new Error('Missing #root element')
-  const persisted = readPersisted(localStorage)
+  const storage = storageOrNull()
+  const persisted = storage === null ? null : readPersisted(storage)
   const store = createEditorStore(new RuntimeHost(), {
     applyTheme,
     initialTheme: persisted?.settings.appearance.theme ?? 'system',
@@ -45,13 +73,14 @@ async function boot(): Promise<void> {
   const doc = await readDocument(idb)
   if (doc !== null) applyDocument(store, doc)
   await applyShareFromLocation(store)
-  startPersisting(store, localStorage)
+  if (storage !== null) startPersisting(store, storage)
   startDocumentPersisting(store, idb)
-  createRoot(root).render(
-    <StrictMode>
-      <Root store={store} />
-    </StrictMode>,
-  )
+  render(root, store)
 }
 
-void boot()
+boot().catch((error: unknown) => {
+  // Whatever went wrong, an empty page is the one outcome the editor must never produce.
+  console.warn('The editor could not restore its state; starting a fresh document', error)
+  const root = document.getElementById('root')
+  if (root !== null) render(root, createEditorStore(new RuntimeHost(), { applyTheme }))
+})

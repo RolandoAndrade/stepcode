@@ -33,5 +33,7 @@ describe('App', () => {
     })
     expect(document.title).toBe('● sin título.stepcode · StepCode')
     rendered.unmount()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F5', cancelable: true }))
+    expect(host.calls).toEqual(['start:run'])
   })
 })

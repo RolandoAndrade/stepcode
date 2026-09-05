@@ -2,7 +2,7 @@
 import { forceParsing } from '@codemirror/language'
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { currentLineOf, toggleBreakpoint } from '@stepcode/codemirror'
+import { breakpointLines, currentLineOf, toggleBreakpoint } from '@stepcode/codemirror'
 import { act } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, expect, it } from 'vitest'
@@ -51,6 +51,18 @@ describe('Editor', () => {
     expect(host.calls).toContain('setBreakpoints:3')
     view.dispatch({ effects: toggleBreakpoint.of({ line: 3 }) })
     expect(store.getState().breakpoints).toEqual([])
+  })
+
+  it('seeds the gutter from the breakpoints the store already holds', () => {
+    const { store, host } = storeWith({ source: FINE, breakpoints: [2] })
+    const ref = createRef<EditorHandle>()
+    renderWithStore(<Editor handleRef={ref} />, store)
+    const handle = ref.current
+    if (handle === null) throw new Error('the editor did not expose its handle')
+    expect(breakpointLines(handle.view.state)).toEqual([2])
+    expect(handle.view.dom.querySelectorAll('.cm-stepcode-breakpoint').length).toBe(1)
+    expect(store.getState().breakpoints).toEqual([2])
+    expect(host.calls).toContain('setBreakpoints:2')
   })
 
   it('moves the current-line marker when the store says so', () => {
