@@ -9,6 +9,7 @@ const functions = {
   stepcodeLanguage: api.stepcodeLanguage,
   stepcodeLint: api.stepcodeLint,
   stepcodeCompletion: api.stepcodeCompletion,
+  arrowInput: api.arrowInput,
   stepcodeSignatureHelp: api.stepcodeSignatureHelp,
   stepcodeHover: api.stepcodeHover,
   stepcodeBlockMatching: api.stepcodeBlockMatching,

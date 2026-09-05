@@ -39,10 +39,11 @@ view.dispatch({ effects: setCurrentLine.of(2) })
 One `LanguageSupport` per profile: the syntax tree (compiled by `stepcode`'s `compile` inside
 a Lezer parser, so highlighting, diagnostics and completion never disagree), lint, folding,
 indentation, block matching (`Si` ↔ `FinSi`), completion with block snippets, signature help,
-hover, and `F12` go to definition. Switch profiles by wrapping it in a `Compartment`.
+hover, `F12` go to definition, and `←` for a typed `<-`. Switch profiles by wrapping it in a `Compartment`.
 
 Every piece is also exported alone: `stepcodeLanguage`, `stepcodeLint`, `stepcodeCompletion`,
-`stepcodeSignatureHelp`, `stepcodeHover`, `stepcodeBlockMatching`, `stepcodeKeymap`.
+`stepcodeSignatureHelp`, `stepcodeHover`, `stepcodeBlockMatching`, `arrowInput`,
+`stepcodeKeymap`.
 `compileResultAt(state)` hands back the `CompileResult` the tree was built from, `treeDataAt(state)`
 adds the offset maps the features use, and `stepcodeDiagnostics(state, options)` is the lint
 mapping without the linter, for a host's own Problems panel.

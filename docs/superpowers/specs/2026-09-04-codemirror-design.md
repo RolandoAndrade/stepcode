@@ -32,7 +32,9 @@ import type { ResolvedProfile } from '@stepcode/profiles'
 import type { CompileResult, Identifier } from 'stepcode'
 
 // Everything, for one profile. A host that switches profiles wraps this in a Compartment.
-export function stepcode(options: { profile: ResolvedProfile; locale?: string }): LanguageSupport
+export function stepcode(options: {
+  profile: ResolvedProfile; locale?: string; completion?: boolean; arrow?: boolean
+}): LanguageSupport
 
 // The pieces, for a host that picks.
 export function stepcodeLanguage(profile: ResolvedProfile): Language
@@ -41,6 +43,7 @@ export function stepcodeCompletion(options: StepcodeOptions): Extension
 export function stepcodeSignatureHelp(options: StepcodeOptions): Extension
 export function stepcodeHover(options: StepcodeOptions): Extension
 export function stepcodeBlockMatching(): Extension          // bracketMatching() configured for us
+export function arrowInput(profile: ResolvedProfile): Extension  // types `<-` as `←` (§5.11)
 export const goToDefinition: Command                        // bound to F12 by stepcodeKeymap
 export const stepcodeKeymap: readonly KeyBinding[]
 
@@ -379,6 +382,16 @@ Tooltip class `cm-stepcode-hover`. `hoverTime` stays at the default.
 adds a cursor in CodeMirror and Alt-click starts rectangular selection, so the host picks its
 own gesture or a context-menu entry.
 
+### 5.11 Arrow input
+
+`arrowInput(profile)` is an `EditorView.inputHandler`: typing `-` right after a `<`, with an
+empty selection, replaces both characters with `←` in a single `input.type` transaction that
+leaves the cursor after the arrow, so one undo takes the pair back to `<`. The keyboard keeps
+the spelling it can reach and the document keeps the one the profile prints. It is off for a
+profile that assigns with `=` and for one whose `operators.assign` does not spell `←` (PSeInt
+itself), and it stays out of prose: the handler resolves the node at the insertion point and
+declines inside a `String` or a `Comment`. `stepcode({ arrow: false })` omits it.
+
 ## 6. Debug extensions
 
 Pure editor state; no import from the interpreter.
@@ -416,7 +429,7 @@ Pure editor state; no import from the interpreter.
 ```ts
 new LanguageSupport(stepcodeLanguage(profile), [
   stepcodeLint(o), stepcodeCompletion(o), stepcodeSignatureHelp(o), stepcodeHover(o),
-  stepcodeBlockMatching(), autocompletion(), indentOnInput(), foldGutter(),
+  stepcodeBlockMatching(), autocompletion(), arrowInput(profile), indentOnInput(), foldGutter(),
   keymap.of(stepcodeKeymap), stepcodeBaseTheme,
 ])
 ```
