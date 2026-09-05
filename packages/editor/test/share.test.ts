@@ -70,7 +70,7 @@ describe('applyShareHash', () => {
       { hash, pathname: '/editor/', search: '?ui=en' },
       (url) => replaced.push(url),
     )
-    expect(applied).toBe(true)
+    expect(applied).not.toBeNull()
     expect(store.getState().source).toBe(SOURCE)
     expect(store.getState().profileId).toBe('en')
     expect(store.getState().name).toBe('compartido.stepcode')
@@ -88,7 +88,51 @@ describe('applyShareHash', () => {
 
   it('does nothing without a code hash', async () => {
     const store = createEditorStore(new FakeHost())
-    expect(await applyShareHash(store, { hash: '' }, () => {})).toBe(false)
-    expect(await applyShareHash(store, { hash: '#code=***' }, () => {})).toBe(false)
+    expect(await applyShareHash(store, { hash: '' }, () => {})).toBeNull()
+    expect(await applyShareHash(store, { hash: '#code=***' }, () => {})).toBeNull()
+  })
+})
+
+describe('the name in the hash', () => {
+  it('writes and reads name=, url-encoded', async () => {
+    const hash = await encodeShare({
+      source: SOURCE,
+      profileId: 'es',
+      name: 'mi programa.stepcode',
+    })
+    expect(hash).toContain('&name=mi%20programa.stepcode')
+    expect(await decodeShare(hash)).toEqual({
+      source: SOURCE,
+      profileId: 'es',
+      name: 'mi programa.stepcode',
+    })
+  })
+
+  it('omits the key entirely when there is no name', async () => {
+    const hash = await encodeShare({ source: SOURCE, profileId: 'es' })
+    expect(hash).not.toContain('name=')
+    expect(await decodeShare(hash)).toEqual({ source: SOURCE, profileId: 'es' })
+  })
+
+  it('still decodes a 4b link that has no name', async () => {
+    const hash = await encodeShare({ source: SOURCE, profileId: 'en', name: 'a.stepcode' })
+    const old = hash.replace('&name=a.stepcode', '')
+    expect(await decodeShare(old)).toEqual({ source: SOURCE, profileId: 'en' })
+  })
+
+  it('names the loaded document after the hash, and falls back to compartido', async () => {
+    const named = await encodeShare({ source: SOURCE, profileId: 'es', name: 'tarea.stepcode' })
+    const store = createEditorStore(new FakeHost())
+    expect(await applyShareHash(store, { hash: named }, () => {})).toEqual({
+      source: SOURCE,
+      profileId: 'es',
+      name: 'tarea.stepcode',
+    })
+    expect(store.getState().name).toBe('tarea.stepcode')
+
+    const plain = await encodeShare({ source: SOURCE, profileId: 'es' })
+    const other = createEditorStore(new FakeHost())
+    await applyShareHash(other, { hash: plain }, () => {})
+    expect(other.getState().name).toBe('compartido.stepcode')
   })
 })

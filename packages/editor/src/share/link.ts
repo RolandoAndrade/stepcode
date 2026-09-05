@@ -10,6 +10,8 @@ export const MAX_SHARE_BYTES = 5 * 1024 * 1024
 export interface SharePayload {
   readonly source: string
   readonly profileId: string
+  /** Spec §2.1: the document name, extension included; absent in 4b links. */
+  readonly name?: string
 }
 
 async function pipe(
@@ -47,11 +49,15 @@ async function inflate(bytes: Uint8Array, limit: number): Promise<Uint8Array | n
   return out
 }
 
-/** Spec §8.5: `#code=<base64url(deflate-raw(utf8))>&profile=<id>`. */
+/** Spec §8.5 + §2.1: `#code=<base64url(deflate-raw(utf8))>&profile=<id>[&name=<name>]`. */
 export async function encodeShare(payload: SharePayload): Promise<string> {
   const bytes = new TextEncoder().encode(payload.source)
   const deflated = await pipe(bytes, new CompressionStream('deflate-raw'))
-  return `#code=${toBase64Url(deflated)}&profile=${encodeURIComponent(payload.profileId)}`
+  const name =
+    payload.name === undefined || payload.name === ''
+      ? ''
+      : `&name=${encodeURIComponent(payload.name)}`
+  return `#code=${toBase64Url(deflated)}&profile=${encodeURIComponent(payload.profileId)}${name}`
 }
 
 export async function decodeShare(
@@ -66,7 +72,10 @@ export async function decodeShare(
     const inflated = await inflate(fromBase64Url(code), maxBytes)
     if (inflated === null) return null
     const source = new TextDecoder('utf-8', { fatal: true }).decode(inflated)
-    return { source, profileId: params.get('profile') ?? 'es' }
+    const profileId = params.get('profile') ?? 'es'
+    const name = params.get('name')
+    // `exactOptionalPropertyTypes`: an absent name is an absent key, never `undefined`.
+    return name === null || name === '' ? { source, profileId } : { source, profileId, name }
   } catch {
     return null
   }
@@ -87,15 +96,15 @@ export async function applyShareHash(
   store: EditorStore,
   location: { readonly hash: string; readonly pathname?: string; readonly search?: string },
   replaceState: (url: string) => void,
-): Promise<boolean> {
+): Promise<SharePayload | null> {
   const payload = await decodeShare(location.hash)
-  if (payload === null) return false
+  if (payload === null) return null
   const s = store.getState()
   const known =
     builtinProfiles.has(payload.profileId) || customProfileOf(s, payload.profileId) !== undefined
   if (!known) s.notify(stringsOf(s).share.unknownProfile)
   s.requestReplace({
-    name: stringsOf(s).app.shared,
+    name: payload.name ?? stringsOf(s).app.shared,
     source: payload.source,
     profileId: known ? payload.profileId : 'es',
   })
@@ -103,5 +112,5 @@ export async function applyShareHash(
   const pathname = location.pathname ?? globalThis.location?.pathname ?? '/'
   const search = location.search ?? globalThis.location?.search ?? ''
   replaceState(`${pathname}${search}`)
-  return true
+  return payload
 }

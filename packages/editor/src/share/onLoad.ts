@@ -10,6 +10,6 @@ function dropHash(url: string): void {
   }
 }
 
-export function applyShareFromLocation(store: EditorStore): Promise<boolean> {
-  return applyShareHash(store, window.location, dropHash)
+export async function applyShareFromLocation(store: EditorStore): Promise<boolean> {
+  return (await applyShareHash(store, window.location, dropHash)) !== null
 }
