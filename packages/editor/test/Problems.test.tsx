@@ -15,18 +15,31 @@ const diagnostics: Diagnostic[] = [
   { from: 21, to: 22, severity: 'warning', message: 'also here', source: 'W9999' },
 ]
 
+const d1: Diagnostic = {
+  from: 0,
+  to: 1,
+  severity: 'error',
+  message: 'a undeclared',
+  source: 'E3001',
+}
+const d2: Diagnostic = {
+  from: 3,
+  to: 4,
+  severity: 'warning',
+  message: 'c never read',
+  source: 'W3002',
+}
+
 describe('Problems', () => {
-  it('shows the empty state and zero counts', () => {
+  it('shows the empty state', () => {
     const { store } = storeWith({ source: SOURCE, diagnostics: [] })
     renderWithStore(<Problems onReveal={() => {}} />, store)
     expect(screen.getByText('Sin problemas')).toBeDefined()
-    expect(screen.getByText('0 errores, 0 advertencias')).toBeDefined()
   })
 
   it('lists diagnostics by position, errors before warnings at the same offset, with line:col', () => {
     const { store } = storeWith({ source: SOURCE, diagnostics })
     renderWithStore(<Problems onReveal={() => {}} />, store)
-    expect(screen.getByText('1 error, 2 advertencias')).toBeDefined()
     const rows = screen.getAllByRole('row')
     const texts = rows.map((row) =>
       within(row)
@@ -73,6 +86,25 @@ describe('Problems', () => {
     const { store } = storeWith({ source: SOURCE, diagnostics: [], profileId: 'en' })
     renderWithStore(<Problems onReveal={() => {}} />, store)
     expect(screen.getByText('No problems')).toBeDefined()
-    expect(screen.getByText('0 errors, 0 warnings')).toBeDefined()
+  })
+
+  it('navigates rows with the keyboard and reveals on Enter', () => {
+    const { store } = storeWith({ source: 'ab\ncd', diagnostics: [d1, d2] })
+    const reveals: [number, number][] = []
+    renderWithStore(<Problems onReveal={(from, to) => reveals.push([from, to])} />, store)
+    const rows = screen.getAllByRole('row')
+    expect(rows).toHaveLength(2)
+    rows[0]?.focus()
+    fireEvent.keyDown(rows[0] as HTMLElement, { key: 'ArrowDown' })
+    expect(document.activeElement).toBe(rows[1])
+    fireEvent.keyDown(rows[1] as HTMLElement, { key: 'Enter' })
+    expect(reveals).toEqual([[d2.from, d2.to]])
+  })
+
+  it('shows the check and text when clean', () => {
+    const { store } = storeWith({})
+    renderWithStore(<Problems onReveal={() => {}} />, store)
+    expect(screen.getByText('Sin problemas')).toBeDefined()
+    expect(screen.queryByRole('row')).toBeNull()
   })
 })

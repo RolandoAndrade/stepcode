@@ -11,9 +11,11 @@ import {
   darkExtension,
   languageExtension,
   readOnlyExtension,
+  settingsExtension,
 } from '../src/editor/extensions'
 import { HIGHLIGHT_SPECS } from '../src/editor/highlight'
 import { EDITOR_THEME_SPEC } from '../src/editor/theme'
+import { DEFAULT_SETTINGS } from '../src/store/settings'
 
 const PROGRAM = [
   'Proceso p',
@@ -29,6 +31,7 @@ function viewFor(doc = PROGRAM) {
     locale: 'es',
     readOnly: false,
     dark: false,
+    settings: DEFAULT_SETTINGS.editor,
   })
   const view = new EditorView({
     parent: document.body,
@@ -147,5 +150,29 @@ describe('createExtensions', () => {
     const diagnostics = stepcodeDiagnostics(view.state, { profile: profiles.en, locale: 'en' })
     expect(diagnostics.length).toBeGreaterThan(0)
     view.destroy()
+  })
+})
+
+describe('settingsExtension', () => {
+  it('applies tab size, wrapping, line numbers and font size', () => {
+    const base = { ...DEFAULT_SETTINGS.editor, tabSize: 2 as const, wordWrap: true, fontSize: 18 }
+    const state = EditorState.create({
+      doc: 'x',
+      extensions: settingsExtension(base, profiles.es, 'es'),
+    })
+    expect(state.tabSize).toBe(2)
+    const view = new EditorView({ state })
+    expect(view.contentDOM.classList.contains('cm-lineWrapping')).toBe(true)
+    expect(view.dom.querySelector('.cm-gutters')).not.toBeNull()
+    expect(view.dom.style.getPropertyValue('--sc-editor-font-size')).toBe('18px')
+    view.destroy()
+    const noNumbers = new EditorView({
+      state: EditorState.create({
+        doc: 'x',
+        extensions: settingsExtension({ ...base, lineNumbers: false }, profiles.es, 'es'),
+      }),
+    })
+    expect(noNumbers.dom.querySelector('.cm-lineNumbers')).toBeNull()
+    noNumbers.destroy()
   })
 })

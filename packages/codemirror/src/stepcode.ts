@@ -16,7 +16,12 @@ import { stepcodeBaseTheme } from './theme'
  * Spec §7: everything for one profile. Deliberately absent: a highlight style, the lint
  * gutter, line numbers, history and the default keymap — those are the host's.
  */
-export function stepcode(options: { profile: ResolvedProfile; locale?: string }): LanguageSupport {
+export function stepcode(options: {
+  profile: ResolvedProfile
+  locale?: string
+  /** Include the autocompletion extension (default true); the editor's setting turns it off. */
+  completion?: boolean
+}): LanguageSupport {
   const resolved: StepcodeOptions = {
     profile: options.profile,
     locale: options.locale ?? options.profile.locale,
@@ -27,7 +32,7 @@ export function stepcode(options: { profile: ResolvedProfile; locale?: string })
     stepcodeSignatureHelp(resolved),
     stepcodeHover(resolved),
     stepcodeBlockMatching(),
-    autocompletion(),
+    ...(options.completion === false ? [] : [autocompletion()]),
     indentOnInput(),
     foldGutter(),
     keymap.of(stepcodeKeymap),

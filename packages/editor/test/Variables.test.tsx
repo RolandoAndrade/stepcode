@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import { screen, within } from '@testing-library/react'
+import { act, screen, within } from '@testing-library/react'
 import type { Frame } from 'stepcode'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Variables } from '../src/panels/Variables'
 import { renderWithStore, storeWith } from './render'
 
@@ -25,6 +25,14 @@ const outer: Frame = {
       value: { element: 'integer', dims: [2], data: [1, 2] },
     },
   ],
+}
+
+function frameWith(value: number): Frame {
+  return {
+    name: 'p',
+    line: 1,
+    variables: [{ name: 'a', kind: 'variable', type: { kind: 'scalar', name: 'integer' }, value }],
+  }
 }
 
 describe('Variables', () => {
@@ -59,5 +67,25 @@ describe('Variables', () => {
     renderWithStore(<Variables />, store)
     expect(screen.getByRole('heading', { level: 3 }).textContent).toBe('p · line 7')
     expect(screen.getByText('Array of Integer')).toBeDefined()
+  })
+
+  it('renders frames as open details and flashes changed values', () => {
+    vi.useFakeTimers()
+    const { store, host } = storeWith({ state: 'paused' })
+    renderWithStore(<Variables />, store)
+    act(() => host.emit({ kind: 'paused', reason: 'step', line: 2, frames: [frameWith(1)] }))
+    expect(screen.getAllByRole('group')).toHaveLength(1)
+    act(() => host.emit({ kind: 'paused', reason: 'step', line: 3, frames: [frameWith(2)] }))
+    const cell = screen.getByText('2')
+    expect(cell.getAttribute('data-changed')).toBe('true')
+    act(() => vi.advanceTimersByTime(600))
+    expect(cell.getAttribute('data-changed')).toBeNull()
+    vi.useRealTimers()
+  })
+
+  it('asks to pause when a program runs without frames', () => {
+    const { store } = storeWith({ state: 'running' })
+    renderWithStore(<Variables />, store)
+    expect(screen.getByText('Pausa el programa para ver las variables')).toBeDefined()
   })
 })

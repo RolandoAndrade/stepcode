@@ -11,8 +11,8 @@ import { type RefObject, useEffect, useRef } from 'react'
 import {
   createExtensions,
   darkExtension,
-  languageExtension,
   readOnlyExtension,
+  settingsExtension,
 } from '../editor/extensions'
 import { useEditorStore, useEditorStoreApi } from '../store/context'
 import { canEdit, localeOf, profileOf, stringsOf } from '../store/store'
@@ -21,6 +21,8 @@ import { canEdit, localeOf, profileOf, stringsOf } from '../store/store'
 export interface EditorHandle {
   readonly view: EditorView
   revealSpan(from: number, to: number): void
+  focus(): void
+  revealLine(line: number): void
 }
 
 export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | null> }) {
@@ -37,6 +39,7 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
       ...options,
       readOnly: !canEdit(initial.state),
       dark: initial.theme === 'dark',
+      settings: initial.settings.editor,
     })
     const view = new EditorView({
       parent,
@@ -51,6 +54,11 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
               actions.setDiagnostics(stepcodeDiagnostics(update.state, options))
             }
             if (breakpointsChanged(update)) actions.setBreakpoints(breakpointLines(update.state))
+            if (update.selectionSet || update.docChanged) {
+              const head = update.state.selection.main.head
+              const line = update.state.doc.lineAt(head)
+              actions.setCursor(line.number, head - line.from + 1)
+            }
           }),
         ],
       }),
@@ -69,6 +77,12 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
         })
         view.focus()
       },
+      focus: () => view.focus(),
+      revealLine: (line) => {
+        const clamped = Math.min(Math.max(line, 1), view.state.doc.lines)
+        const from = view.state.doc.line(clamped).from
+        handle.revealSpan(from, from)
+      },
     }
     if (handleRef !== undefined) handleRef.current = handle
 
@@ -80,8 +94,14 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
       if (next.profileId !== previous.profileId) {
         options = { profile: profileOf(next), locale: localeOf(next) }
         view.dispatch({
-          effects: compartments.language.reconfigure(
-            languageExtension(options.profile, options.locale),
+          effects: compartments.settings.reconfigure(
+            settingsExtension(next.settings.editor, options.profile, options.locale),
+          ),
+        })
+      } else if (next.settings.editor !== previous.settings.editor) {
+        view.dispatch({
+          effects: compartments.settings.reconfigure(
+            settingsExtension(next.settings.editor, options.profile, options.locale),
           ),
         })
       }

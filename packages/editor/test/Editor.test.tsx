@@ -3,6 +3,7 @@ import { forceParsing } from '@codemirror/language'
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { currentLineOf, toggleBreakpoint } from '@stepcode/codemirror'
+import { act } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, expect, it } from 'vitest'
 import { Editor, type EditorHandle } from '../src/panels/Editor'
@@ -94,6 +95,21 @@ describe('Editor', () => {
     handle.revealSpan(12, 13)
     expect(view.state.selection.main.from).toBe(12)
     expect(view.state.selection.main.to).toBe(13)
+  })
+
+  it('reports the cursor position and applies editor settings live', () => {
+    const { store, handle, view } = mount(FINE)
+    view.dispatch({ selection: { anchor: FINE.indexOf('a <- 1') } })
+    expect(store.getState().cursor).toEqual({ line: 3, column: 3 })
+    act(() => {
+      store.getState().updateSettings('editor', { fontSize: 17, lineNumbers: false })
+    })
+    expect(view.dom.style.getPropertyValue('--sc-editor-font-size')).toBe('17px')
+    expect(view.dom.querySelector('.cm-lineNumbers')).toBeNull()
+    handle.focus()
+    expect(view.hasFocus || document.activeElement === view.contentDOM).toBe(true)
+    handle.revealLine(4)
+    expect(view.state.selection.main.head).toBe(view.state.doc.line(4).from)
   })
 
   it('destroys the view and clears the handle on unmount', () => {
