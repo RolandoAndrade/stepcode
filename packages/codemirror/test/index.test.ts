@@ -27,7 +27,6 @@ const functions = {
 /** Everything the barrel exports at runtime — nothing beyond spec §3 (types erase). */
 const surface = [
   ...Object.keys(functions),
-  'packageName',
   'stepcodeKeymap',
   'toggleBreakpoint',
   'setBreakpoints',
@@ -35,10 +34,6 @@ const surface = [
 ].sort()
 
 describe('@stepcode/codemirror', () => {
-  it('exposes its package name', () => {
-    expect(api.packageName).toBe('@stepcode/codemirror')
-  })
-
   it('exports the surface of spec §3', () => {
     for (const [name, value] of Object.entries(functions)) {
       expect(typeof value, name).toBe('function')

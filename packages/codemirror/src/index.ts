@@ -2,8 +2,6 @@
  * The package's public surface: spec §3 and nothing else. Every other module keeps its own
  * exports for the tests and for this barrel; they are not part of the API.
  */
-export const packageName = '@stepcode/codemirror'
-
 export { stepcodeCompletion } from './completion'
 export {
   breakpointLines,
