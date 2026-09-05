@@ -69,7 +69,10 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     const api = apiRef.current
     const controller = controllerRef.current
     if (api === null || controller === null) return
-    setPanelStates(panelStatesOf(api, (groupId) => controller.isCollapsed(groupId)))
+    // The previous states carry each panel's zone forward while its group has no box to measure.
+    setPanelStates((previous) =>
+      panelStatesOf(api, (groupId) => controller.isCollapsed(groupId), previous),
+    )
   }, [])
 
   const reset = useCallback(() => {

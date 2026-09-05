@@ -8,6 +8,7 @@ export interface RectLike {
   readonly right: number
   readonly bottom: number
   readonly width: number
+  readonly height: number
 }
 
 /** The structural subset of `DockviewApi` the sidebar's state needs. */
@@ -24,7 +25,7 @@ export interface PanelHostLike {
     | undefined
 }
 
-const ZERO: RectLike = { top: 0, left: 0, right: 0, bottom: 0, width: 0 }
+const ZERO: RectLike = { top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }
 
 /** What the sidebar draws before the dock exists, and for a panel the layout lost. */
 export const HIDDEN_PANEL_STATES: PanelStates = Object.freeze(
@@ -38,11 +39,13 @@ export const HIDDEN_PANEL_STATES: PanelStates = Object.freeze(
  * right of the editor is the right strip, above it the left strip's top cluster, and anything
  * else (below, or to the left) the bottom cluster the default layout uses.
  *
- * An unmeasured group keeps the default: happy-dom reports zeros, and so does dockview before it
- * has laid the group out.
+ * A group with no box keeps `fallback` — its previous zone. happy-dom reports zeros, dockview
+ * reports zeros before it has laid a group out, and a *collapsed* group is a zero-height box
+ * parked at the top of the grid, which would otherwise throw every icon into the top cluster.
  */
-export function zoneFor(editor: RectLike, group: RectLike): Zone {
-  if (editor.width === 0 || group.width === 0) return 'left-bottom'
+export function zoneFor(editor: RectLike, group: RectLike, fallback: Zone = 'left-bottom'): Zone {
+  const measured = editor.width > 0 && editor.height > 0 && group.width > 0 && group.height > 0
+  if (!measured) return fallback
   if (group.left >= editor.right) return 'right'
   if (group.bottom <= editor.top) return 'left-top'
   return 'left-bottom'
@@ -52,18 +55,20 @@ export function zoneFor(editor: RectLike, group: RectLike): Zone {
  * Spec §3.3: a panel is visible when its group is not collapsed, and active when it is the tab in
  * front of that group. `isCollapsed` comes from the shell's own controller rather than dockview's
  * `api.isVisible`, which `fromJSON` restores without firing the visibility event it is fed from.
- * A floating or popped-out group can sit anywhere, so its panels keep the default zone.
+ * A floating or popped-out group can sit anywhere, so its panels keep the zone they had.
  */
 export function panelStatesOf(
   api: PanelHostLike,
   isCollapsed: (groupId: string) => boolean,
+  previous: PanelStates = HIDDEN_PANEL_STATES,
 ): PanelStates {
   const editor = api.getPanel('editor')?.group.element?.getBoundingClientRect() ?? ZERO
   const states: Record<string, { visible: boolean; active: boolean; zone: Zone }> = {}
   for (const id of PANEL_IDS) {
     const panel = api.getPanel(id)
+    const kept = previous[id].zone
     if (panel === undefined) {
-      states[id] = { visible: false, active: false, zone: 'left-bottom' }
+      states[id] = { visible: false, active: false, zone: kept }
       continue
     }
     const grid = panel.group.api.location.type === 'grid'
@@ -71,7 +76,7 @@ export function panelStatesOf(
     states[id] = {
       visible: !isCollapsed(panel.group.id),
       active: panel.group.activePanel?.id === id,
-      zone: grid ? zoneFor(editor, box) : 'left-bottom',
+      zone: grid ? zoneFor(editor, box, kept) : kept,
     }
   }
   return states as PanelStates

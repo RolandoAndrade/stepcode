@@ -99,11 +99,16 @@ describe('zoneFor', () => {
     expect(zoneFor(EDITOR, rect(0, 40, 40, 500))).toBe('left-bottom')
   })
 
-  it('falls back to the bottom cluster while nothing is measured', () => {
-    // happy-dom reports zeros, and so does a group dockview has not laid out yet.
+  it('keeps the zone it is given while nothing is measured', () => {
+    // happy-dom reports zeros, so does a group dockview has not laid out yet — and so does a
+    // collapsed group, which is a zero-height box parked at the top of the grid.
     const zero = rect(0, 0, 0, 0)
+    const collapsed = rect(40, 40, 900, 0)
     expect(zoneFor(zero, zero)).toBe('left-bottom')
     expect(zoneFor(EDITOR, zero)).toBe('left-bottom')
+    expect(zoneFor(EDITOR, collapsed)).toBe('left-bottom')
+    expect(zoneFor(EDITOR, collapsed, 'right')).toBe('right')
+    expect(zoneFor(EDITOR, zero, 'left-top')).toBe('left-top')
   })
 })
 
@@ -121,5 +126,27 @@ describe('panelStatesOf zones', () => {
     expect(states.console.zone).toBe('right')
     expect(states.problems.zone).toBe('left-top')
     expect(states.variables.zone).toBe('left-bottom')
+  })
+
+  it('keeps a panel on its own strip while its group is hidden', () => {
+    // A collapsed group has no box, so the icon has to stay where the user last saw it.
+    const docked = api({
+      editor: { group: 'main', active: 'editor', box: EDITOR },
+      console: { group: 'side', active: 'console', box: rect(960, 40, 300, 500) },
+      problems: { group: 'side', active: 'console', box: rect(960, 40, 300, 500) },
+      variables: { group: 'side', active: 'console', box: rect(960, 40, 300, 500) },
+    })
+    const shown = panelStatesOf(docked, () => false)
+    const hidden = api({
+      editor: { group: 'main', active: 'editor', box: EDITOR },
+      console: { group: 'side', active: 'console', box: rect(960, 40, 300, 0) },
+      problems: { group: 'side', active: 'console', box: rect(960, 40, 300, 0) },
+      variables: { group: 'side', active: 'console', box: rect(960, 40, 300, 0) },
+    })
+    expect(panelStatesOf(hidden, () => true, shown).console).toEqual({
+      visible: false,
+      active: true,
+      zone: 'right',
+    })
   })
 })

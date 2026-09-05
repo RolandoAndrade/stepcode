@@ -108,7 +108,8 @@ export function Sidebar({
       role="toolbar"
       aria-orientation="vertical"
       data-zone={zone}
-      className={`flex min-h-10 flex-col items-center gap-1 py-1 ${extra} ${
+      // Each cluster takes half the strip so a drop anywhere on it lands in one of the zones.
+      className={`flex flex-1 flex-col items-center gap-1 py-1 ${extra} ${
         dragging ? 'bg-accent-soft' : ''
       }`}
       onDragOver={(event) => {
@@ -145,13 +146,13 @@ export function Sidebar({
   return (
     <div className="flex h-full w-full">
       <div className="flex w-10 shrink-0 flex-col border-border border-r bg-surface">
-        {cluster('left-top', '')}
-        {cluster('left-bottom', 'mt-auto')}
+        {cluster('left-top', 'justify-start')}
+        {cluster('left-bottom', 'justify-end')}
       </div>
       {children}
       {right.length > 0 || dragging ? (
         <div className="flex w-10 shrink-0 flex-col border-border border-l bg-surface">
-          {cluster('right', 'mt-auto')}
+          {cluster('right', 'justify-end')}
         </div>
       ) : null}
     </div>
