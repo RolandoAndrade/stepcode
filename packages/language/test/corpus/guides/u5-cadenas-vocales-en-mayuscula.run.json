@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "only the vowels come back uppercase",
+      "inputs": ["algoritmo"],
+      "output": "Introduce texto: \nResultado: AlgOrItmO\n"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "procedure receives parameters",
+      "inputs": [],
+      "output": "30\n"
+    }
+  ]
+}

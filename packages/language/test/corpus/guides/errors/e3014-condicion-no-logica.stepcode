@@ -1,0 +1,9 @@
+// expect: E3014
+// U4 P1: se usa el número como condición, sin comparar.
+Proceso CondicionNumerica
+    Definir caramelos Como Entero;
+    Leer caramelos;
+    Si caramelos Entonces
+        Escribir "Quedan caramelos";
+    FinSi
+FinProceso

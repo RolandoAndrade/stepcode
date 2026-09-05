@@ -1,0 +1,8 @@
+// expect: E3033
+// U6 P1: se retorna un valor desde el proceso principal.
+Proceso RetornarEnProceso
+    Definir n Como Entero;
+    Leer n;
+    Escribir n;
+    Retornar n;
+FinProceso

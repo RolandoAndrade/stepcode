@@ -1,0 +1,9 @@
+Funcion valor <- prueba(a Como Entero, b Como Entero)
+        Escribir 'hola';
+        valor <- a + b;
+      FinFuncion
+      Proceso pruebaProceso
+        Definir a Como Entero;
+        a <- prueba(10, 20);
+        Escribir a;
+      FinProceso

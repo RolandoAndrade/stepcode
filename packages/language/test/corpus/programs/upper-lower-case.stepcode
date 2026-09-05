@@ -1,0 +1,16 @@
+Proceso MayusculasMinusculas
+    Definir palabra Como Cadena;
+    Definir letra Como Caracter;
+    Definir i Como Entero;
+    Escribir 'Introduce palabra';
+    Leer palabra;
+    Para i ← 1 Hasta Longitud(palabra) Con Paso 1 Hacer
+        Si i MOD 2 = 0 Entonces
+            letra ← Minusculas(palabra[i]);
+        Sino
+            letra ← Mayusculas(palabra[i]);
+        FinSi
+        palabra ← Subcadena(palabra, 1, i - 1) + letra + Subcadena(palabra, i + 1, Longitud(palabra));
+    FinPara
+    Escribir palabra;
+    FinProceso

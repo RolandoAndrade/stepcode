@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "procedure cannot override variable of the process",
+      "inputs": [],
+      "output": "20\n"
+    }
+  ]
+}

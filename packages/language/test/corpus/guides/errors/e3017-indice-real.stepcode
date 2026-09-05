@@ -1,0 +1,9 @@
+// expect: E3017
+// U5 Arreglos P5: se indexa con un Real.
+Proceso IndiceReal
+    Definir a Como Entero[10];
+    Definir posicion Como Real;
+    Leer posicion;
+    Leer a[posicion];
+    Escribir a[1];
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a gross salary that reaches every tax tier",
+      "inputs": ["40", "2500"],
+      "output": "Introduce horas trabajadas: \nIntroduce salario por horas: \nEl salario bruto es 100000\nImpuestos a pagar: 19000\nSueldo neto: 81000\n"
+    }
+  ]
+}

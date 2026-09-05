@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test round",
+      "inputs": ["-1.5", "1.5"],
+      "output": "-2\n2\n"
+    }
+  ]
+}

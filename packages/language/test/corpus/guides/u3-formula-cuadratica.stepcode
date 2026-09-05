@@ -1,0 +1,23 @@
+// Guía Práctica U3 — Pregunta 6.f: (-b ± raíz(b^2 - 4ac)) / 2a como expresión algorítmica.
+Proceso FormulaCuadratica
+    Definir a, b, c, discriminante, x1, x2 Como Real;
+    Escribir "Introduce a: ";
+    Leer a;
+    Escribir "Introduce b: ";
+    Leer b;
+    Escribir "Introduce c: ";
+    Leer c;
+    Si Abs(a) < 0.000001 Entonces
+        Escribir "No es una ecuacion de segundo grado";
+    Sino
+        discriminante <- b ^ 2 - 4 * a * c;
+        Si discriminante < 0 Entonces
+            Escribir "No tiene raices reales";
+        Sino
+            x1 <- (-b + RC(discriminante)) / (2 * a);
+            x2 <- (-b - RC(discriminante)) / (2 * a);
+            Escribir "x1 = ", x1;
+            Escribir "x2 = ", x2;
+        FinSi
+    FinSi
+FinProceso

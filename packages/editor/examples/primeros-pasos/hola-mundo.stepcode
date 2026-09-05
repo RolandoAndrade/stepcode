@@ -1,0 +1,5 @@
+// título: Hola mundo
+// descripción: Escribe un saludo en la consola
+Proceso HolaMundo
+  Escribir 'Hola, mundo';
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test pass string by reference",
+      "inputs": [],
+      "output": "adios\n"
+    }
+  ]
+}

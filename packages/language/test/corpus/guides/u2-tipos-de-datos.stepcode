@@ -1,0 +1,23 @@
+// Guía Práctica U2 — Pregunta 3: un dato de cada tipo, para leer el análisis semántico como programa.
+Proceso TiposDeDatos
+    Definir nombre Como Cadena;
+    Definir edad Como Entero;
+    Definir estatura Como Real;
+    Definir inicial Como Caracter;
+    Definir esEstudiante Como Logico;
+    Escribir "Nombre: ";
+    Leer nombre;
+    Escribir "Edad: ";
+    Leer edad;
+    Escribir "Estatura en metros: ";
+    Leer estatura;
+    Escribir "Inicial del apellido: ";
+    Leer inicial;
+    esEstudiante <- edad < 25;
+    Escribir "Cadena: ", nombre;
+    Escribir "Entero: ", edad;
+    Escribir "Real: ", estatura;
+    Escribir "Caracter: ", inicial;
+    Escribir "Logico: ", esEstudiante;
+    Escribir "Todo junto: ", Concatenar(nombre, ConvertirATexto(edad));
+FinProceso

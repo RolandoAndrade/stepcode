@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test simple repeat until statement with continue",
+      "inputs": [],
+      "output": "1\n3\n5\n"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+packages:
+  - packages/*
+
+allowBuilds:
+  esbuild: true
+  workerd: true
+
+catalog:
+  typescript: ^7.0.2
+  vitest: ^4.1.11
+  tsdown: ^0.22.14
+  '@types/node': ^24.13.3
+  fast-check: ^4.3.0
+  '@codemirror/state': ^6.7.2
+  '@codemirror/view': ^6.43.11
+  '@codemirror/language': ^6.12.4
+  '@codemirror/lint': ^6.9.7
+  '@codemirror/autocomplete': ^6.20.3
+  '@lezer/common': ^1.5.2
+  '@lezer/highlight': ^1.2.3
+  happy-dom: ^20.13.2
+  '@codemirror/commands': ^6.11.0
+  '@vitest/web-worker': ^4.1.11
+  zod: ^4.5.4
+
+minimumReleaseAgeExclude:
+  - '@biomejs/biome@2.5.12'
+  - '@biomejs/cli-darwin-arm64@2.5.12'
+  - '@biomejs/cli-darwin-x64@2.5.12'
+  - '@biomejs/cli-linux-arm64-musl@2.5.12'
+  - '@biomejs/cli-linux-arm64@2.5.12'
+  - '@biomejs/cli-linux-x64-musl@2.5.12'
+  - '@biomejs/cli-linux-x64@2.5.12'
+  - '@biomejs/cli-win32-arm64@2.5.12'
+  - '@biomejs/cli-win32-x64@2.5.12'
+  - '@types/react-dom@19.2.7'
+  - happy-dom@20.13.2
+  - lucide-react@1.41.0

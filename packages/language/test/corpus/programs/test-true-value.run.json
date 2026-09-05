@@ -1,0 +1,14 @@
+{
+  "runs": [
+    {
+      "name": "test 1",
+      "inputs": ["2", "3", "4"],
+      "output": "VerdaderoFalsoFalso\nFalso\nFalso\n"
+    },
+    {
+      "name": "test 2",
+      "inputs": ["7", "2", "8"],
+      "output": "VerdaderoFalsoFalso\nFalso\nFalso\n"
+    }
+  ]
+}

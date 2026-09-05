@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "forty-five degrees, where the tangent is one",
+      "inputs": ["45"],
+      "output": "Introduce el angulo en grados: \nEl resultado es: 1.4142135623730951\nEl seno es: 0.7071067811865475\nEl coseno es: 0.7071067811865476\nEl logaritmo natural del angulo es: -0.2415644752704905\nLa exponencial del angulo es: 2.1932800507380152\n"
+    }
+  ]
+}

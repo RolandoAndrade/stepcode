@@ -1,0 +1,30 @@
+// Guía U5 Arreglos — Pregunta 6: buscar una cadena dentro de un arreglo de cadenas.
+Funcion Buscar(a Como Cadena[], n Como Entero, buscada Como Cadena): Entero
+    Definir i Como Entero;
+    Para i <- 1 Hasta n Hacer
+        Si Minusculas(a[i]) = Minusculas(buscada) Entonces
+            Retornar i;
+        FinSi
+    FinPara
+    Retornar -1;
+FinFuncion
+
+Proceso BuscarCadena
+    Definir a Como Cadena[10];
+    Definir n, i, posicion Como Entero;
+    Definir buscada Como Cadena;
+    Escribir "Introduce n: ";
+    Leer n;
+    Para i <- 1 Hasta n Hacer
+        Escribir "a[", i, "]: ";
+        Leer a[i];
+    FinPara
+    Escribir "Buscar: ";
+    Leer buscada;
+    posicion <- Buscar(a, n, buscada);
+    Si posicion = -1 Entonces
+        Escribir buscada, " no esta en el arreglo";
+    Sino
+        Escribir buscada, " esta en la posicion ", posicion;
+    FinSi
+FinProceso

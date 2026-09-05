@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic sub operation",
+      "inputs": [],
+      "output": "-10\n"
+    }
+  ]
+}

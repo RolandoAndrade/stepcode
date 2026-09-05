@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test complex operations with constants",
+      "inputs": [],
+      "output": "14.5\n"
+    }
+  ]
+}

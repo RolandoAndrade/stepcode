@@ -1,0 +1,8 @@
+// expect: E3025
+// U1 P6: la velocidad constante se escribe como cero.
+Proceso TiempoEntreCero
+    Definir desplazamiento, tiempo Como Real;
+    Leer desplazamiento;
+    tiempo <- desplazamiento / 0;
+    Escribir tiempo;
+FinProceso

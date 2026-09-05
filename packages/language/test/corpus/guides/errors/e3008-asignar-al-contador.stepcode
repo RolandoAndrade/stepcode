@@ -1,0 +1,11 @@
+// expect: E3008
+// U5 Arreglos P1: se modifica el contador dentro de su propio Para.
+Proceso ContadorModificado
+    Definir i, total Como Entero;
+    total <- 0;
+    Para i <- 1 Hasta 10 Hacer
+        total <- total + i;
+        i <- i + 1;
+    FinPara
+    Escribir total;
+FinProceso

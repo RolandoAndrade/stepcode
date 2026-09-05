@@ -1,0 +1,6 @@
+SubProceso suma(a Como Entero, b Como Entero)
+        Escribir a + b;
+      FinSubProceso
+      Proceso prueba
+        suma(10, 20);
+      FinProceso

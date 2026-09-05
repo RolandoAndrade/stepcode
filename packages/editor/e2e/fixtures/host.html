@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Host</title>
+  </head>
+  <body style="margin: 0">
+    <iframe
+      id="frame"
+      src="/embed"
+      width="100%"
+      height="480"
+      style="border: 0"
+      title="StepCode"
+    ></iframe>
+    <script>
+      window.received = []
+      window.addEventListener('message', (event) => {
+        window.received.push(event.data)
+      })
+      window.send = (message) => {
+        document.getElementById('frame').contentWindow.postMessage(message, '*')
+      }
+    </script>
+  </body>
+</html>

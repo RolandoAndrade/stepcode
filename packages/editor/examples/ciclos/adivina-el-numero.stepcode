@@ -1,0 +1,13 @@
+// título: Adivina el número
+// descripción: Repite hasta acertar con Mientras
+Proceso AdivinaElNumero
+  // El número secreto es fijo porque el lenguaje no tiene una función aleatoria.
+  Definir secreto, intento Como Entero;
+  secreto <- 7;
+  intento <- 0;
+  Mientras Que intento <> secreto Hacer
+    Escribir 'Intenta un número: ';
+    Leer intento;
+  FinMientras
+  Escribir 'Acertaste!';
+FinProceso

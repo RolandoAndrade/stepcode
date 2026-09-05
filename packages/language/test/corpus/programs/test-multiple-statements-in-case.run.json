@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test multiple statements in case",
+      "inputs": [],
+      "output": "a=1\nb=2\n"
+    }
+  ]
+}

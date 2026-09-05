@@ -1,0 +1,9 @@
+{
+  "id": "pseint",
+  "extends": "es",
+  "options": {
+    "requireSemicolons": false,
+    "implicitDeclarations": true,
+    "typedParameters": false
+  }
+}

@@ -1,0 +1,30 @@
+// Guía U5 Arreglos — Pregunta 3: eliminar los números pares de un arreglo, compactándolo.
+SubProceso EliminarPares(a Como Entero[], n Como Entero Por Referencia)
+    Definir i, quedan Como Entero;
+    quedan <- 0;
+    Para i <- 1 Hasta n Hacer
+        Si a[i] MOD 2 <> 0 Entonces
+            quedan <- quedan + 1;
+            a[quedan] <- a[i];
+        FinSi
+    FinPara
+    n <- quedan;
+FinSubProceso
+
+Proceso SinPares
+    Definir a Como Entero[10];
+    Definir n, i Como Entero;
+    Escribir "Introduce n: ";
+    Leer n;
+    Para i <- 1 Hasta n Hacer
+        Escribir "a[", i, "]: ";
+        Leer a[i];
+    FinPara
+    EliminarPares(a, n);
+    Escribir Sin Saltar "Sin pares es: ";
+    Para i <- 1 Hasta n Hacer
+        Escribir Sin Saltar a[i];
+        Escribir Sin Saltar " ";
+    FinPara
+    Escribir "";
+FinProceso

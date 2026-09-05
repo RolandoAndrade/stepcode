@@ -1,0 +1,97 @@
+/*
+ * Spec §8.1: every color the editor uses, once. `:root` is One Light; the dark block is One Dark.
+ * Tailwind reads these through `@theme inline` in index.css; CodeMirror through `var(--sc-…)`.
+ * `--sc-line` and `--sc-current-line` are overlays and stay rgba; everything else is hex.
+ */
+:root {
+  /*
+   * Not a color: dockview's stylesheet stacks sashes and drop overlays up to 9999, and anything
+   * of ours that must cover the whole layout — dialogs, menus, tooltips, toasts — goes above
+   * that. Mapped to Tailwind's `z-modal` in index.css. `--sc-z-*` is the prefix `parseTokens`
+   * skips, so it never joins the color model.
+   */
+  --sc-z-modal: 10000;
+
+  --sc-bg: #fafafa;
+  --sc-surface: #ffffff;
+  --sc-surface-raised: #f0f0f1;
+  --sc-border: #dbdbdc;
+  --sc-fg: #383a42;
+  --sc-fg-muted: #a0a1a7;
+  --sc-accent: #4078f2;
+  --sc-caret: #526fff;
+  --sc-selection: #e5e5e6;
+  --sc-line: rgba(56, 58, 66, 0.05);
+  --sc-error: #e45649;
+  --sc-warning: #c18401;
+  --sc-success: #50a14f;
+  --sc-breakpoint: #e45649;
+  --sc-current-line: rgba(193, 132, 1, 0.18);
+  --sc-syn-keyword: #a626a4;
+  --sc-syn-string: #50a14f;
+  --sc-syn-number: #986801;
+  --sc-syn-comment: #a0a1a7;
+  --sc-syn-type: #c18401;
+  --sc-syn-builtin: #4078f2;
+  --sc-syn-operator: #0184bc;
+  --sc-syn-variable: #e45649;
+  --sc-syn-definition: #4078f2;
+
+  /* 4b shell tokens: accent at ~15 %, dialog backdrop, floating shadow, changed-value flash */
+  --sc-accent-soft: rgba(64, 120, 242, 0.15);
+  --sc-overlay: rgba(56, 58, 66, 0.4);
+  --sc-shadow: rgba(56, 58, 66, 0.2);
+  --sc-changed: #fdf3c7;
+
+  /*
+   * Filled bands (the running status bar, the sidebar's error badge) carry 10–12 px text, which
+   * needs 4.5:1 — `--sc-accent` behind `--sc-bg` reaches only 3.9:1. These are the same hues,
+   * darkened until white sits on them safely; they are never used as foreground colors.
+   */
+  --sc-accent-strong: #2f62d8;
+  --sc-warning-strong: #8a5d00;
+  --sc-error-strong: #c0342a;
+  --sc-on-accent: #ffffff;
+  --sc-on-warning: #ffffff;
+  --sc-on-error: #ffffff;
+}
+
+:root[data-theme="dark"] {
+  --sc-bg: #282c34;
+  --sc-surface: #21252b;
+  --sc-surface-raised: #2c313a;
+  --sc-border: #181a1f;
+  --sc-fg: #abb2bf;
+  --sc-fg-muted: #5c6370;
+  --sc-accent: #61afef;
+  --sc-caret: #528bff;
+  --sc-selection: #3e4451;
+  --sc-line: rgba(153, 187, 255, 0.04);
+  --sc-error: #e06c75;
+  --sc-warning: #e5c07b;
+  --sc-success: #98c379;
+  --sc-breakpoint: #e06c75;
+  --sc-current-line: rgba(229, 192, 123, 0.18);
+  --sc-syn-keyword: #c678dd;
+  --sc-syn-string: #98c379;
+  --sc-syn-number: #d19a66;
+  --sc-syn-comment: #5c6370;
+  --sc-syn-type: #e5c07b;
+  --sc-syn-builtin: #61afef;
+  --sc-syn-operator: #56b6c2;
+  --sc-syn-variable: #e06c75;
+  --sc-syn-definition: #61afef;
+
+  --sc-accent-soft: rgba(97, 175, 239, 0.15);
+  --sc-overlay: rgba(24, 26, 31, 0.6);
+  --sc-shadow: rgba(0, 0, 0, 0.45);
+  --sc-changed: #4a4321;
+
+  /* Dark keeps the hues as they are and puts the surface color on top of them instead. */
+  --sc-accent-strong: #61afef;
+  --sc-warning-strong: #e5c07b;
+  --sc-error-strong: #e06c75;
+  --sc-on-accent: #21252b;
+  --sc-on-warning: #21252b;
+  --sc-on-error: #21252b;
+}

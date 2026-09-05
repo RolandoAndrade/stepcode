@@ -1,0 +1,8 @@
+Proceso prueba
+      Definir a, b Como Entero;
+      Definir c Como Logico;
+      a <- 10;
+      b <- 10;
+      c <- a < b;
+      Escribir c;
+      FinProceso

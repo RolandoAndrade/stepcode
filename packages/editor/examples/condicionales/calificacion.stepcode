@@ -1,0 +1,16 @@
+// título: Calificación
+// descripción: Varias ramas con Sino Si
+Proceso Calificacion
+  Definir nota Como Entero;
+  Escribir 'Introduce la nota: ';
+  Leer nota;
+  Si nota >= 90 Entonces
+    Escribir 'Sobresaliente';
+  Sino Si nota >= 70 Entonces
+    Escribir 'Aprobado';
+  Sino Si nota >= 50 Entonces
+    Escribir 'Suficiente';
+  Sino
+    Escribir 'Reprobado';
+  FinSi
+FinProceso

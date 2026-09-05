@@ -1,0 +1,7 @@
+Proceso prueba
+      Definir a Como Cadena;
+      Definir b Como Entero;
+      a <- "Hola";
+      b <- Longitud(a);
+      Escribir b;
+      FinProceso

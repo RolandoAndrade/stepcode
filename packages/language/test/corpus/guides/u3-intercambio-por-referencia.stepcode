@@ -1,0 +1,18 @@
+// Guía Práctica U3 — Pregunta 7: intercambiar A y B con un subproceso por referencia.
+SubProceso Intercambiar(a Como Entero Por Referencia, b Como Entero Por Referencia)
+    Definir aux Como Entero;
+    aux <- a;
+    a <- b;
+    b <- aux;
+FinSubProceso
+
+Proceso IntercambioDeValores
+    Definir a, b Como Entero;
+    Escribir "Introduce A: ";
+    Leer a;
+    Escribir "Introduce B: ";
+    Leer b;
+    Intercambiar(a, b);
+    Escribir "Muestro A: ", a;
+    Escribir "Muestro B: ", b;
+FinProceso

@@ -1,0 +1,16 @@
+// expect: E3034
+// U3 P8: la función Mayor recibe tres argumentos.
+Funcion Mayor(a Como Entero, b Como Entero): Entero
+    Si a > b Entonces
+        Retornar a;
+    FinSi
+    Retornar b;
+FinFuncion
+
+Proceso AridadIncorrecta
+    Definir a, b, c Como Entero;
+    Leer a;
+    Leer b;
+    Leer c;
+    Escribir Mayor(a, b, c);
+FinProceso

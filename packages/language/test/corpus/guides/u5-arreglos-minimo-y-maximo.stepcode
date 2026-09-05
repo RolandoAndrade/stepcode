@@ -1,0 +1,28 @@
+// Guía U5 Arreglos — Pregunta 5: mínimo y máximo recorriendo el arreglo una sola vez.
+SubProceso MinimoYMaximo(a Como Entero[], n Como Entero, minimo Como Entero Por Referencia, maximo Como Entero Por Referencia)
+    Definir i Como Entero;
+    minimo <- a[1];
+    maximo <- a[1];
+    Para i <- 2 Hasta n Hacer
+        Si a[i] < minimo Entonces
+            minimo <- a[i];
+        FinSi
+        Si a[i] > maximo Entonces
+            maximo <- a[i];
+        FinSi
+    FinPara
+FinSubProceso
+
+Proceso MinimoYMaximoDeUnArreglo
+    Definir a Como Entero[10];
+    Definir n, i, minimo, maximo Como Entero;
+    Escribir "Introduce n: ";
+    Leer n;
+    Para i <- 1 Hasta n Hacer
+        Escribir "a[", i, "]: ";
+        Leer a[i];
+    FinPara
+    MinimoYMaximo(a, n, minimo, maximo);
+    Escribir "El minimo es: ", minimo;
+    Escribir "El maximo es: ", maximo;
+FinProceso

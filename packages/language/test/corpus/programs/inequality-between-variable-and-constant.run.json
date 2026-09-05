@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "inequality between variable and constant",
+      "inputs": [],
+      "output": "Falso\n"
+    }
+  ]
+}

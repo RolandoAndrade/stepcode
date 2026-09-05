@@ -1,0 +1,10 @@
+{
+  "runs": [
+    {
+      "name": "four names drawn from three firsts and two lasts",
+      "inputs": ["3", "2", "Ana", "Luis", "Sofia", "Perez", "Gomez", "4"],
+      "output": "Introduce n de nombres: \nIntroduce n de apellidos: \nnombre[1]: \nnombre[2]: \nnombre[3]: \napellido[1]: \napellido[2]: \nNombres a generar: \nLuis Perez\nLuis Gomez\nSofia Perez\nLuis Gomez\n",
+      "seed": 1
+    }
+  ]
+}

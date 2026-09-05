@@ -1,0 +1,13 @@
+// Guía Práctica U4 — Pregunta 8: sumar los dígitos de un número con DIV y MOD.
+Proceso SumaDeDigitos
+    Definir n, resto, suma Como Entero;
+    Escribir "Introduce n: ";
+    Leer n;
+    resto <- Abs(n);
+    suma <- 0;
+    Mientras resto > 0 Hacer
+        suma <- suma + resto MOD 10;
+        resto <- resto DIV 10;
+    FinMientras
+    Escribir "La suma de sus digitos es: ", suma;
+FinProceso

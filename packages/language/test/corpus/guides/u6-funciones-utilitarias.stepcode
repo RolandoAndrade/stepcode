@@ -1,0 +1,46 @@
+// Guía U6 Procedimientos y funciones — Pregunta 4: funciones sueltas reutilizables de las guías anteriores.
+Funcion PiesAMetros(pies Como Real): Real
+    Retornar pies * 0.3048;
+FinFuncion
+
+Funcion EsPrimo(numero Como Entero): Logico
+    Definir divisor Como Entero;
+    Si numero < 2 Entonces
+        Retornar Falso;
+    FinSi
+    divisor <- 2;
+    Mientras divisor * divisor <= numero Hacer
+        Si numero MOD divisor = 0 Entonces
+            Retornar Falso;
+        FinSi
+        divisor <- divisor + 1;
+    FinMientras
+    Retornar Verdadero;
+FinFuncion
+
+Funcion Factorial(n Como Entero): Entero
+    Si n <= 1 Entonces
+        Retornar 1;
+    FinSi
+    Retornar n * Factorial(n - 1);
+FinFuncion
+
+Proceso FuncionesUtilitarias
+    Definir pies Como Real;
+    Definir numero Como Entero;
+    Escribir "Introduce una altura en pies: ";
+    Leer pies;
+    Escribir "Son ", PiesAMetros(pies), " metros";
+    Escribir "Introduce un numero: ";
+    Leer numero;
+    Si EsPrimo(numero) Entonces
+        Escribir numero, " es primo";
+    Sino
+        Escribir numero, " no es primo";
+    FinSi
+    Si numero >= 0 Y numero <= 12 Entonces
+        Escribir "Su factorial es ", Factorial(numero);
+    Sino
+        Escribir "El factorial se sale de rango";
+    FinSi
+FinProceso

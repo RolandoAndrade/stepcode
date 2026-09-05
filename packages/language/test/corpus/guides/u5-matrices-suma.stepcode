@@ -1,0 +1,39 @@
+// Guía U5 Matrices — Pregunta 1: sumar dos matrices de la misma dimensión.
+SubProceso LeerMatriz(m Como Entero[,], filas Como Entero, columnas Como Entero)
+    Definir i, j Como Entero;
+    Para i <- 1 Hasta filas Hacer
+        Para j <- 1 Hasta columnas Hacer
+            Escribir "m[", i, ",", j, "]: ";
+            Leer m[i, j];
+        FinPara
+    FinPara
+FinSubProceso
+
+SubProceso EscribirMatriz(m Como Entero[,], filas Como Entero, columnas Como Entero)
+    Definir i, j Como Entero;
+    Para i <- 1 Hasta filas Hacer
+        Para j <- 1 Hasta columnas Hacer
+            Escribir Sin Saltar m[i, j];
+            Escribir Sin Saltar " ";
+        FinPara
+        Escribir "";
+    FinPara
+FinSubProceso
+
+Proceso SumaDeMatrices
+    Definir a, b, c Como Entero[10,10];
+    Definir filas, columnas, i, j Como Entero;
+    Escribir "Introduce m: ";
+    Leer filas;
+    Escribir "Introduce n: ";
+    Leer columnas;
+    LeerMatriz(a, filas, columnas);
+    LeerMatriz(b, filas, columnas);
+    Para i <- 1 Hasta filas Hacer
+        Para j <- 1 Hasta columnas Hacer
+            c[i, j] <- a[i, j] + b[i, j];
+        FinPara
+    FinPara
+    Escribir "La suma es:";
+    EscribirMatriz(c, filas, columnas);
+FinProceso

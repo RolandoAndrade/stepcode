@@ -1,0 +1,8 @@
+Proceso prueba
+        Definir a, b Como Entero;
+        Para a <- 1 Hasta 5 Hacer
+          Para b <- 1 Hasta 5 Hacer
+            Escribir a, ' * ', b, ' = ', a * b;
+          FinPara
+        FinPara
+      FinProceso

@@ -1,0 +1,36 @@
+// Guía U5 Arreglos — Pregunta 1: ordenar un arreglo de hasta 10 números en orden descendente.
+SubProceso LeerArreglo(a Como Entero[], n Como Entero)
+    Definir i Como Entero;
+    Para i <- 1 Hasta n Hacer
+        Escribir "a[", i, "]: ";
+        Leer a[i];
+    FinPara
+FinSubProceso
+
+SubProceso OrdenarDescendente(a Como Entero[], n Como Entero)
+    Definir i, j, aux Como Entero;
+    Para i <- 1 Hasta n - 1 Hacer
+        Para j <- 1 Hasta n - i Hacer
+            Si a[j] < a[j + 1] Entonces
+                aux <- a[j];
+                a[j] <- a[j + 1];
+                a[j + 1] <- aux;
+            FinSi
+        FinPara
+    FinPara
+FinSubProceso
+
+Proceso OrdenDescendente
+    Definir a Como Entero[10];
+    Definir n, i Como Entero;
+    Escribir "Introduce n: ";
+    Leer n;
+    LeerArreglo(a, n);
+    OrdenarDescendente(a, n);
+    Escribir Sin Saltar "Ordenado es: ";
+    Para i <- 1 Hasta n Hacer
+        Escribir Sin Saltar a[i];
+        Escribir Sin Saltar " ";
+    FinPara
+    Escribir "";
+FinProceso

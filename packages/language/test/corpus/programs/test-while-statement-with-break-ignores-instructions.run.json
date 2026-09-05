@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test while statement with break ignores instructions",
+      "inputs": [],
+      "output": "1\n2\n3\na=3\n"
+    }
+  ]
+}

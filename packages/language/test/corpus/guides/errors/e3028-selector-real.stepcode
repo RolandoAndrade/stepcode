@@ -1,0 +1,12 @@
+// expect: E3028
+// U4 P6: se hace Segun sobre un Real.
+Proceso SegunReal
+    Definir distancia Como Real;
+    Leer distancia;
+    Segun distancia Hacer
+        1:
+            Escribir "un metro";
+        De Otro Modo:
+            Escribir "otra distancia";
+    FinSegun
+FinProceso

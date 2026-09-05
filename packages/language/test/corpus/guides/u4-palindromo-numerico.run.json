@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "one palindrome, one that is not, then zero",
+      "inputs": ["12321", "1234", "0"],
+      "output": "Introduce un numero: \n12321 es palindromo\nIntroduce un numero: \n1234 no es palindromo\nIntroduce un numero: \nAdios!\n"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+// expect: W3001
+// U3 P8: hay una instrucción después del Retornar.
+Funcion Mayor(a Como Entero, b Como Entero): Entero
+    Si a > b Entonces
+        Retornar a;
+    FinSi
+    Retornar b;
+    Escribir "nunca llega";
+FinFuncion
+
+Proceso CodigoInalcanzable
+    Definir a, b Como Entero;
+    Leer a;
+    Leer b;
+    Escribir Mayor(a, b);
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "one value of each type, with the student branch true",
+      "inputs": ["Ana", "22", "1.62", "P"],
+      "output": "Nombre: \nEdad: \nEstatura en metros: \nInicial del apellido: \nCadena: Ana\nEntero: 22\nReal: 1.62\nCaracter: P\nLogico: Verdadero\nTodo junto: Ana22\n"
+    }
+  ]
+}

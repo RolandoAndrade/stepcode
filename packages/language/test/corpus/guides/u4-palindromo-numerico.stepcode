@@ -1,0 +1,27 @@
+// Guía Práctica U4 — Pregunta 15: decir si un entero positivo es palíndromo.
+Funcion Invertir(n Como Entero): Entero
+    Definir resto, invertido Como Entero;
+    resto <- n;
+    invertido <- 0;
+    Mientras resto > 0 Hacer
+        invertido <- invertido * 10 + resto MOD 10;
+        resto <- resto DIV 10;
+    FinMientras
+    Retornar invertido;
+FinFuncion
+
+Proceso PalindromoNumerico
+    Definir n Como Entero;
+    Repetir
+        Escribir "Introduce un numero: ";
+        Leer n;
+        Si n > 0 Entonces
+            Si Invertir(n) = n Entonces
+                Escribir n, " es palindromo";
+            Sino
+                Escribir n, " no es palindromo";
+            FinSi
+        FinSi
+    Hasta Que n <= 0;
+    Escribir "Adios!";
+FinProceso

@@ -1,0 +1,36 @@
+/** What a file handle is to the store: the files module (Task 5) narrows it to the real one. */
+export interface FileHandle {
+  readonly name: string
+}
+
+/** A whole document about to replace the current one (Nuevo, Abrir, an example, a share link). */
+export interface DocumentDraft {
+  readonly name: string
+  readonly source: string
+  readonly profileId?: string
+}
+
+export const EXTENSIONS = ['.stepcode', '.psc', '.txt', '.sc'] as const
+
+/** Spec §8.1: dirty means the text differs from the last file save (or the starter program). */
+export function isDirty(state: { readonly source: string; readonly savedSource: string }): boolean {
+  return state.source !== state.savedSource
+}
+
+/** Trims and appends `.stepcode` when the name has no known extension; blank stays blank. */
+export function nameWithExtension(raw: string): string {
+  const name = raw.trim()
+  if (name === '') return ''
+  return EXTENSIONS.some((extension) => name.toLowerCase().endsWith(extension))
+    ? name
+    : `${name}.stepcode`
+}
+
+/**
+ * Spec §4.2: the toolbar shows the name without its extension. Strips one known extension
+ * (case-insensitively); a name with no known extension is returned untouched.
+ */
+export function displayName(name: string): string {
+  const extension = EXTENSIONS.find((candidate) => name.toLowerCase().endsWith(candidate))
+  return extension === undefined ? name : name.slice(0, name.length - extension.length)
+}

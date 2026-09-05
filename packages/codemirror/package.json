@@ -1,0 +1,62 @@
+{
+  "name": "@stepcode/codemirror",
+  "version": "0.0.0",
+  "description": "CodeMirror 6 language support and debug extensions for StepCode",
+  "license": "MIT",
+  "author": "Rolando Andrade",
+  "keywords": [
+    "stepcode",
+    "codemirror",
+    "pseudocode",
+    "pseint"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RolandoAndrade/stepcode",
+    "directory": "packages/codemirror"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "catalog:",
+    "@codemirror/language": "catalog:",
+    "@codemirror/lint": "catalog:",
+    "@codemirror/state": "catalog:",
+    "@codemirror/view": "catalog:",
+    "@lezer/common": "catalog:",
+    "@lezer/highlight": "catalog:",
+    "@stepcode/profiles": "workspace:*",
+    "stepcode": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "happy-dom": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

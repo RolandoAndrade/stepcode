@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test power operation",
+      "inputs": [],
+      "output": "100\n1000\n"
+    }
+  ]
+}

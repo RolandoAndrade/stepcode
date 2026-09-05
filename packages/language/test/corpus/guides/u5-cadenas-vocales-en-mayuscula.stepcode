@@ -1,0 +1,24 @@
+// Guía U5 Cadenas — Pregunta 3: pasar sólo las vocales a mayúscula.
+Funcion EsVocal(letra Como Caracter): Logico
+    Definir minuscula Como Caracter;
+    minuscula <- Minusculas(letra);
+    Retornar minuscula = 'a' O minuscula = 'e' O minuscula = 'i' O minuscula = 'o' O minuscula = 'u';
+FinFuncion
+
+Proceso VocalesEnMayuscula
+    Definir frase, salida Como Cadena;
+    Definir letra Como Caracter;
+    Definir i Como Entero;
+    Escribir "Introduce texto: ";
+    Leer frase;
+    salida <- "";
+    Para i <- 1 Hasta Longitud(frase) Hacer
+        letra <- frase[i];
+        Si EsVocal(letra) Entonces
+            salida <- salida + Mayusculas(letra);
+        Sino
+            salida <- salida + letra;
+        FinSi
+    FinPara
+    Escribir "Resultado: ", salida;
+FinProceso

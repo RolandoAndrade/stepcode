@@ -1,0 +1,8 @@
+// título: Leer y escribir
+// descripción: Pide un nombre y saluda
+Proceso LeerYEscribir
+  Definir nombre Como Cadena;
+  Escribir '¿Cómo te llamas?';
+  Leer nombre;
+  Escribir 'Hola, ', nombre, '!';
+FinProceso

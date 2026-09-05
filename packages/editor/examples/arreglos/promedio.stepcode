@@ -1,0 +1,15 @@
+// título: Promedio
+// descripción: Guarda notas en un arreglo y promedia
+Proceso Promedio
+  Definir notas Como Real;
+  Definir i Como Entero;
+  Definir suma Como Real;
+  Dimension notas[3];
+  suma <- 0;
+  Para i <- 1 Hasta 3 Hacer
+    Escribir 'Nota ', i, ':';
+    Leer notas[i];
+    suma <- suma + notas[i];
+  FinPara
+  Escribir 'Promedio: ', suma / 3;
+FinProceso

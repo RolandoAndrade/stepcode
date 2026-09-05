@@ -1,0 +1,40 @@
+// Guía U5 Matrices — Pregunta 3: producto de una matriz mxn por una nxp.
+Proceso ProductoDeMatrices
+    Definir a, b, c Como Entero[10,10];
+    Definir m, n, p, i, j, k, acumulado Como Entero;
+    Escribir "Introduce m: ";
+    Leer m;
+    Escribir "Introduce n: ";
+    Leer n;
+    Escribir "Introduce p: ";
+    Leer p;
+    Para i <- 1 Hasta m Hacer
+        Para j <- 1 Hasta n Hacer
+            Escribir "a[", i, ",", j, "]: ";
+            Leer a[i, j];
+        FinPara
+    FinPara
+    Para i <- 1 Hasta n Hacer
+        Para j <- 1 Hasta p Hacer
+            Escribir "b[", i, ",", j, "]: ";
+            Leer b[i, j];
+        FinPara
+    FinPara
+    Para i <- 1 Hasta m Hacer
+        Para j <- 1 Hasta p Hacer
+            acumulado <- 0;
+            Para k <- 1 Hasta n Hacer
+                acumulado <- acumulado + a[i, k] * b[k, j];
+            FinPara
+            c[i, j] <- acumulado;
+        FinPara
+    FinPara
+    Escribir "El producto de matrices es:";
+    Para i <- 1 Hasta m Hacer
+        Para j <- 1 Hasta p Hacer
+            Escribir Sin Saltar c[i, j];
+            Escribir Sin Saltar " ";
+        FinPara
+        Escribir "";
+    FinPara
+FinProceso

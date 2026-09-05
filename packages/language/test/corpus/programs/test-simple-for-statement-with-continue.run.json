@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test simple for statement with continue",
+      "inputs": [],
+      "output": "2\n4\n"
+    }
+  ]
+}

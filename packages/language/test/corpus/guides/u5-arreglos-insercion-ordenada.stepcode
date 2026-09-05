@@ -1,0 +1,28 @@
+// Guía U5 Arreglos — Pregunta 4: insertar hasta 10 números manteniendo el arreglo ordenado.
+SubProceso InsertarOrdenado(a Como Entero[], cantidad Como Entero Por Referencia, valor Como Entero)
+    Definir i Como Entero;
+    i <- cantidad;
+    Mientras i >= 1 Y a[i] > valor Hacer
+        a[i + 1] <- a[i];
+        i <- i - 1;
+    FinMientras
+    a[i + 1] <- valor;
+    cantidad <- cantidad + 1;
+FinSubProceso
+
+Proceso InsercionOrdenada
+    Definir a Como Entero[11];
+    Definir cantidad, i, valor Como Entero;
+    cantidad <- 0;
+    Mientras cantidad < 10 Hacer
+        Escribir "Introduce numero: ";
+        Leer valor;
+        InsertarOrdenado(a, cantidad, valor);
+        Escribir Sin Saltar "El arreglo es: ";
+        Para i <- 1 Hasta cantidad Hacer
+            Escribir Sin Saltar a[i];
+            Escribir Sin Saltar " ";
+        FinPara
+        Escribir "";
+    FinMientras
+FinProceso

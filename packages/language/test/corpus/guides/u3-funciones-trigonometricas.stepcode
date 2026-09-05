@@ -1,0 +1,19 @@
+// Guía Práctica U3 — Pregunta 6.c: (sen(x) + cos(x)) / tan(x), y las demás funciones de la nota.
+Proceso FuncionesTrigonometricas
+    Definir grados, x, resultado Como Real;
+    Escribir "Introduce el angulo en grados: ";
+    Leer grados;
+    x <- grados * PI / 180;
+    Si Abs(Tan(x)) < 0.000001 Entonces
+        Escribir "La tangente es cero, la expresion no esta definida";
+    Sino
+        resultado <- (Sen(x) + Cos(x)) / Tan(x);
+        Escribir "El resultado es: ", resultado;
+    FinSi
+    Escribir "El seno es: ", Sen(x);
+    Escribir "El coseno es: ", Cos(x);
+    Si x > 0 Entonces
+        Escribir "El logaritmo natural del angulo es: ", Ln(x);
+    FinSi
+    Escribir "La exponencial del angulo es: ", Exp(x);
+FinProceso

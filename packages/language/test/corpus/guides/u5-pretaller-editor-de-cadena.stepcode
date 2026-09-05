@@ -1,0 +1,37 @@
+// Guía U5 Pretaller — Pregunta 3: escribir caracteres sueltos sobre una cadena de largo fija.
+Funcion Reemplazar(frase Como Cadena, posicion Como Entero, letra Como Caracter): Cadena
+    Definir salida Como Cadena;
+    Si posicion < 1 O posicion > Longitud(frase) Entonces
+        Retornar frase;
+    FinSi
+    salida <- "";
+    Si posicion > 1 Entonces
+        salida <- Subcadena(frase, 1, posicion - 1);
+    FinSi
+    salida <- salida + letra;
+    Si posicion < Longitud(frase) Entonces
+        salida <- salida + Subcadena(frase, posicion + 1, Longitud(frase));
+    FinSi
+    Retornar salida;
+FinFuncion
+
+Proceso EditorDeCadena
+    Definir largo, posicion, i Como Entero;
+    Definir frase Como Cadena;
+    Definir letra Como Caracter;
+    Escribir "Introduce largo: ";
+    Leer largo;
+    frase <- "";
+    Para i <- 1 Hasta largo Hacer
+        frase <- frase + "_";
+    FinPara
+    Escribir frase;
+    Repetir
+        Escribir "Introduce caracter: ";
+        Leer letra;
+        Escribir "Introduce posicion: ";
+        Leer posicion;
+        frase <- Reemplazar(frase, posicion, letra);
+        Escribir frase;
+    Hasta Que posicion = 0;
+FinProceso

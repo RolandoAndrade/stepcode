@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a first and last name joined into one greeting",
+      "inputs": ["Rolando", "Andrade"],
+      "output": "Introduce nombre: \nIntroduce apellido: \nHola Rolando Andrade\n"
+    }
+  ]
+}

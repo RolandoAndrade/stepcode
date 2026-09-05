@@ -1,0 +1,8 @@
+// expect: E3003
+// U3 P4: se usa la variable antes de la línea que la declara.
+Proceso UsoAnticipado
+    Escribir x;
+    Definir x Como Entero;
+    x <- 1;
+    Escribir x;
+FinProceso

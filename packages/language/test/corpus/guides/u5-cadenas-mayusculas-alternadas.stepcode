@@ -1,0 +1,18 @@
+// Guía U5 Cadenas — Pregunta 2: posiciones pares en mayúscula e impares en minúscula.
+Proceso MayusculasAlternadas
+    Definir frase, salida Como Cadena;
+    Definir letra Como Caracter;
+    Definir i Como Entero;
+    Escribir "Introduce texto: ";
+    Leer frase;
+    salida <- "";
+    Para i <- 1 Hasta Longitud(frase) Hacer
+        letra <- frase[i];
+        Si i MOD 2 = 0 Entonces
+            salida <- salida + Mayusculas(letra);
+        Sino
+            salida <- salida + Minusculas(letra);
+        FinSi
+    FinPara
+    Escribir "Resultado: ", salida;
+FinProceso

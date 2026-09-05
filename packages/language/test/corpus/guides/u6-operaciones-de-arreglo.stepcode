@@ -1,0 +1,99 @@
+// Guía U6 Procedimientos y funciones — Pregunta 1: leer, imprimir, sumar, máximo, mínimo, buscar, voltear y ordenar.
+SubProceso LeerVector(a Como Entero[], n Como Entero)
+    Definir i Como Entero;
+    Para i <- 1 Hasta n Hacer
+        Leer a[i];
+    FinPara
+FinSubProceso
+
+SubProceso ImprimirVector(a Como Entero[], n Como Entero)
+    Definir i Como Entero;
+    Para i <- 1 Hasta n Hacer
+        Escribir Sin Saltar a[i];
+        Escribir Sin Saltar " ";
+    FinPara
+    Escribir "";
+FinSubProceso
+
+Funcion Sumar(a Como Entero[], n Como Entero): Entero
+    Definir i, total Como Entero;
+    total <- 0;
+    Para i <- 1 Hasta n Hacer
+        total <- total + a[i];
+    FinPara
+    Retornar total;
+FinFuncion
+
+Funcion Maximo(a Como Entero[], n Como Entero): Entero
+    Definir i, mayor Como Entero;
+    mayor <- a[1];
+    Para i <- 2 Hasta n Hacer
+        Si a[i] > mayor Entonces
+            mayor <- a[i];
+        FinSi
+    FinPara
+    Retornar mayor;
+FinFuncion
+
+Funcion Minimo(a Como Entero[], n Como Entero): Entero
+    Definir i, menor Como Entero;
+    menor <- a[1];
+    Para i <- 2 Hasta n Hacer
+        Si a[i] < menor Entonces
+            menor <- a[i];
+        FinSi
+    FinPara
+    Retornar menor;
+FinFuncion
+
+Funcion Buscar(a Como Entero[], n Como Entero, x Como Entero): Entero
+    Definir i Como Entero;
+    Para i <- 1 Hasta n Hacer
+        Si a[i] = x Entonces
+            Retornar i;
+        FinSi
+    FinPara
+    Retornar -1;
+FinFuncion
+
+SubProceso Voltear(origen Como Entero[], destino Como Entero[], n Como Entero)
+    Definir i Como Entero;
+    Para i <- 1 Hasta n Hacer
+        destino[n - i + 1] <- origen[i];
+    FinPara
+FinSubProceso
+
+SubProceso Ordenar(a Como Entero[], n Como Entero)
+    Definir i, j, aux Como Entero;
+    Para i <- 1 Hasta n - 1 Hacer
+        Para j <- 1 Hasta n - i Hacer
+            Si a[j] > a[j + 1] Entonces
+                aux <- a[j];
+                a[j] <- a[j + 1];
+                a[j + 1] <- aux;
+            FinSi
+        FinPara
+    FinPara
+FinSubProceso
+
+Proceso OperacionesDeArreglo
+    Definir a, volteado Como Entero[10];
+    Definir n, buscado Como Entero;
+    Escribir "Dame un arreglo de enteros de longitud: ";
+    Leer n;
+    LeerVector(a, n);
+    Escribir Sin Saltar "El array es: ";
+    ImprimirVector(a, n);
+    Escribir "La suma es: ", Sumar(a, n);
+    Escribir "El maximo es: ", Maximo(a, n);
+    Escribir "El minimo es: ", Minimo(a, n);
+    Voltear(a, volteado, n);
+    Escribir Sin Saltar "Volteado es: ";
+    ImprimirVector(volteado, n);
+    Ordenar(a, n);
+    Escribir Sin Saltar "Ordenado ascendente es: ";
+    ImprimirVector(a, n);
+    Escribir "Numero a buscar: ";
+    Leer buscado;
+    Escribir "Su posicion es: ", Buscar(a, n, buscado);
+FinProceso

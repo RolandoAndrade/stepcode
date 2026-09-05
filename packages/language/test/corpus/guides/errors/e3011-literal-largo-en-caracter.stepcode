@@ -1,0 +1,7 @@
+// expect: E3011
+// Repaso P8: una palabra completa asignada a un Caracter.
+Proceso GeneroEnCaracter
+    Definir genero Como Caracter;
+    genero <- "masculino";
+    Escribir genero;
+FinProceso

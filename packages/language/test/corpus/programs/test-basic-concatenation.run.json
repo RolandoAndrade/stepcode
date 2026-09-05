@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic concatenation",
+      "inputs": [],
+      "output": "Hola mundo\n"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic sum operation",
+      "inputs": [],
+      "output": "31\n"
+    }
+  ]
+}

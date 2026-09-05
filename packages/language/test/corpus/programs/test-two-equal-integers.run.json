@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test two equal integers",
+      "inputs": [],
+      "output": "Verdadero\n"
+    }
+  ]
+}

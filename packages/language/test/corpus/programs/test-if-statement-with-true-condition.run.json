@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test if statement with true condition",
+      "inputs": [],
+      "output": "a=1\n"
+    }
+  ]
+}

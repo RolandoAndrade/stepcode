@@ -1,0 +1,29 @@
+Proceso Maraton
+    Definir edad como Entero;
+    Definir sexo como Caracter;
+    Definir tiempo como Real;
+    Escribir "Ingrese la edad de la persona: ";
+    Leer edad;
+    Escribir "Ingrese el sexo de la persona (M/F): ";
+    Leer sexo;
+    sexo ← Mayusculas(sexo);
+    Escribir "Ingrese el tiempo de calificacion en minutos: ";
+    Leer tiempo;
+    Si sexo = 'M' Entonces
+        Si edad < 40 Y tiempo < 150.0 Entonces
+            Escribir "El corredor clasifica";
+        SiNo Si (edad ≥ 40 ) Y (tiempo < 175) Entonces
+            Escribir "El corredor clasifica";
+        Sino
+            Escribir "El corredor no clasifica";
+        FinSi
+    SiNo Si sexo = 'F' Entonces
+        Si tiempo < 180 Entonces
+            Escribir "El corredor clasifica";
+        SiNo
+            Escribir "El corredor no clasifica";
+        FinSi
+    SiNo
+        Escribir "El sexo ingresado no es valido";
+    FinSi
+    FinProceso
