@@ -77,6 +77,7 @@ export const DIAGNOSTIC_CODES = [
   'E4006', // function ended without a result
   'E4007', // invalid builtin argument
   'E4008', // Para step is zero
+  'E4009', // internal runtime failure
 ] as const
 
 export type DiagnosticCode = (typeof DIAGNOSTIC_CODES)[number]
@@ -154,4 +155,5 @@ export const DIAGNOSTIC_SEVERITY: Readonly<Record<DiagnosticCode, Severity>> = O
   E4006: 'error',
   E4007: 'error',
   E4008: 'error',
+  E4009: 'error',
 })

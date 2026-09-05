@@ -257,7 +257,8 @@ interface Frame {
 }
 ```
 
-`inspect()` returns one `Frame` per active call, innermost first. `variables` lists the body
+`inspect()` returns one `Frame` per active call, innermost first, and main's final frame once
+the run is `done`. `variables` lists the body
 scope's `Scope.order` — declaration order, which is how the checker keeps its output stable
 — with each symbol's current slot value; the program scope holds only subprogram symbols and
 is never listed. An array variable is inspected as its `ArrayValue` (flat data plus dims,

@@ -195,7 +195,9 @@ function diagnosticOf(
 describe('every runtime code has a case', () => {
   it('covers E4001–E4008', () => {
     const covered = [...new Set(cases.map((entry) => entry.code))].sort()
-    const expected = DIAGNOSTIC_CODES.filter((code) => code.startsWith('E4'))
+    // E4009 (internal runtime failure) is never raised by `evaluate.ts`: it is synthesized by
+    // a host embedding the interpreter, so no program can drive a `Run` to produce it.
+    const expected = DIAGNOSTIC_CODES.filter((code) => code.startsWith('E4') && code !== 'E4009')
     expect(covered).toEqual([...expected].sort())
   })
 

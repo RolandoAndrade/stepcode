@@ -70,7 +70,11 @@ function runtimeHeader(source: string): { expected: string[]; inputs: string[] }
 describe('the course-guide runtime corpus', () => {
   it('holds one program per runtime code', () => {
     const codes = runtimeFiles.map((file) => file.slice(0, 5).toUpperCase()).sort()
-    expect(codes).toEqual(DIAGNOSTIC_CODES.filter((code) => code.startsWith('E4')))
+    // E4009 (internal runtime failure) is never raised by a StepCode program: it is
+    // synthesized by a host embedding the interpreter, so no corpus program can produce it.
+    expect(codes).toEqual(
+      DIAGNOSTIC_CODES.filter((code) => code.startsWith('E4') && code !== 'E4009'),
+    )
   })
 
   it.each(runtimeFiles)(

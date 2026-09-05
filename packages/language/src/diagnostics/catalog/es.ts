@@ -81,6 +81,7 @@ const templates: Record<DiagnosticCode, string> = {
     'La función «{name}» terminó sin devolver un valor: asigna el resultado o usa «{kw:return}».',
   E4007: '«{builtin:$builtin}» no acepta este valor.',
   E4008: 'El paso del bucle de «{name}» es 0: el bucle nunca terminaría.',
+  E4009: 'Un error interno detuvo la ejecución: {message}',
 }
 
 const variants: Record<string, string> = {

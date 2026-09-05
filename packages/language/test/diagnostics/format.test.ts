@@ -84,6 +84,7 @@ describe('codes and severities', () => {
       'E4006',
       'E4007',
       'E4008',
+      'E4009',
     ])
   })
 
@@ -151,6 +152,7 @@ describe('catalogs', () => {
     size: 0,
     depth: 1000,
     type: 'Entero',
+    message: 'boom',
   }
 
   it('leaves no unresolved slot in any template under the es profile', () => {

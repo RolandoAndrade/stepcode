@@ -77,6 +77,7 @@ const templates: Record<DiagnosticCode, string> = {
   E4006: 'Function "{name}" ended without a result: assign its result or use "{kw:return}".',
   E4007: '"{builtin:$builtin}" does not accept this value.',
   E4008: 'The step of the loop over "{name}" is 0: the loop would never end.',
+  E4009: 'An internal error stopped the run: {message}',
 }
 
 const variants: Record<string, string> = {
