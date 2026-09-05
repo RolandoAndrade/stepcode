@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useEditorStore } from '../../store/context'
 import type { PanelId } from '../../store/layout'
 import { stringsOf } from '../../store/store'
+import { PANEL_ICONS } from '../../ui/panelIcons'
 
 /**
  * Spec §3.1 wants "the active tab of a group", which is not `api.isActive` (that one is the active
@@ -28,8 +29,11 @@ function useActiveInGroup(api: DockviewPanelApi): boolean {
   return active
 }
 
+/** The tab strip is 28 px: the 16 px default icon leaves no room around the label. */
+const TAB_ICON_SIZE = 14
+
 /**
- * Spec §3.1: label only, accent underline on the active tab, nothing else. The role, the selected
+ * Spec §3.1: panel icon, label, accent underline on the active tab, nothing else. The role, the selected
  * state and the accessible name stay on dockview's own `.dv-tab` wrapper, whose `aria-label` is the
  * panel title — `PANEL_TITLES` sets that to the very words rendered here.
  */
@@ -37,11 +41,13 @@ export function Tab(props: IDockviewPanelHeaderProps) {
   const strings = useEditorStore(stringsOf)
   const id = props.api.id as PanelId
   const active = useActiveInGroup(props.api)
+  const Icon = PANEL_ICONS[id]
 
   return (
     <div
-      className={`sc-tab relative flex h-7 items-center px-3 text-xs ${active ? 'sc-tab-active text-fg' : 'text-muted'}`}
+      className={`sc-tab relative flex h-7 items-center gap-1.5 px-3 text-xs ${active ? 'sc-tab-active text-fg' : 'text-muted'}`}
     >
+      {Icon === undefined ? null : <Icon size={TAB_ICON_SIZE} />}
       {strings.panels[id] ?? props.api.title ?? id}
     </div>
   )

@@ -140,6 +140,15 @@ describe('DesktopShell', () => {
     await waitFor(() => expect(editorHeader().style.display).toBe('none'))
   })
 
+  it('puts the panel icon on every tab', async () => {
+    mount()
+    await panelSection('Consola')
+    for (const name of ['Consola', 'Problemas', 'Variables']) {
+      const tab = screen.getByRole('tab', { name })
+      expect(tab.querySelector('svg'), name).not.toBeNull()
+    }
+  })
+
   it('refuses to drag the editor out of its locked group', async () => {
     mount()
     await panelSection('Editor')
