@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { forceParsing, highlightingFor, syntaxTree } from '@codemirror/language'
+import { setDiagnostics } from '@codemirror/lint'
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { tags as t } from '@lezer/highlight'
@@ -118,17 +119,40 @@ describe('gutters', () => {
   it('narrows the lint gutter and paints its markers from the tokens', () => {
     expect(rule('.cm-gutter.cm-gutter-lint').minWidth).toBe('0.8em')
     expect(rule('.cm-gutter-lint .cm-gutterElement').padding).toBe('0 0.1em')
-    expect(rule('.cm-lint-marker').width).toBe('0.6em')
-    expect(rule('.cm-lint-marker').height).toBe('0.6em')
-    expect(rule('.cm-lint-marker').backgroundImage).toBe('none')
-    expect(rule('.cm-lint-marker-error').color).toBe('var(--sc-error)')
-    expect(rule('.cm-lint-marker-warning').color).toBe('var(--sc-warning)')
+    expect(rule('.cm-gutter-lint .cm-lint-marker').width).toBe('0.6em')
+    expect(rule('.cm-gutter-lint .cm-lint-marker').height).toBe('0.6em')
+    expect(rule('.cm-gutter-lint .cm-lint-marker').content).toBe('none')
+    expect(rule('.cm-gutter-lint .cm-lint-marker-error').color).toBe('var(--sc-error)')
+    expect(rule('.cm-gutter-lint .cm-lint-marker-warning').color).toBe('var(--sc-warning)')
+  })
+
+  // The whole point of the rules above: `@codemirror/lint` paints its markers with
+  // `content: url(<svg fill="#f87">)`, which is a replaced element — a background color would
+  // never show and `::after` would never be generated. Only a mounted view proves the override
+  // wins, so this test dispatches a real diagnostic and reads the cascade back.
+  it('replaces the vendor lint SVG with a token-colored dot', () => {
+    const { view } = viewFor()
+    view.dispatch(
+      setDiagnostics(view.state, [{ from: 0, to: 3, severity: 'error', message: 'boom' }]),
+    )
+    const marker = view.dom.querySelector('.cm-lint-marker-error')
+    expect(marker).not.toBeNull()
+    const style = getComputedStyle(marker as Element)
+    expect(style.content).toBe('none')
+    expect(style.borderRadius).toBe('50%')
+    expect(style.backgroundColor).toBe('currentcolor')
+    // 0.6em against the vendor's 1em, and round rather than a triangle or a squashed circle.
+    expect(style.width).toBe(style.height)
+    expect(Number.parseFloat(style.width)).toBeLessThan(14)
+    view.destroy()
   })
 
   it('pulses the marker with a ring, and holds still under reduced motion', () => {
-    expect(rule('.cm-lint-marker::after').animation).toContain('sc-lint-pulse')
+    expect(rule('.cm-gutter-lint .cm-lint-marker::after').animation).toContain('sc-lint-pulse')
     expect(EDITOR_THEME_SPEC['@keyframes sc-lint-pulse']).toBeDefined()
-    const reduced = rule('@media (prefers-reduced-motion: reduce)')['.cm-lint-marker::after']
+    const reduced = rule('@media (prefers-reduced-motion: reduce)')[
+      '.cm-gutter-lint .cm-lint-marker::after'
+    ]
     expect(reduced).toEqual({ animation: 'none' })
   })
 })

@@ -47,7 +47,12 @@ export const EDITOR_THEME_SPEC: Readonly<Record<string, EditorThemeSpec>> = {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  '.cm-lint-marker': {
+  // `@codemirror/lint` paints its markers with `content: url(<svg fill="#f87">)`, which makes the
+  // element replaced: a background color would never show and `::after` would never be generated.
+  // `content: none` takes the image away and hands the box back, and the extra `.cm-gutter-lint`
+  // in the selector outranks the vendor rules instead of relying on stylesheet order.
+  '.cm-gutter-lint .cm-lint-marker': {
+    content: 'none',
     position: 'relative',
     width: '0.6em',
     height: '0.6em',
@@ -55,11 +60,12 @@ export const EDITOR_THEME_SPEC: Readonly<Record<string, EditorThemeSpec>> = {
     backgroundImage: 'none',
     backgroundColor: 'currentColor',
   },
-  '.cm-lint-marker-error': { color: 'var(--sc-error)' },
-  '.cm-lint-marker-warning': { color: 'var(--sc-warning)' },
+  '.cm-gutter-lint .cm-lint-marker-error': { content: 'none', color: 'var(--sc-error)' },
+  '.cm-gutter-lint .cm-lint-marker-warning': { content: 'none', color: 'var(--sc-warning)' },
+  '.cm-gutter-lint .cm-lint-marker-info': { content: 'none', color: 'var(--sc-accent)' },
   // A ring expanding out of the dot: a problem that appears while you type is easy to miss in
   // a narrow gutter otherwise.
-  '.cm-lint-marker::after': {
+  '.cm-gutter-lint .cm-lint-marker::after': {
     content: '""',
     position: 'absolute',
     inset: '0',
@@ -72,7 +78,7 @@ export const EDITOR_THEME_SPEC: Readonly<Record<string, EditorThemeSpec>> = {
     to: { transform: 'scale(2.4)', opacity: '0' },
   },
   '@media (prefers-reduced-motion: reduce)': {
-    '.cm-lint-marker::after': { animation: 'none' },
+    '.cm-gutter-lint .cm-lint-marker::after': { animation: 'none' },
   },
   '.cm-stepcode-breakpoint': { backgroundColor: 'var(--sc-breakpoint)' },
   '.cm-stepcode-current-line': { backgroundColor: 'var(--sc-current-line)' },
