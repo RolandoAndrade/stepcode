@@ -8,10 +8,15 @@ export function LayoutSection() {
   const showConsoleOnRun = useEditorStore((s) => s.settings.layout.showConsoleOnRun)
   const updateSettings = useEditorStore((s) => s.updateSettings)
   const resetLayout = useEditorStore((s) => s.resetLayout)
+  const resetSettings = useEditorStore((s) => s.resetSettings)
   const t = strings.settings.layout
 
   return (
-    <Section title={strings.settings.sections.layout} resetLabel={strings.settings.reset}>
+    <Section
+      title={strings.settings.sections.layout}
+      onReset={() => resetSettings('layout')}
+      resetLabel={strings.settings.reset}
+    >
       <button
         type="button"
         className="h-8 rounded border border-border px-3 text-sm hover:bg-surface-raised"

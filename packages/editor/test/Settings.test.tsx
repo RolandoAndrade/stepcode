@@ -61,6 +61,14 @@ describe('Settings', () => {
     expect(store.getState().dialog).toBeNull()
   })
 
+  it('resets the layout section preferences from its own header', () => {
+    const store = open('layout')
+    fireEvent.click(screen.getByRole('switch', { name: 'Mostrar la consola al ejecutar' }))
+    expect(store.getState().settings.layout.showConsoleOnRun).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Restablecer' }))
+    expect(store.getState().settings.layout.showConsoleOnRun).toBe(true)
+  })
+
   it('switches profile and opens the builder', () => {
     const store = open()
     fireEvent.click(screen.getByRole('radio', { name: /English/ }))

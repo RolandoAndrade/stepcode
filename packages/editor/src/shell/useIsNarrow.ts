@@ -8,11 +8,16 @@ interface MediaList {
   removeEventListener(type: 'change', listener: (event: { matches: boolean }) => void): void
 }
 
+/**
+ * The default is bound once, at module scope: a fresh bound function per render would be a new
+ * effect dependency every time, re-subscribing the listener on each render.
+ */
+const DEFAULT_MATCH_MEDIA: ((query: string) => MediaList) | undefined =
+  typeof window === 'undefined' ? undefined : window.matchMedia?.bind(window)
+
 /** Spec §9: the phone shell below 768 px, re-evaluated on every change. */
 export function useIsNarrow(
-  matchMedia: ((query: string) => MediaList) | undefined = typeof window === 'undefined'
-    ? undefined
-    : window.matchMedia?.bind(window),
+  matchMedia: ((query: string) => MediaList) | undefined = DEFAULT_MATCH_MEDIA,
 ): boolean {
   const [narrow, setNarrow] = useState(() => matchMedia?.(QUERY).matches ?? false)
   useEffect(() => {

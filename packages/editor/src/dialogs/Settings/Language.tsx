@@ -57,7 +57,7 @@ export function Language() {
     : profileId
 
   return (
-    <Section title={strings.settings.sections.language} resetLabel={strings.settings.reset}>
+    <Section title={strings.settings.sections.language}>
       <RadioCards label={t.profile} value={profileId} options={items} onChange={setProfile} />
       {customProfiles.length > 0 ? (
         <ul className="mt-2 flex flex-col gap-1">

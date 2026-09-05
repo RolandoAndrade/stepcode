@@ -129,6 +129,7 @@ export function RadioCards<T extends string>({
   )
 }
 
+/** `onReset` and `resetLabel` travel together: a section with nothing to reset passes neither. */
 export function Section({
   title,
   onReset,
@@ -137,14 +138,14 @@ export function Section({
 }: {
   title: string
   onReset?: () => void
-  resetLabel: string
+  resetLabel?: string
   children: ReactNode
 }) {
   return (
     <section aria-label={title} className="flex flex-col gap-1">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="font-semibold text-base">{title}</h3>
-        {onReset !== undefined ? (
+        {onReset !== undefined && resetLabel !== undefined ? (
           <button type="button" onClick={onReset} className="text-muted text-xs hover:text-fg">
             {resetLabel}
           </button>

@@ -14,9 +14,10 @@ export function SymbolBar({ view, visible }: { view: EditorView | null; visible:
       aria-label={strings.mobile.symbols}
       className="flex h-10 shrink-0 items-center gap-1 overflow-x-auto border-border border-t bg-surface px-2"
     >
-      {symbolKeys(profile).map((key) => (
+      {symbolKeys(profile).map((key, index) => (
         <button
-          key={key.label}
+          // Two keys may print the same label (an assignment spelled with a punctuation mark).
+          key={`${index}-${key.label}`}
           type="button"
           onPointerDown={(event) => event.preventDefault()}
           onClick={() => insertSymbol(view, key.insert)}
