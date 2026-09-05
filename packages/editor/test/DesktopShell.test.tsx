@@ -80,6 +80,7 @@ describe('DesktopShell', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Contraer' }))
     })
     await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    expect(screen.queryByRole('button', { name: 'Expandir' })).toBeNull()
     // Spec §3.4: a program blocked on a prompt the user cannot see is unusable.
     act(() => host.emit({ kind: 'input', line: 2, target: null }))
     await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
@@ -121,6 +122,8 @@ describe('DesktopShell', () => {
     const view = (): Element | null =>
       document.querySelector('.dv-tab[aria-label="Consola"]')?.closest('.dv-view') ?? null
     expect(view()?.classList.contains('visible')).toBe(false)
+    // The header goes with the group, so the chevron only ever collapses: there is no Expandir.
+    expect(screen.queryByRole('button', { name: 'Expandir' })).toBeNull()
     act(() => store.getState().run())
     await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
     expect(view()?.classList.contains('visible')).toBe(true)

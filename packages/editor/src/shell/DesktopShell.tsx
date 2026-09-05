@@ -30,7 +30,6 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
   const dockRef = useRef<HTMLDivElement | null>(null)
   const controllerRef = useRef<CollapseController | null>(null)
   const disposablesRef = useRef<{ dispose(): void }[]>([])
-  const [collapsedIds, setCollapsedIds] = useState<readonly string[]>([])
   const [panelStates, setPanelStates] = useState<PanelStates>(HIDDEN_PANEL_STATES)
   const manuallyCollapsed = useRef(new Set<string>())
   const context = useMemo(() => ({ editor: editorRef }), [editorRef])
@@ -65,8 +64,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     const { bottomGroupId } = applyDefaultLayout(api, PANEL_TITLES(stringsOf(store.getState())))
     const controller = new CollapseController(
       api,
-      (ids) => {
-        setCollapsedIds(ids)
+      () => {
         syncPanelStates()
         save()
       },
@@ -106,8 +104,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         for (const id of Object.keys(titles) as PanelId[]) api.getPanel(id)?.setTitle(titles[id])
         const controller = new CollapseController(
           api,
-          (ids) => {
-            setCollapsedIds(ids)
+          () => {
             syncPanelStates()
             save()
           },
@@ -203,27 +200,18 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
   }, [store, reset, reveal])
 
   // A collapse the user performs during a run is remembered until the next run (spec §3.4).
-  const controllerFor = useCallback((): CollapseController | null => {
+  const collapseManually = useCallback((groupId: string) => {
     const controller = controllerRef.current
-    if (controller === null) return null
-    return new Proxy(controller, {
-      get(target, key) {
-        if (key === 'toggle') {
-          return (id: string) => {
-            if (!target.isCollapsed(id)) manuallyCollapsed.current.add(id)
-            target.toggle(id)
-          }
-        }
-        return Reflect.get(target, key)
-      },
-    })
+    if (controller === null || controller.isCollapsed(groupId)) return
+    manuallyCollapsed.current.add(groupId)
+    controller.collapse(groupId)
   }, [])
 
   const rightHeaderActionsComponent = useCallback(
     (props: IDockviewHeaderActionsProps) => (
-      <HeaderActions {...props} controller={controllerFor()} collapsedIds={collapsedIds} />
+      <HeaderActions {...props} onCollapse={collapseManually} />
     ),
-    [controllerFor, collapsedIds],
+    [collapseManually],
   )
 
   return (
