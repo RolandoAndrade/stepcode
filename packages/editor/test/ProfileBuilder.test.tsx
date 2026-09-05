@@ -78,6 +78,42 @@ describe('ProfileBuilder', () => {
     ).toBe(true)
   })
 
+  it('lets the author pick the base and re-reads the spellings from it', () => {
+    const { store } = storeWith({})
+    renderWithStore(<ProfileBuilder base="es" onDone={() => {}} />, store)
+    const write = screen.getByRole('textbox', { name: 'write' }) as HTMLInputElement
+    expect(write.value).toBe('Escribir, Mostrar, Imprimir')
+    fireEvent.change(screen.getByRole('combobox', { name: 'Basado en' }), {
+      target: { value: 'en' },
+    })
+    expect(write.value).toBe('Write, Print')
+  })
+
+  it('diffs the spellings one by one, not as one joined string', async () => {
+    const { store } = storeWith({})
+    renderWithStore(<ProfileBuilder base="es" onDone={() => {}} />, store)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Nombre' }), { target: { value: 'Mio' } })
+    // "De Otro Modo" is one spelling; "De, Otro, Modo" is three.
+    fireEvent.change(screen.getByRole('textbox', { name: 'otherwise' }), {
+      target: { value: 'De, Otro, Modo' },
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Guardar perfil' }))
+    })
+    const saved = store.getState().customProfiles[0] as unknown as {
+      keywords?: Record<string, readonly string[]>
+    }
+    expect(saved.keywords?.otherwise).toEqual(['De', 'Otro', 'Modo'])
+  })
+
+  it('explains an unusable name instead of printing the sentinel', () => {
+    const { store } = storeWith({})
+    renderWithStore(<ProfileBuilder base="es" onDone={() => {}} />, store)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Nombre' }), { target: { value: '###' } })
+    const alert = screen.getByRole('alert').textContent ?? ''
+    expect(alert).toBe('Solo letras, números y guiones')
+  })
+
   it('edits a profile that extends "en" without rebasing it onto the `base` prop', async () => {
     const editing = { id: 'mio2', extends: 'en', locale: 'en-GB', keywords: { write: ['Say'] } }
     const { store } = storeWith({ customProfiles: [editing] })

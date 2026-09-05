@@ -13,9 +13,10 @@ import {
 } from '@stepcode/profiles'
 import { useMemo, useState } from 'react'
 import { starterProgram } from '../../profiles/starter'
+import { profileItems } from '../../shell/StatusBar'
 import { useEditorStore, useEditorStoreApi } from '../../store/context'
-import { PROFILE_IDS, stringsOf } from '../../store/store'
-import { Toggle } from './controls'
+import { PROFILE_IDS, profileOf, stringsOf } from '../../store/store'
+import { Select, Toggle } from './controls'
 
 type SectionKey = 'keywords' | 'types' | 'operators' | 'builtins'
 type Spellings = Readonly<Record<string, readonly string[]>>
@@ -97,13 +98,12 @@ export function ProfileBuilder({
   const store = useEditorStoreApi()
   const strings = useEditorStore(stringsOf)
   const customs = useEditorStore((s) => s.customProfiles)
+  const settings = useEditorStore((s) => s.settings)
   // Editing a custom profile rebases on its own `extends`, never on the `base` prop (which
   // is only meaningful when creating a new profile): a profile extending `en` must stay on
   // `en` after a save, not silently move onto `es`.
   const editingExtends = editing !== undefined && 'extends' in editing ? editing.extends : undefined
   const effectiveBase = editingExtends ?? base
-  const baseProfile =
-    (profiles as Record<string, ResolvedProfile | undefined>)[effectiveBase] ?? profiles.es
   const seed = editing as
     | (Partial<Record<SectionKey, Spellings>> & {
         options?: Partial<ProfileOptions>
@@ -122,6 +122,22 @@ export function ProfileBuilder({
     ...(seed?.locale === undefined ? {} : { locale: seed.locale }),
   }))
   const id = editing?.id ?? slugify(name)
+  // A custom profile may extend another custom profile; only `profileOf` knows how to resolve
+  // that chain, and a chain that no longer resolves must not take the builder down with it.
+  const baseProfile = useMemo(() => {
+    try {
+      return profileOf({ profileId: form.base, customProfiles: customs })
+    } catch {
+      return profiles.es
+    }
+  }, [form.base, customs])
+  const baseOptions = useMemo(
+    () =>
+      profileItems({ profileId: form.base, customProfiles: customs, settings })
+        .filter((item) => item.id !== id)
+        .map((item) => ({ value: item.id, label: item.name })),
+    [form.base, customs, settings, id],
+  )
   const input = useMemo(() => buildInput({ ...form, id }), [form, id])
   const others = editing === undefined ? customs : customs.filter((c) => c.id !== editing.id)
   const result = useMemo(() => validateInput(input, others), [input, others])
@@ -133,7 +149,9 @@ export function ProfileBuilder({
       const next: Record<string, readonly string[]> = { ...f[section] }
       const list = textToSpellings(text)
       const baseList = sectionOf(baseProfile, section)[key] ?? []
-      if (list.join(' ') === baseList.join(' ')) delete next[key]
+      // Spelling by spelling: "De Otro Modo" and "De, Otro, Modo" are different profiles.
+      const same = list.length === baseList.length && list.every((one, i) => one === baseList[i])
+      if (same) delete next[key]
       else next[key] = list
       return { ...f, [section]: next }
     })
@@ -147,7 +165,7 @@ export function ProfileBuilder({
             <span className="w-32 truncate font-mono text-muted">{key}</span>
             <input
               aria-label={key}
-              defaultValue={spellingsToText(
+              value={spellingsToText(
                 form[section][key] ?? sectionOf(baseProfile, section)[key] ?? [],
               )}
               onChange={(event) => setSpellings(section, key, event.target.value)}
@@ -163,7 +181,9 @@ export function ProfileBuilder({
     ? null
     : result.message === 'duplicate'
       ? t.duplicate
-      : t.invalid(result.message)
+      : result.message === 'id'
+        ? t.nameHint
+        : t.invalid(result.message)
 
   return (
     <div className="mt-3 rounded-md border border-border p-3">
@@ -181,9 +201,12 @@ export function ProfileBuilder({
       <p className="mt-1 text-muted text-xs">
         {t.nameHint} · {t.spellingsHint}
       </p>
-      <p className="mt-1 text-sm">
-        {t.base}: {strings.profiles[effectiveBase] ?? effectiveBase}
-      </p>
+      <Select
+        label={t.base}
+        value={form.base}
+        options={baseOptions}
+        onChange={(next) => setForm((f) => ({ ...f, base: next }))}
+      />
       {table('keywords', KEYWORD_KEYS, t.keywords)}
       {table('types', TYPE_KEYS, t.types)}
       {table('operators', OPERATOR_KEYS, t.operators)}
