@@ -390,7 +390,9 @@ leaves the cursor after the arrow, so one undo takes the pair back to `<`. The k
 the spelling it can reach and the document keeps the one the profile prints. It is off for a
 profile that assigns with `=` and for one whose `operators.assign` does not spell `←` (PSeInt
 itself), and it stays out of prose: the handler resolves the node at the insertion point and
-declines inside a `String` or a `Comment`. `stepcode({ arrow: false })` omits it.
+declines inside a `String` or a `Comment`. It also declines when the selection has more than one
+range — CodeMirror calls an input handler once, with the main range, so claiming the keystroke
+would drop every other cursor's — and while an IME composition is in flight. `stepcode({ arrow: false })` omits it.
 
 ## 6. Debug extensions
 

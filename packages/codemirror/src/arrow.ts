@@ -28,6 +28,10 @@ export function arrowInput(profile: ResolvedProfile): Extension {
   if (!profile.operators.assign.includes(ARROW)) return []
   return EditorView.inputHandler.of((view, from, to, text) => {
     if (text !== '-' || from !== to || from === 0) return false
+    // CodeMirror calls an input handler once, with the main range; the default insertion is what
+    // reaches the other cursors. Claiming the keystroke here would silently drop them. And text
+    // an IME still owns is not ours to rewrite mid-composition.
+    if (view.state.selection.ranges.length > 1 || view.composing) return false
     if (view.state.sliceDoc(from - 1, from) !== '<') return false
     if (inLiteral(view.state, from)) return false
     view.dispatch({

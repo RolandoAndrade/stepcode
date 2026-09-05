@@ -1,5 +1,10 @@
 // @vitest-environment happy-dom
-import { EditorState, type Extension, type Transaction } from '@codemirror/state'
+import {
+  EditorSelection,
+  EditorState,
+  type Extension,
+  type Transaction,
+} from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { builtinProfiles, profiles, type ResolvedProfile, resolveProfile } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
@@ -28,14 +33,27 @@ interface Typed {
  * plain insertion only happens when none of them claims it.
  */
 function type(doc: string, extensions: Extension, text = '-'): Typed {
-  const cursor = doc.indexOf('|')
-  const source = doc.replace('|', '')
+  // Every `|` is a cursor; `[` and `]` around text make the main range a selection instead.
+  const anchors: number[] = []
+  let source = ''
+  let selectionFrom: number | null = null
+  let selectionTo: number | null = null
+  for (const char of doc) {
+    if (char === '|') anchors.push(source.length)
+    else if (char === '[') selectionFrom = source.length
+    else if (char === ']') selectionTo = source.length
+    else source += char
+  }
+  const ranges =
+    selectionFrom !== null && selectionTo !== null
+      ? [EditorSelection.range(selectionFrom, selectionTo)]
+      : anchors.map((at) => EditorSelection.cursor(at))
   const transactions: Transaction[] = []
   const view = new EditorView({
     state: EditorState.create({
       doc: source,
-      selection: { anchor: cursor },
-      extensions,
+      selection: EditorSelection.create(ranges),
+      extensions: [EditorState.allowMultipleSelections.of(true), extensions],
     }),
     dispatchTransactions: (trs, self) => {
       transactions.push(...trs)
@@ -43,12 +61,9 @@ function type(doc: string, extensions: Extension, text = '-'): Typed {
     },
   })
   const { from, to } = view.state.selection.main
+  // What CodeMirror hands a handler as the default: one transaction covering every range.
   const insert = (): Transaction =>
-    view.state.update({
-      changes: { from, to, insert: text },
-      selection: { anchor: from + text.length },
-      userEvent: 'input.type',
-    })
+    view.state.update({ ...view.state.replaceSelection(text), userEvent: 'input.type' })
   const handled = view.state
     .facet(EditorView.inputHandler)
     .some((handler) => handler(view, from, to, text, insert))
@@ -92,9 +107,50 @@ describe('arrowInput', () => {
     view.destroy()
   })
 
-  it('needs a `<` right before the cursor and an empty selection', () => {
+  it('needs a `<` right before the cursor', () => {
     const { view } = type('Escribir a |', es(arrowInput(profiles.es)))
     expect(view.state.doc.toString()).toBe('Escribir a -')
+    view.destroy()
+  })
+
+  it('leaves a non-empty selection to the default insertion', () => {
+    const { view } = type('Escribir a<[bc]', es(arrowInput(profiles.es)))
+    expect(view.state.doc.toString()).toBe('Escribir a<-')
+    view.destroy()
+  })
+
+  it('declines under more than one cursor, so no keystroke is swallowed', () => {
+    // CodeMirror calls an input handler once, with the main range; the default insertion is what
+    // reaches every other cursor. Claiming the keystroke here would drop the rest.
+    const { view } = type('Escribir a< b<|  c<|', es(arrowInput(profiles.es)))
+    expect(view.state.doc.toString()).toBe('Escribir a< b<-  c<-')
+    view.destroy()
+  })
+
+  it('leaves `<-` alone inside a string the line never closes', () => {
+    const { view } = type('Escribir "a<|', es(arrowInput(profiles.es)))
+    expect(view.state.doc.toString()).toBe('Escribir "a<-')
+    view.destroy()
+  })
+
+  it('stands aside while an IME composition is in flight', () => {
+    const doc = 'Escribir a<'
+    const view = new EditorView({
+      state: EditorState.create({
+        doc,
+        selection: { anchor: doc.length },
+        extensions: es(arrowInput(profiles.es)),
+      }),
+    })
+    // Rewriting text the IME still owns strands its pending composition.
+    Object.defineProperty(view, 'composing', { get: () => true })
+    const handled = view.state
+      .facet(EditorView.inputHandler)
+      .some((handler) =>
+        handler(view, doc.length, doc.length, '-', () => view.state.update({ changes: [] })),
+      )
+    expect(handled).toBe(false)
+    expect(view.state.doc.toString()).toBe(doc)
     view.destroy()
   })
 
