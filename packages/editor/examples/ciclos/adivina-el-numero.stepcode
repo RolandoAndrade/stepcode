@@ -1,0 +1,12 @@
+// título: Adivina el número
+// descripción: Repite hasta acertar con Mientras
+Proceso AdivinaElNumero
+  Definir secreto, intento Como Entero;
+  secreto <- 7;
+  intento <- 0;
+  Mientras Que intento <> secreto Hacer
+    Escribir 'Intenta un número: ';
+    Leer intento;
+  FinMientras
+  Escribir 'Acertaste!';
+FinProceso
