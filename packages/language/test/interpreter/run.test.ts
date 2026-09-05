@@ -103,7 +103,9 @@ describe('step (§3.4)', () => {
     expect(lines).toEqual([3, 4, 5, 4, 5, 4, 5, 4, 7])
     expect(run.state).toBe('done')
     expect(output()).toBe('6\n')
-    expect(run.inspect()).toEqual([])
+    const [frame] = run.inspect()
+    expect(frame?.name).toBe('p')
+    expect(frame?.variables.find((v) => v.name === 'total')?.value).toBe(6)
   })
 
   it('enters a call: the callee frame is innermost and the caller shows the call line', () => {
@@ -458,7 +460,7 @@ describe('errors (§3.3, §5.1)', () => {
 
 describe('legal commands per state (§3.2)', () => {
   it('rejects input() outside the input state and every stepping command after done', () => {
-    const { run } = startSource(main('Escribir 1;'))
+    const { run } = startSource(main('Definir x Como Entero;', 'x <- 1;', 'Escribir x;'))
     expect(() => run.input('x')).toThrow(/input/)
     expect(run.continue()).toEqual({ kind: 'done' })
     for (const command of [
@@ -470,7 +472,9 @@ describe('legal commands per state (§3.2)', () => {
       expect(command).toThrow(/done/)
     }
     expect(() => run.setBreakpoints([1])).not.toThrow()
-    expect(run.inspect()).toEqual([])
+    const [frame] = run.inspect()
+    expect(frame?.name).toBe('p')
+    expect(frame?.variables.find((v) => v.name === 'x')?.value).toBe(1)
   })
 
   it('answers stepping commands in the input state by re-reporting the request', () => {

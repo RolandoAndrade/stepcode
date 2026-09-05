@@ -118,7 +118,7 @@ States:
 | `paused` | stopped before a statement, or between the targets of a `Leer` after an accepted input | same as `ready` |
 | `input` | a `Leer` target or `Esperar Tecla` is waiting for text | `input`; also `step`, `stepOver`, `stepOut`, `continue`, which re-report the pending request (§5.7); `setBreakpoints`, `inspect` |
 | `waiting` | an `Esperar` was reached; the host sleeps, then resumes | same as `ready` |
-| `done` | main ended | `inspect` (returns `[]`), `setBreakpoints` |
+| `done` | main ended | `inspect` (returns main's frame with its final values), `setBreakpoints` |
 | `error` | a runtime diagnostic was raised | `inspect` (returns the frames at the error), `setBreakpoints` |
 
 A command that is not legal in the current state throws a plain `Error`. `setBreakpoints`
@@ -147,7 +147,8 @@ type InputRequest = Omit<Extract<StepResult, { kind: 'input' }>, 'kind'>
 - `wait`: `Esperar millis` was reached; `millis` is the evaluated value, negative clamped to
   0. The host sleeps, then calls `continue` or a step command; the statement is complete, so
   the run resumes at the next statement.
-- `done`: main's body ended (or a bare `Retornar` in main was executed).
+- `done`: main's body ended (or a bare `Retornar` in main was executed): `inspect()` keeps
+  returning main's final frame.
 - `error`: the diagnostic and the frames at the point of failure, innermost first. The run is
   over; `inspect()` keeps returning those frames.
 

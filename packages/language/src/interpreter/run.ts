@@ -191,8 +191,9 @@ class Controller implements Run {
   }
 
   inspect(): Frame[] {
-    if (this.state === 'done') return []
     if (this.failure !== null) return this.failure.frames
+    // §3.1: `finish()` returns `'done'` without popping main's frame, so its final values are
+    // still on `this.frames` — a host can show them after the run ends.
     return inspectFrames(this.frames)
   }
 
