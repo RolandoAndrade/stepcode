@@ -19,6 +19,15 @@ describe('acceptedSrc', () => {
     )
   })
 
+  it('rewrites the user-less Gist form', () => {
+    expect(at('https://gist.github.com/0123456789abcdef')).toBe(
+      'https://gist.githubusercontent.com/0123456789abcdef/raw',
+    )
+    expect(at('https://gist.github.com/0123456789abcdef#file-uno-stepcode')).toBe(
+      'https://gist.githubusercontent.com/0123456789abcdef/raw',
+    )
+  })
+
   it('passes the raw hosts through unchanged', () => {
     expect(at('https://raw.githubusercontent.com/ana/curso/main/uno.stepcode')).toBe(
       'https://raw.githubusercontent.com/ana/curso/main/uno.stepcode',
@@ -33,6 +42,7 @@ describe('acceptedSrc', () => {
     expect(at('https://example.com/uno.stepcode')).toBeNull()
     expect(at('https://github.com/ana/curso')).toBeNull()
     expect(at('https://gist.github.com/ana')).toBeNull()
+    expect(at('https://gist.github.com/ana/curso/blob/main/uno.stepcode')).toBeNull()
     expect(at('not a url')).toBeNull()
     expect(at('')).toBeNull()
   })
@@ -116,6 +126,71 @@ describe('fetchSrc', () => {
       throw new TypeError('Failed to fetch')
     }) as unknown as typeof fetch
     expect(await reasonOf(fetchSrc(RAW, failing))).toBe('network')
+  })
+
+  it('stops reading and cancels the stream once the body passes the cap', async () => {
+    const MEGABYTE = 1024 * 1024
+    const offered = 10
+    let pulled = 0
+    let cancelled = false
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (pulled === offered) {
+          controller.close()
+          return
+        }
+        pulled += 1
+        controller.enqueue(new Uint8Array(MEGABYTE).fill(97))
+      },
+      cancel() {
+        cancelled = true
+      },
+    })
+    const response = {
+      ok: true,
+      headers: new Headers({ 'content-type': 'text/plain' }),
+      body,
+      text: () => Promise.reject(new Error('the body must not be buffered whole')),
+    } as unknown as Response
+    expect(await reasonOf(fetchSrc(RAW, fakeFetch(response)))).toBe('size')
+    expect(cancelled).toBe(true)
+    expect(pulled).toBeLessThan(offered)
+  })
+
+  it('refuses an oversized content-length before reading the body', async () => {
+    let opened = false
+    const response = {
+      ok: true,
+      headers: new Headers({
+        'content-type': 'text/plain',
+        'content-length': String(MAX_SRC_BYTES + 1),
+      }),
+      body: {
+        getReader: () => {
+          opened = true
+          throw new Error('the body must not be read')
+        },
+      },
+    } as unknown as Response
+    expect(await reasonOf(fetchSrc(RAW, fakeFetch(response)))).toBe('size')
+    expect(opened).toBe(false)
+  })
+
+  it('decodes multi-byte characters split across chunks', async () => {
+    const bytes = new TextEncoder().encode('Escribir "ñandú";')
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(bytes.slice(0, 11))
+        controller.enqueue(bytes.slice(11))
+        controller.close()
+      },
+    })
+    const response = {
+      ok: true,
+      headers: new Headers({ 'content-type': 'text/plain' }),
+      body,
+    } as unknown as Response
+    expect(await fetchSrc(RAW, fakeFetch(response))).toBe('Escribir "ñandú";')
   })
 
   it('caps the payload at the same 5 MB the share decoder uses', () => {

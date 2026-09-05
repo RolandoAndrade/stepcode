@@ -16,7 +16,8 @@ export const MAX_SRC_BYTES = 5 * 1024 * 1024
 
 const RAW_HOSTS: readonly string[] = ['raw.githubusercontent.com', 'gist.githubusercontent.com']
 const BLOB = /^\/([^/]+)\/([^/]+)\/blob\/(.+)$/
-const GIST = /^\/([^/]+)\/([0-9a-fA-F]+)\/?$/
+// The user is optional: `gist.github.com/<id>` is what a Gist opened from a link often reads.
+const GIST = /^\/(?:([^/]+)\/)?([0-9a-fA-F]+)\/?$/
 
 /**
  * Spec §2.2: the URL to fetch, or `null` when the host is not accepted. Teachers paste what
@@ -42,8 +43,9 @@ export function acceptedSrc(url: string): URL | null {
   if (parsed.hostname === 'gist.github.com') {
     const match = GIST.exec(parsed.pathname)
     if (match === null) return null
-    const [, user = '', id = ''] = match
-    return new URL(`https://gist.githubusercontent.com/${user}/${id}/raw`)
+    const [, user, id = ''] = match
+    const owner = user === undefined ? '' : `${user}/`
+    return new URL(`https://gist.githubusercontent.com/${owner}${id}/raw`)
   }
   return null
 }
@@ -63,13 +65,39 @@ export async function fetchSrc(url: string, fetchImpl: typeof fetch = fetch): Pr
   if (type === null || !type.trim().toLowerCase().startsWith('text/')) throw new SrcError('type')
   const declared = Number(response.headers.get('content-length'))
   if (Number.isFinite(declared) && declared > MAX_SRC_BYTES) throw new SrcError('size')
-  let text: string
+  // The header is advisory (and absent on a chunked response), so the body is measured as it
+  // arrives: `response.text()` would buffer a lying server's whole answer before the cap could
+  // refuse it.
+  const body = response.body
+  if (body === null) {
+    let text: string
+    try {
+      text = await response.text()
+    } catch {
+      throw new SrcError('network')
+    }
+    if (new TextEncoder().encode(text).byteLength > MAX_SRC_BYTES) throw new SrcError('size')
+    return text
+  }
+  const reader = body.getReader()
+  const decoder = new TextDecoder()
+  let read = 0
+  let text = ''
   try {
-    text = await response.text()
-  } catch {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      read += value.byteLength
+      if (read > MAX_SRC_BYTES) {
+        await reader.cancel().catch(() => {})
+        throw new SrcError('size')
+      }
+      text += decoder.decode(value, { stream: true })
+    }
+  } catch (error) {
+    if (error instanceof SrcError) throw error
     throw new SrcError('network')
   }
-  // The header is advisory (and absent on a chunked response), so the body is measured too.
-  if (new TextEncoder().encode(text).byteLength > MAX_SRC_BYTES) throw new SrcError('size')
-  return text
+  // A character split across the last two chunks is only complete once the stream ends.
+  return text + decoder.decode()
 }
