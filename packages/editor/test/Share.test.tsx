@@ -194,4 +194,40 @@ describe('Share: the Insertar tab', () => {
     await waitFor(() => expect(copied[1]).toContain('https://x.test/embed'))
     expect(copied[1]).not.toContain('<iframe')
   })
+
+  it('never previews an empty embed URL while the link is pending or failed', async () => {
+    encodes.fail = true
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { store } = storeWith({ dialog: 'share', name: 'tarea.stepcode' })
+    renderWithStore(<Share base="https://x.test/" origin="https://x.test/" />, store)
+    act(() => {
+      fireEvent.click(screen.getByRole('tab', { name: 'Insertar' }))
+    })
+    // Still pending, before the mocked encoder has even rejected: no iframe yet.
+    expect(document.querySelector('iframe')).toBeNull()
+    await waitFor(() => expect(encodes.count).toBe(1))
+    // Let the rejection's `.catch` (and its `setHash('')`) settle before the test ends, so no
+    // state update is left pending once the environment is torn down.
+    await act(async () => {})
+    // The encode failed, so the hash (and therefore the embed URL) never arrives.
+    expect(document.querySelector('iframe')).toBeNull()
+    expect(screen.getByRole('img', { name: 'Vista previa' })).toBeDefined()
+    warn.mockRestore()
+  })
+
+  it('switches tabs by keyboard, not just by clicking', async () => {
+    const { store } = storeWith({ dialog: 'share', name: 'tarea.stepcode' })
+    renderWithStore(<Share base="https://x.test/" origin="https://x.test/" />, store)
+    const linkTab = screen.getByRole('tab', { name: 'Enlace' })
+    act(() => linkTab.focus())
+    act(() => {
+      fireEvent.keyDown(linkTab, { key: 'ArrowRight', code: 'ArrowRight' })
+    })
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: 'Insertar' }).getAttribute('aria-selected')).toBe(
+        'true',
+      ),
+    )
+    expect(screen.getByRole('textbox', { name: 'Insertar' })).toBeDefined()
+  })
 })

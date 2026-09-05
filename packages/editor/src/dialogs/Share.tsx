@@ -192,18 +192,37 @@ export function Share({
                 type="number"
                 min={MIN_EMBED_HEIGHT}
                 value={height}
-                onChange={(event) => setHeight(Number(event.target.value))}
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  setHeight(Number.isFinite(next) ? next : DEFAULT_EMBED_HEIGHT)
+                }}
                 className={`${FIELD} w-24`}
               />
             </label>
           </div>
-          <iframe
-            title={strings.share.preview}
-            src={frame}
-            width="100%"
-            height={Math.min(Math.max(height, MIN_EMBED_HEIGHT), PREVIEW_MAX_HEIGHT)}
-            className="mt-3 w-full rounded border border-border"
-          />
+          {frame === '' ? (
+            // No hash yet (still encoding, or the encode failed): an iframe with an empty `src`
+            // resolves to the current document, which would load the whole editor recursively
+            // inside its own dialog. A plain placeholder carries the same accessible name.
+            <div
+              role="img"
+              aria-label={strings.share.preview}
+              className="mt-3 flex w-full items-center justify-center rounded border border-border text-muted text-xs"
+              style={{
+                height: Math.min(Math.max(height, MIN_EMBED_HEIGHT), PREVIEW_MAX_HEIGHT),
+              }}
+            >
+              {strings.share.preview}
+            </div>
+          ) : (
+            <iframe
+              title={strings.share.preview}
+              src={frame}
+              width="100%"
+              height={Math.min(Math.max(height, MIN_EMBED_HEIGHT), PREVIEW_MAX_HEIGHT)}
+              className="mt-3 w-full rounded border border-border"
+            />
+          )}
           <textarea
             readOnly
             aria-label={strings.share.tabs.embed}
