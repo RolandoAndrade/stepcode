@@ -13,8 +13,9 @@ export function Toolbar({ env, compact = false }: { env: FileEnvironment; compac
   const store = useEditorStoreApi()
   const strings = useEditorStore(stringsOf)
   const dirty = useEditorStore(isDirty)
+  const running = useEditorStore((s) => s.state === 'running')
   return (
-    <header className="flex h-10 items-center gap-2 border-b border-border bg-surface px-2 text-fg">
+    <header className="relative flex h-10 items-center gap-2 border-b border-border bg-surface px-2 text-fg">
       <Menu env={env} />
       <Filename />
       {compact ? null : (
@@ -53,6 +54,18 @@ export function Toolbar({ env, compact = false }: { env: FileEnvironment; compac
       )}
       <span className="ml-auto" />
       <RunControls compact={compact} />
+      {running ? (
+        // Indeterminate on purpose: a program's remaining work is unknowable, so the stripe says
+        // "still going", not "this far along". Under prefers-reduced-motion the global rule in
+        // index.css stops the slide and leaves the bar solid.
+        <div
+          role="progressbar"
+          aria-label={strings.status.running}
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-accent"
+        >
+          <span aria-hidden="true" className="sc-stripe block h-full w-[30%] bg-bg/50" />
+        </div>
+      ) : null}
     </header>
   )
 }

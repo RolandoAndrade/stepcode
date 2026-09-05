@@ -246,11 +246,16 @@ Changes to the 4a panels, all inside the panel files:
 ### 4.1 Layout
 
 ```
-[≡] [hola.stepcode ●]  [Nuevo] [Abrir] [Guardar]        [Ejecutar] [Depurar] … [Pausar] [Detener]
+[≡] [hola.stepcode]  [Nuevo] [Abrir] [Guardar•]        [Ejecutar] [Depurar] … [Pausar] [Detener]
 ```
 
 Left to right: menu button (hexagon icon 20 px, tooltip "Menú"), filename, file actions. The run
 cluster is right-aligned. Nothing in the center.
+
+While a program is `running`, the toolbar's bottom edge becomes a 2 px accent progress bar with a
+lighter segment sliding along it (`role="progressbar"`, no value: a program's remaining work is
+unknowable). It is not rendered in any other state, and the global reduced-motion rule leaves it
+solid instead of sliding.
 
 ### 4.2 Filename
 

@@ -40,6 +40,22 @@
   --z-index-modal: var(--sc-z-modal);
 }
 
+@layer components {
+  /* The toolbar's running stripe (§4.1): a lighter segment sliding along the accent bar. */
+  .sc-stripe {
+    animation: sc-stripe 1.2s linear infinite;
+  }
+}
+
+@keyframes sc-stripe {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+
 @layer base {
   html,
   body,

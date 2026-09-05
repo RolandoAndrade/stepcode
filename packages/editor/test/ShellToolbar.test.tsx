@@ -49,6 +49,24 @@ describe('Toolbar (shell)', () => {
     expect(dot()?.getAttribute('aria-hidden')).toBe('true')
   })
 
+  it('shows an indeterminate progress stripe only while a program runs', () => {
+    const { store } = storeWith({})
+    renderWithStore(
+      <TooltipProvider>
+        <Toolbar env={env} />
+      </TooltipProvider>,
+      store,
+    )
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    act(() => store.setState({ state: 'running' }))
+    const bar = screen.getByRole('progressbar', { name: 'Ejecutando…' })
+    expect(bar.getAttribute('aria-valuenow')).toBeNull()
+    act(() => store.setState({ state: 'paused' }))
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    act(() => store.setState({ state: 'ready' }))
+    expect(screen.queryByRole('progressbar')).toBeNull()
+  })
+
   it('Nuevo replaces the document with the starter', () => {
     const { store } = storeWith({})
     renderWithStore(
