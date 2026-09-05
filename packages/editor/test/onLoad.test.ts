@@ -36,6 +36,51 @@ describe('loadFromLocation', () => {
     expect(store.getState().source).toBe(before)
   })
 
+  it('starts the program when the address asked for autorun', async () => {
+    const hash = await encodeShare({ source: SOURCE, profileId: 'es', name: 'a.stepcode' })
+    window.history.replaceState(null, '', `/?autorun${hash}`)
+    const host = new FakeHost()
+    const store = createEditorStore(host)
+    await loadFromLocation(store)
+    expect(host.starts).toHaveLength(1)
+    expect(host.starts[0]?.source).toBe(SOURCE)
+    expect(host.starts[0]?.mode).toBe('run')
+  })
+
+  it('leaves a loaded program waiting when the address did not ask for autorun', async () => {
+    const hash = await encodeShare({ source: SOURCE, profileId: 'es', name: 'a.stepcode' })
+    window.history.replaceState(null, '', `/${hash}`)
+    const host = new FakeHost()
+    await loadFromLocation(createEditorStore(host))
+    expect(host.starts).toEqual([])
+  })
+
+  it('starts nothing when autorun has no program to start', async () => {
+    window.history.replaceState(null, '', '/?autorun&example=no/such')
+    const failing = new FakeHost()
+    expect(await loadFromLocation(createEditorStore(failing), { example: () => null })).toEqual({
+      kind: 'failed',
+      reason: 'example',
+    })
+    expect(failing.starts).toEqual([])
+
+    window.history.replaceState(null, '', '/?autorun')
+    const empty = new FakeHost()
+    expect(await loadFromLocation(createEditorStore(empty))).toEqual({ kind: 'none' })
+    expect(empty.starts).toEqual([])
+  })
+
+  it('waits for the unsaved prompt instead of starting a parked program', async () => {
+    const hash = await encodeShare({ source: SOURCE, profileId: 'es', name: 'a.stepcode' })
+    window.history.replaceState(null, '', `/?autorun${hash}`)
+    const host = new FakeHost()
+    const store = createEditorStore(host)
+    store.getState().setSource('Proceso mio\n  Escribir 2;\nFinProceso\n')
+    await loadFromLocation(store)
+    expect(store.getState().pendingReplace).not.toBeNull()
+    expect(host.starts).toEqual([])
+  })
+
   it('says nothing happened for a plain address', async () => {
     window.history.replaceState(null, '', '/')
     const store = createEditorStore(new FakeHost())

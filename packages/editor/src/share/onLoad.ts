@@ -27,18 +27,16 @@ export interface BootFromUrlResult {
 export async function bootFromUrl(
   store: EditorStore,
   url: URL,
-  deps: Omit<LoadDeps, 'replaceState'> & { replaceState?: LoadDeps['replaceState'] } = {},
+  deps: LoadDeps = {},
 ): Promise<BootFromUrlResult> {
   const options = readUrlOptions(url)
+  // Plan deviation 10: both land in the store before `startPersisting`, so a URL choice is only
+  // written to storage once the reader changes a setting themselves.
   if (options.profile !== null) store.getState().setProfile(options.profile)
   if (options.lang !== null) {
     store.getState().updateSettings('appearance', { uiLocale: options.lang })
   }
-  // `exactOptionalPropertyTypes`: an explicit `replaceState: undefined` is not the same as no
-  // `replaceState` at all, so the key is dropped rather than passed empty.
-  const { replaceState, ...rest } = deps
-  const loadDeps: LoadDeps = replaceState === undefined ? rest : { ...rest, replaceState }
-  const outcome = await loadProgramFromUrl(store, url, loadDeps)
+  const outcome = await loadProgramFromUrl(store, url, deps)
   if (outcome.kind !== 'failed') return { options, outcome, message: null }
   const strings = stringsOf(store.getState())
   return { options, outcome, message: strings.embed.loadFailed(strings.src[outcome.reason]) }
