@@ -1,6 +1,10 @@
 packages:
   - packages/*
 
+allowBuilds:
+  esbuild: true
+  workerd: true
+
 catalog:
   typescript: ^7.0.2
   vitest: ^4.1.11
