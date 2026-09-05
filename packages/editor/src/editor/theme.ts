@@ -13,7 +13,7 @@ export interface EditorThemeSpec {
   readonly [key: string]: string | EditorThemeSpec
 }
 
-export const EDITOR_THEME_SPEC: EditorThemeSpec = {
+export const EDITOR_THEME_SPEC: Readonly<Record<string, EditorThemeSpec>> = {
   '&': { backgroundColor: 'var(--sc-bg)', color: 'var(--sc-fg)', height: '100%' },
   '.cm-scroller': { fontFamily: MONO, lineHeight: '1.5' },
   '.cm-content': { caretColor: 'var(--sc-caret)' },

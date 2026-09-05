@@ -12,16 +12,11 @@ export interface ExpandEvent {
 }
 
 /** Spec §3.4: which panel an observed store transition wants expanded, if any. */
-export function autoExpandTarget(
-  previous: ExpandInput,
-  next: ExpandInput,
-  showConsoleOnRun = true,
-): ExpandEvent | null {
+export function autoExpandTarget(previous: ExpandInput, next: ExpandInput): ExpandEvent | null {
   if (next.pendingInput !== null && previous.pendingInput === null) {
     return { panel: 'console', reason: 'input' }
   }
   if (next.pausedInRun && !previous.pausedInRun) return { panel: 'variables', reason: 'pause' }
-  if (next.runSeq !== previous.runSeq && showConsoleOnRun)
-    return { panel: 'console', reason: 'run' }
+  if (next.runSeq !== previous.runSeq) return { panel: 'console', reason: 'run' }
   return null
 }

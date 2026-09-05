@@ -8,7 +8,7 @@ import type { EditorStore, StoreState } from './store'
 export const STORAGE_KEY = 'stepcode.editor'
 
 export const PersistedSchema = z.strictObject({
-  version: z.literal(1),
+  version: z.literal(2),
   settings: z.strictObject({
     profileId: z.string().min(1),
     customProfiles: z.array(ProfileInputSchema),
@@ -21,14 +21,27 @@ export const PersistedSchema = z.strictObject({
   }),
 })
 
-export type PersistedV1 = z.infer<typeof PersistedSchema>
+export type PersistedV2 = z.infer<typeof PersistedSchema>
 
-export const CURRENT_VERSION = 1
+export const CURRENT_VERSION = 2
 
-/** `migrations[n]` upgrades a version-`n` document to `n + 1`. Empty for the first release. */
-export const migrations: ReadonlyArray<
-  (previous: Record<string, unknown>) => Record<string, unknown>
-> = []
+type Migration = (previous: Record<string, unknown>) => Record<string, unknown>
+
+/**
+ * `migrations[n]` upgrades a version-`n` document to `n + 1`. Slot 0 is empty on purpose: no
+ * version-0 document was ever written, so one is refused rather than upgraded.
+ */
+export const migrations: ReadonlyArray<Migration | undefined> = [
+  undefined,
+  // Version 1 stored `settings.layout.showConsoleOnRun`; the console now always opens on a run,
+  // and the schema is strict, so the retired section has to go rather than be ignored.
+  (previous) => {
+    const settings = previous.settings
+    if (typeof settings !== 'object' || settings === null) return { ...previous, version: 2 }
+    const { layout: _retired, ...rest } = settings as Record<string, unknown>
+    return { ...previous, version: 2, settings: rest }
+  },
+]
 
 export interface StorageLike {
   getItem(key: string): string | null
@@ -38,7 +51,7 @@ export interface StorageLike {
 /** `steps[n]` upgrades version `n`; a version no step can lift is refused. */
 export function migrate(
   raw: Record<string, unknown>,
-  steps: ReadonlyArray<(previous: Record<string, unknown>) => Record<string, unknown>> = migrations,
+  steps: ReadonlyArray<Migration | undefined> = migrations,
   target: number = CURRENT_VERSION,
 ): Record<string, unknown> | null {
   let current = raw
@@ -53,7 +66,7 @@ export function migrate(
 }
 
 /** Never throws (global constraint): garbage, unknown versions and storage errors all yield null. */
-export function readPersisted(storage: StorageLike): PersistedV1 | null {
+export function readPersisted(storage: StorageLike): PersistedV2 | null {
   try {
     const text = storage.getItem(STORAGE_KEY)
     if (text === null) return null
@@ -70,7 +83,7 @@ export function readPersisted(storage: StorageLike): PersistedV1 | null {
   }
 }
 
-export function writePersisted(storage: StorageLike, value: PersistedV1): void {
+export function writePersisted(storage: StorageLike, value: PersistedV2): void {
   try {
     storage.setItem(STORAGE_KEY, JSON.stringify(value))
   } catch (error) {
@@ -78,9 +91,9 @@ export function writePersisted(storage: StorageLike, value: PersistedV1): void {
   }
 }
 
-export function persistedOf(state: StoreState): PersistedV1 {
+export function persistedOf(state: StoreState): PersistedV2 {
   return {
-    version: 1,
+    version: CURRENT_VERSION,
     settings: {
       profileId: state.profileId,
       customProfiles: [...state.customProfiles],
@@ -94,7 +107,7 @@ export function persistedOf(state: StoreState): PersistedV1 {
   }
 }
 
-export function applyPersisted(store: EditorStore, persisted: PersistedV1): void {
+export function applyPersisted(store: EditorStore, persisted: PersistedV2): void {
   const { profileId, customProfiles, ...settings } = persisted.settings
   store.setState({
     customProfiles,

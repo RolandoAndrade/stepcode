@@ -58,7 +58,7 @@ describe('localStorage persistence', () => {
     const storage = new MemoryStorage()
     writePersisted(storage, persistedOf(store.getState()))
     const parsed = JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as { version: number }
-    expect(parsed.version).toBe(1)
+    expect(parsed.version).toBe(2)
 
     const again = createEditorStore(new FakeHost())
     const loaded = readPersisted(storage)
@@ -87,6 +87,23 @@ describe('localStorage persistence', () => {
     expect(readPersisted(storage)).toBeNull()
     expect(warn).toHaveBeenCalledTimes(3)
     warn.mockRestore()
+  })
+
+  it('drops the retired layout settings of a version-1 document', () => {
+    const storage = new MemoryStorage()
+    const store = createEditorStore(new FakeHost())
+    const current = persistedOf(store.getState())
+    storage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...current,
+        version: 1,
+        settings: { ...current.settings, layout: { showConsoleOnRun: false } },
+      }),
+    )
+    const loaded = readPersisted(storage)
+    expect(loaded?.version).toBe(2)
+    expect(loaded?.settings).not.toHaveProperty('layout')
   })
 
   it('never throws when storage is unavailable', () => {

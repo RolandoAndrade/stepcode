@@ -148,9 +148,7 @@ export interface Strings {
   readonly settings: {
     readonly title: string
     readonly reset: string
-    readonly sections: Readonly<
-      Record<'language' | 'editor' | 'execution' | 'appearance' | 'layout', string>
-    >
+    readonly sections: Readonly<Record<'language' | 'editor' | 'execution' | 'appearance', string>>
     readonly language: {
       readonly profile: string
       readonly customize: string
@@ -203,10 +201,6 @@ export interface Strings {
       readonly auto: string
       readonly spanish: string
       readonly english: string
-    }
-    readonly layout: {
-      readonly reset: string
-      readonly showConsoleOnRun: string
     }
   }
   readonly files: {
@@ -396,7 +390,6 @@ const es: Strings = {
       editor: 'Editor',
       execution: 'Ejecución',
       appearance: 'Apariencia',
-      layout: 'Diseño',
     },
     language: {
       profile: 'Perfil',
@@ -448,7 +441,6 @@ const es: Strings = {
       spanish: 'Español',
       english: 'English',
     },
-    layout: { reset: 'Restablecer diseño', showConsoleOnRun: 'Mostrar la consola al ejecutar' },
   },
   files: {
     saved: 'Guardado',
@@ -625,7 +617,6 @@ const en: Strings = {
       editor: 'Editor',
       execution: 'Execution',
       appearance: 'Appearance',
-      layout: 'Layout',
     },
     language: {
       profile: 'Profile',
@@ -677,7 +668,6 @@ const en: Strings = {
       spanish: 'Español',
       english: 'English',
     },
-    layout: { reset: 'Reset layout', showConsoleOnRun: 'Show the console on run' },
   },
   files: {
     saved: 'Saved',

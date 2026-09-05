@@ -177,7 +177,7 @@ since the current run started:
 | a Vista menu item is chosen | that panel, always |
 
 "Since the current run started" is a flag per group set by a manual collapse and cleared when the
-next run starts. The Diseño setting "Mostrar consola al ejecutar" turns the first row off.
+next run starts. The first row is unconditional: there is no setting to turn it off (§6).
 
 An input request always expands the target group even if the user collapsed it manually during
 this run (a program blocked on a prompt nobody can see is unusable); the manual-collapse rule
@@ -325,9 +325,8 @@ Theme: Sistema / Claro / Oscuro. Interface language: Automático / Español / En
 follows the active profile's locale. `stringsFor` receives the resolved UI locale; the profile's
 locale keeps driving diagnostic text and runtime rendering.
 
-### 6.5 Diseño
-
-Restablecer diseño; Mostrar consola al ejecutar (default on).
+There is no Diseño section: the console always opens on a run — a setting nobody found before
+the first run is not a setting — and "Restablecer diseño" lives in the Vista menu alone.
 
 ## 7. Persistence
 
@@ -336,15 +335,14 @@ Restablecer diseño; Mostrar consola al ejecutar (default on).
 One key `stepcode.editor`, one JSON document:
 
 ```ts
-interface PersistedV1 {
-  version: 1
+interface PersistedV2 {
+  version: 2
   settings: {
     profileId: string
     customProfiles: ProfileInput[]
     editor: { fontSize: number; lineNumbers: boolean; wordWrap: boolean; autocomplete: boolean; tabSize: 2 | 4; highlightLine: boolean }
     execution: { warnOnWarnings: boolean; clearConsoleOnRun: boolean }
     appearance: { theme: 'light' | 'dark' | 'system'; uiLocale: 'auto' | 'es' | 'en' }
-    layout: { showConsoleOnRun: boolean }
   }
   layout: { dockview: SerializedDockview | null; collapsed: string[]; sheet: 'collapsed' | 'half' | 'full' }
 }
@@ -352,7 +350,8 @@ interface PersistedV1 {
 
 Loading validates with zod. Unknown version, parse failure or validation failure → defaults, and
 a console warning; nothing throws. `version` increments with a migration function list
-(`migrations[n]: (prev) => next`), and the first release ships the empty list. Writes are
+(`migrations[n]: (prev) => next`, slot 0 empty because no version-0 document was ever written).
+Version 2 drops `settings.layout`, the retired auto-expand preference. Writes are
 debounced 250 ms and coalesced; the `storage` event does not sync tabs (last writer wins).
 
 Dockview JSON is validated shallowly (it is dockview's format); if `fromJSON` throws, the shell

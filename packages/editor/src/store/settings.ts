@@ -18,14 +18,12 @@ export const SettingsSchema = z.strictObject({
     theme: z.enum(['light', 'dark', 'system']),
     uiLocale: z.enum(['auto', 'es', 'en']),
   }),
-  layout: z.strictObject({ showConsoleOnRun: z.boolean() }),
 })
 
 export type Settings = z.infer<typeof SettingsSchema>
 export type EditorSettings = Settings['editor']
 export type ExecutionSettings = Settings['execution']
 export type AppearanceSettings = Settings['appearance']
-export type LayoutSettings = Settings['layout']
 export type SettingsSection = keyof Settings
 
 /** Spec §6: every default, once. */
@@ -40,5 +38,4 @@ export const DEFAULT_SETTINGS: Settings = Object.freeze({
   },
   execution: { warnOnWarnings: true, clearConsoleOnRun: true },
   appearance: { theme: 'system', uiLocale: 'auto' },
-  layout: { showConsoleOnRun: true },
 })

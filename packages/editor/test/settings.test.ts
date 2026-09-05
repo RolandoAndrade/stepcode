@@ -14,7 +14,6 @@ describe('settings', () => {
       },
       execution: { warnOnWarnings: true, clearConsoleOnRun: true },
       appearance: { theme: 'system', uiLocale: 'auto' },
-      layout: { showConsoleOnRun: true },
     })
   })
 
@@ -24,5 +23,11 @@ describe('settings', () => {
     expect(SettingsSchema.safeParse(bad).success).toBe(false)
     const tab = { ...DEFAULT_SETTINGS, editor: { ...DEFAULT_SETTINGS.editor, tabSize: 3 } }
     expect(SettingsSchema.safeParse(tab).success).toBe(false)
+  })
+
+  it('has no layout section: the console always opens on run', () => {
+    expect('layout' in DEFAULT_SETTINGS).toBe(false)
+    const stale = { ...DEFAULT_SETTINGS, layout: { showConsoleOnRun: false } }
+    expect(SettingsSchema.safeParse(stale).success).toBe(false)
   })
 })

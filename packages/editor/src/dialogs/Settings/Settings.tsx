@@ -8,11 +8,10 @@ import { Appearance } from './Appearance'
 import { EditorSection } from './EditorSection'
 import { Execution } from './Execution'
 import { Language } from './Language'
-import { LayoutSection } from './LayoutSection'
 import { Rail } from './Rail'
 
-export type SettingsPage = 'language' | 'editor' | 'execution' | 'appearance' | 'layout'
-const PAGES: readonly SettingsPage[] = ['language', 'editor', 'execution', 'appearance', 'layout']
+export type SettingsPage = 'language' | 'editor' | 'execution' | 'appearance'
+const PAGES: readonly SettingsPage[] = ['language', 'editor', 'execution', 'appearance']
 
 /** Spec §6: rail + one scrolling body; every control writes to the store immediately. */
 export function Settings({ initialSection = 'language' }: { initialSection?: SettingsPage }) {
@@ -26,7 +25,6 @@ export function Settings({ initialSection = 'language' }: { initialSection?: Set
     editor: <EditorSection />,
     execution: <Execution />,
     appearance: <Appearance />,
-    layout: <LayoutSection />,
   }[page]
   return (
     <Dialog.Root open={open} onOpenChange={(next) => !next && store.getState().closeDialog()}>
