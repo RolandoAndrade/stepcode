@@ -126,3 +126,38 @@ describe('RunControls', () => {
     expect(store.getState().panelRequest?.id).toBe('problems')
   })
 })
+
+describe('RunControls debug={false}', () => {
+  it.each<[WorkerState, string[]]>([
+    ['ready', ['Ejecutar']],
+    ['done', ['Ejecutar']],
+    ['error', ['Ejecutar']],
+    ['running', ['Pausar', 'Detener']],
+    ['paused', ['Continuar', 'Detener']],
+    ['input', ['Detener']],
+    ['waiting', ['Detener']],
+  ])('in %s shows %j', (state, expected) => {
+    const { store } = storeWith({ state })
+    renderWithStore(
+      <TooltipProvider>
+        <RunControls debug={false} />
+      </TooltipProvider>,
+      store,
+    )
+    expect(visible()).toEqual(expected)
+  })
+
+  it('still runs the program from the remaining button', () => {
+    const { store, host } = storeWith({ state: 'ready' })
+    renderWithStore(
+      <TooltipProvider>
+        <RunControls debug={false} />
+      </TooltipProvider>,
+      store,
+    )
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Ejecutar' }))
+    })
+    expect(host.calls).toEqual(['start:run'])
+  })
+})

@@ -33,7 +33,16 @@ export function slotsFor(state: string): readonly Slot[] {
   }
 }
 
-export function RunControls({ compact = false }: { compact?: boolean }) {
+/** Spec §3.2: the embed's restricted cluster — Ejecutar/Detener, no debugger. */
+const DEBUG_SLOTS: ReadonlySet<Slot> = new Set(['debug', 'stepOver', 'stepInto', 'stepOut'])
+
+export function RunControls({
+  compact = false,
+  debug = true,
+}: {
+  compact?: boolean
+  debug?: boolean
+}) {
   const strings = useEditorStore(stringsOf)
   const state = useEditorStore((s) => s.state)
   const errors = useEditorStore(hasErrors)
@@ -50,12 +59,13 @@ export function RunControls({ compact = false }: { compact?: boolean }) {
     })),
   )
   const t = strings.toolbar
+  const offered = slotsFor(state).filter((slot) => debug || !DEBUG_SLOTS.has(slot))
   const shown = new Set(
     compact
-      ? slotsFor(state).filter(
+      ? offered.filter(
           (slot) => slot === 'run' || slot === 'stop' || slot === 'pause' || slot === 'continue',
         )
-      : slotsFor(state),
+      : offered,
   )
   const runOrProblems = (): void => (errors ? a.requestPanel('problems') : a.run())
   const buttons: Record<
