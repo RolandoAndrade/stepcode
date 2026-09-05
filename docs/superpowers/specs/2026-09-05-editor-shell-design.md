@@ -605,9 +605,12 @@ Vitest with happy-dom, per file opt-in as in 4a. Coverage by area:
   strings untouched; every example × every built-in profile compiles clean.
 - share: encode/decode round trip, empty, oversize warning threshold, unknown profile fallback.
 - files: FSA path with a fake `showOpenFilePicker`, fallback path with a fake input, error toasts.
-- shell: default layout serialization, collapse constraints and restore, auto-expand rules with
-  the manual-collapse flag, Vista actions, reset; dockview mocked at its React API for unit tests
-  and mounted for real in one smoke test. Popout is not tested in 4b: it is deferred to 4c's
+- shell: default layout serialization, collapse as group visibility (hide, show, restore from the
+  saved id list, the animation mark and its fallback timer), the sidebar's three click outcomes
+  and its pressed/badge states, auto-expand rules with the manual-collapse flag, Vista actions,
+  reset; dockview mocked at its React API for unit tests and mounted for real in one smoke test —
+  the mounted one also proves the editor group's header is hidden and that a collapsed group's
+  grid view loses dockview's `visible` class. Popout is not tested in 4b: it is deferred to 4c's
   Playwright pass.
 - toolbar, filename, menu, status bar, dialogs: rendering per state, shortcuts, `⌘`/Ctrl
   labels, keyboard navigation in Problems, settings rail, profile builder validation.
@@ -633,7 +636,18 @@ there as deferred, not skipped.
 - Examples authored once in `es` and transposed, with overrides; a test guards every profile.
 - File handles are not persisted; a reload turns Guardar into Guardar como.
 - Phone layout is a separate shell over the same panels; dockview is not loaded on phones.
-- dockview 8.2.0 ships native collapsible edge groups. 4b keeps its own collapse controller (the
-  work was already specified against constraint pairs, and the native API changes group
-  identity and persistence); migrating to it is a follow-up, not part of 4b.
+- dockview 8.2.0 ships native collapsible edge groups. 4b keeps its own collapse controller
+  (the native API changes group identity and persistence), but the controller now collapses the
+  way dockview itself hides a view — `group.api.setVisible(false)` — instead of freezing a
+  constraint pair at the header size. A hidden group is honest about being gone, it costs no
+  size bookkeeping (dockview caches and clamps the size back), and it survives serialization on
+  its own; migrating to the native edge groups is still a follow-up, not part of 4b.
+- With no collapsed strip left to click, the way back to a hidden panel is the sidebar (§3.3): a
+  JetBrains-style tool-window bar down the left of the layout area. It doubles as the place where
+  the problems count is visible while the panel is away.
+- The editor group's header is hidden rather than styled: its one panel can never leave it, so the
+  tab only spent 28 px repeating the filename the toolbar already shows.
+- Hiding and showing a group is animated by transitioning the geometry dockview writes inline,
+  under a class the shell only turns on around its own calls — never during a sash drag, and never
+  while a layout is being built or restored.
 - `#code=` beats the stored document on load, so a shared link always shows what was shared.
