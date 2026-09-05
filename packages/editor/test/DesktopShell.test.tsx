@@ -184,9 +184,8 @@ describe('DesktopShell', () => {
     await panelSection('Consola')
     await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
     const dock = document.querySelector('.sc-dock') as HTMLElement
-    // The default layout collapses the bottom group, so the mark starts on and expires by itself:
-    // nothing transitions in happy-dom, which is exactly what the fallback timer is for.
-    await waitFor(() => expect(dock.classList.contains('sc-animating')).toBe(false))
+    // Building the default layout is not an animation: the bottom group starts hidden.
+    expect(dock.classList.contains('sc-animating')).toBe(false)
     act(() => store.getState().run())
     await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
     expect(dock.classList.contains('sc-animating')).toBe(true)

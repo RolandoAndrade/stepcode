@@ -49,6 +49,7 @@ export const ANIMATION_FALLBACK_MS = 250
 export class CollapseController {
   private readonly collapsed = new Set<string>()
   private timer: ReturnType<typeof setTimeout> | null = null
+  private muted = false
 
   constructor(
     private readonly api: ApiLike,
@@ -64,10 +65,23 @@ export class CollapseController {
     this.root?.removeEventListener('transitionend', this.endAnimation)
   }
 
+  /**
+   * Building, resetting or restoring a layout lands on its geometry in one pass; only a change
+   * the user asked for slides. Everything `run` collapses or expands skips the animation.
+   */
+  withoutAnimation(run: () => void): void {
+    this.muted = true
+    try {
+      run()
+    } finally {
+      this.muted = false
+    }
+  }
+
   /** Mark the dock just before the grid is relaid out; the first finished transition clears it. */
   private beginAnimation(): void {
     const root = this.root
-    if (root === null) return
+    if (root === null || this.muted) return
     if (this.timer === null) root.addEventListener('transitionend', this.endAnimation)
     else clearTimeout(this.timer)
     root.classList.add(ANIMATING_CLASS)
@@ -111,12 +125,14 @@ export class CollapseController {
    * hidden, and nothing else would ever bring it back.
    */
   restoreFrom(ids: readonly string[]): void {
-    this.collapsed.clear()
-    for (const group of this.api.groups) {
-      if (ids.includes(group.id) || group.api.location.type !== 'grid') continue
-      group.api.setVisible(true)
-    }
-    for (const id of ids) this.collapse(id)
+    this.withoutAnimation(() => {
+      this.collapsed.clear()
+      for (const group of this.api.groups) {
+        if (ids.includes(group.id) || group.api.location.type !== 'grid') continue
+        group.api.setVisible(true)
+      }
+      for (const id of ids) this.collapse(id)
+    })
   }
 
   dispose(): void {

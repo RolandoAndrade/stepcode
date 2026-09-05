@@ -145,6 +145,21 @@ describe('CollapseController animation', () => {
     expect(dock.classes.has(ANIMATING_CLASS)).toBe(false)
   })
 
+  it('leaves the dock alone while it builds or restores a layout', () => {
+    // Mount and reset arrive at their geometry in one pass; only a user's collapse slides.
+    const dock = root()
+    const bottom = group('bottom')
+    const controller = new CollapseController(api([bottom]), () => {}, dock)
+    controller.restoreFrom(['bottom'])
+    expect(dock.classes.has(ANIMATING_CLASS)).toBe(false)
+    expect(dock.listeners).toBe(0)
+    controller.withoutAnimation(() => controller.expand('bottom'))
+    expect(dock.classes.has(ANIMATING_CLASS)).toBe(false)
+    // The mute lasts exactly as long as the call.
+    controller.collapse('bottom')
+    expect(dock.classes.has(ANIMATING_CLASS)).toBe(true)
+  })
+
   it('drops the mark and the timer when it is disposed mid-transition', () => {
     const dock = root()
     const bottom = group('bottom')

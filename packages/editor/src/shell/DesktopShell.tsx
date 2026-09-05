@@ -73,7 +73,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       dockRef.current?.querySelector<HTMLElement>('.sc-dock') ?? null,
     )
     controllerRef.current = controller
-    controller.collapse(bottomGroupId)
+    controller.withoutAnimation(() => controller.collapse(bottomGroupId))
     manuallyCollapsed.current.clear()
     rebuilding.current = false
     save()
