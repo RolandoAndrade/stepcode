@@ -5,7 +5,8 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: {
-    environment: 'happy-dom',
+    name: '@stepcode/editor',
+    environment: 'node',
     setupFiles: ['./test/setup.ts'],
   },
 })
