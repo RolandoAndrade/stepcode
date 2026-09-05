@@ -1,10 +1,5 @@
 // @vitest-environment happy-dom
-import {
-  EditorSelection,
-  EditorState,
-  type Extension,
-  type Transaction,
-} from '@codemirror/state'
+import { EditorSelection, EditorState, type Extension, type Transaction } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
 import { builtinProfiles, profiles, type ResolvedProfile, resolveProfile } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
