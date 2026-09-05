@@ -148,7 +148,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       if (next.panelRequest !== before.panelRequest && next.panelRequest !== null)
         reveal(next.panelRequest.id, false)
       if (next.runSeq !== before.runSeq) manuallyCollapsed.current.clear()
-      const event = autoExpandTarget(before, next, next.settings.layout.showConsoleOnRun)
+      const event = autoExpandTarget(before, next)
       // Spec §3.4: run and pause respect a manual collapse; an input request never does — a
       // program blocked on a prompt nobody can see is unusable.
       if (event !== null) reveal(event.panel, event.reason !== 'input')

@@ -15,7 +15,7 @@ export interface ExpandEvent {
 export function autoExpandTarget(
   previous: ExpandInput,
   next: ExpandInput,
-  showConsoleOnRun: boolean,
+  showConsoleOnRun = true,
 ): ExpandEvent | null {
   if (next.pendingInput !== null && previous.pendingInput === null) {
     return { panel: 'console', reason: 'input' }

@@ -66,7 +66,7 @@ export function MobileShell({
         if (next.layout.sheet === 'collapsed') next.setSheet('half')
       }
       if (next.runSeq !== before.runSeq) manuallyCollapsed.current = false
-      const event = autoExpandTarget(before, next, next.settings.layout.showConsoleOnRun)
+      const event = autoExpandTarget(before, next)
       if (event === null || event.panel === 'editor') return
       // An input request always wins: a program blocked on an off-screen prompt is unusable on a
       // phone. A run or a pause respects a collapse the user made during this run.
