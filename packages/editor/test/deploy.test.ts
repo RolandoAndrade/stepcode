@@ -42,6 +42,7 @@ describe('the embed entry', () => {
     const config = read('../vite.config.ts')
     expect(config).toContain('embed.html')
     expect(config).toContain('navigateFallbackDenylist')
+    expect(config).toContain("globIgnores: ['**/embed.html']")
     expect(config).toContain('/^\\/embed/')
     expect(read('../embed.html')).toContain('/src/embed/main.tsx')
   })
@@ -51,6 +52,13 @@ describe('the embed entry', () => {
 
   // CI runs `pnpm test` before `pnpm build`, so this only asserts against a build that exists;
   // the repo gate (`… && pnpm build && pnpm test`) always runs it.
+  it.skipIf(!built)('stays out of the precache and registers no service worker of its own', () => {
+    expect(readFileSync(join(dist, 'sw.js'), 'utf8')).not.toContain('embed.html')
+    const html = readFileSync(join(dist, 'embed.html'), 'utf8')
+    expect(html).not.toContain('serviceWorker')
+    expect(html).not.toContain('registerSW')
+  })
+
   it.skipIf(!built)('emits embed.html without pulling its chunk into index.html', () => {
     expect(existsSync(join(dist, 'embed.html'))).toBe(true)
     expect(readFileSync(join(dist, 'index.html'), 'utf8')).not.toMatch(/assets\/embed-/)

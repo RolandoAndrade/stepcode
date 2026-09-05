@@ -44,6 +44,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2,png,ico,svg}'],
+        // A precached embed.html would let a third-party frame be served a stale build forever,
+        // and the frame registers no service worker that could ever update it (spec §9).
+        globIgnores: ['**/embed.html'],
         // The frame must never be answered with the app shell (spec §9).
         navigateFallbackDenylist: [/^\/embed/],
       },
