@@ -85,7 +85,8 @@ dockview use `--sc-surface` for headers and `--sc-bg` for bodies. A 1 px hairlin
 - **Motion:** 150 ms ease-out on opacity and transform for menus, popovers, dialogs, the bottom
   sheet and collapse; `prefers-reduced-motion` disables transforms.
 - **Density:** buttons are 28 px tall in the toolbar and 32 px in dialogs; touch targets on the
-  phone are at least 44 px.
+  phone are at least 44 px, except the keys inside the 40 px symbol bar and the 36 px sheet
+  handle, which fill their bar's height.
 
 ### 2.3 Tokens
 
@@ -178,14 +179,18 @@ since the current run started:
 "Since the current run started" is a flag per group set by a manual collapse and cleared when the
 next run starts. The Diseño setting "Mostrar consola al ejecutar" turns the first row off.
 
+An input request always expands the target group even if the user collapsed it manually during
+this run (a program blocked on a prompt nobody can see is unusable); the manual-collapse rule
+applies to run and pause only.
+
 ### 3.5 Pop-out
 
 Dockview's popout groups open a browser window that clones the stylesheets of the opener.
 CodeMirror in a popout works because its styles are injected into the document that hosts the
 view; the console, problems and variables panels use Tailwind classes that arrive with the cloned
 sheets. Popped-out groups are not persisted: on reload they return to their last docked position
-(dockview's own behavior). One smoke test mounts a panel in a second `window` object under
-happy-dom; real popout behavior is checked in 4c's Playwright pass.
+(dockview's own behavior). 4b ships no popout test: both the smoke test and real popout behavior
+are deferred to 4c's Playwright pass.
 
 ### 3.6 Panel refinements
 
@@ -472,7 +477,10 @@ Below 768 px (`matchMedia`, re-evaluated on resize) the shell renders `MobileShe
 - **Bottom sheet:** three positions, `collapsed` (handle only), `half` (45 % of height), `full`
   (top bar remains). Drag the handle or tap it to cycle; swipe down from `half` collapses. Tabs
   in the handle switch pages; pages are the panel components. Auto-expand events (§3.4) move it
-  to `half`; an input request moves it to `full` and focuses the field. Position persists (§7.1).
+  to `half`; an input request moves it to `full` and focuses the field. An input request opens the
+sheet even if the user collapsed it manually during this run (§3.4); the manual-collapse rule
+applies to run and pause only. Touch targets are at least 44 px, except the keys inside the 40 px
+symbol bar and the 36 px sheet handle, which fill their bar's height. Position persists (§7.1).
 - **Status bar:** profile (opens the picker as a bottom popover) and problems only.
 - Dialogs are full screen; the menu is a left sheet; tooltips are disabled on touch.
 
@@ -497,7 +505,8 @@ Below 768 px (`matchMedia`, re-evaluated on resize) the shell renders `MobileShe
 Dependencies: `dockview-react`, `@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`,
 `@radix-ui/react-popover`, `@radix-ui/react-tooltip`, `@radix-ui/react-tabs`,
 `@radix-ui/react-toast`, `lucide-react`, `idb-keyval`, `zod` (already in the workspace catalog),
-`vite-plugin-pwa` (dev), JetBrains Mono woff2 files (public). All pinned through the catalog.
+`vite-plugin-pwa` (dev), `workbox-window` (dev, the peer its register module imports),
+JetBrains Mono woff2 files (public). All pinned through the catalog.
 
 New source layout under `packages/editor/src`:
 
@@ -546,7 +555,8 @@ Vitest with happy-dom, per file opt-in as in 4a. Coverage by area:
 - files: FSA path with a fake `showOpenFilePicker`, fallback path with a fake input, error toasts.
 - shell: default layout serialization, collapse constraints and restore, auto-expand rules with
   the manual-collapse flag, Vista actions, reset; dockview mocked at its React API for unit tests
-  and mounted for real in one smoke test; popout smoke test.
+  and mounted for real in one smoke test. Popout is not tested in 4b: it is deferred to 4c's
+  Playwright pass.
 - toolbar, filename, menu, status bar, dialogs: rendering per state, shortcuts, `⌘`/Ctrl
   labels, keyboard navigation in Problems, settings rail, profile builder validation.
 - mobile: shell selection by `matchMedia`, sheet positions and auto-expand, symbol bar derivation
@@ -571,4 +581,7 @@ there as deferred, not skipped.
 - Examples authored once in `es` and transposed, with overrides; a test guards every profile.
 - File handles are not persisted; a reload turns Guardar into Guardar como.
 - Phone layout is a separate shell over the same panels; dockview is not loaded on phones.
+- dockview 8.2.0 ships native collapsible edge groups. 4b keeps its own collapse controller (the
+  work was already specified against constraint pairs, and the native API changes group
+  identity and persistence); migrating to it is a follow-up, not part of 4b.
 - `#code=` beats the stored document on load, so a shared link always shows what was shared.

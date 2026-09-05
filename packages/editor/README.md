@@ -38,9 +38,9 @@ pnpm vitest run --project @stepcode/editor
   Ejemplos, Compartir, Acerca de, the warnings prompt, the unsaved-changes confirmation, and the
   toaster.
 - `src/store/persist.ts` — settings, the profile and the layout live under the `stepcode.editor`
-  localStorage key (versioned and migrated on read); the open document (name, source, cursor)
-  lives in the `stepcode` IndexedDB database, debounced. Neither ever throws: a failure warns and
-  the editor keeps working.
+  localStorage key (versioned and migrated on read); the open document (name, source,
+  profile and last saved text) lives in the `stepcode` IndexedDB database, debounced. Neither
+  ever throws: a failure warns and the editor keeps working.
 - `src/files/` — new, open, save and save as through the File System Access API, with a
   download and an `<input type="file">` fallback where it is missing; the environment is
   injected (`FileEnvironment`) so tests never touch the real pickers.
