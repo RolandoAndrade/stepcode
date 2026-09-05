@@ -22,6 +22,18 @@ describe('App', () => {
     expect(screen.getByRole('region', { name: 'Paneles' })).toBeDefined()
   })
 
+  it('keeps dockview out of the phone bundle by loading the desktop shell lazily', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath, URL: NodeURL } = await import('node:url')
+    const source = readFileSync(
+      fileURLToPath(new NodeURL('../src/App.tsx', import.meta.url)),
+      'utf8',
+    )
+    // Spec §9: a static import would pull dockview into the entry chunk every phone loads.
+    expect(source).not.toMatch(/import\s[^\n]*from '\.\/shell\/DesktopShell'/)
+    expect(source).toContain("import('./shell/DesktopShell')")
+  })
+
   it('installs shortcuts and updates the title when dirty', () => {
     const { store, host } = storeWith({})
     const rendered = renderWithStore(<App env={env} narrow={false} />, store)

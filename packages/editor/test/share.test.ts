@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   applyShareHash,
   decodeShare,
   encodeShare,
+  MAX_SHARE_BYTES,
   SHARE_WARN_LENGTH,
   shareUrl,
 } from '../src/share/link'
@@ -33,6 +34,25 @@ describe('share links', () => {
     expect(await decodeShare('#code=AAAA')).toBeNull()
   })
 
+  it('refuses a hash that inflates past the cap', async () => {
+    // A short link can carry a decompression bomb; the payload is bounded, not the link.
+    const hash = await encodeShare({ source: 'x'.repeat(200_000), profileId: 'es' })
+    expect(hash.length).toBeLessThan(2000)
+    expect(await decodeShare(hash, 1000)).toBeNull()
+    expect((await decodeShare(hash))?.source.length).toBe(200_000)
+    expect(MAX_SHARE_BYTES).toBe(5 * 1024 * 1024)
+  })
+
+  it('keeps the query string of the page it builds a link for', () => {
+    vi.stubGlobal('location', {
+      origin: 'https://x.test',
+      pathname: '/editor/',
+      search: '?ui=en',
+    })
+    expect(shareUrl('#code=abc')).toBe('https://x.test/editor/?ui=en#code=abc')
+    vi.unstubAllGlobals()
+  })
+
   it('defaults the profile to es when the hash has none', async () => {
     const hash = await encodeShare({ source: SOURCE, profileId: 'en' })
     const noProfile = hash.replace('&profile=en', '')
@@ -45,12 +65,17 @@ describe('applyShareHash', () => {
     const store = createEditorStore(new FakeHost())
     const hash = await encodeShare({ source: SOURCE, profileId: 'en' })
     const replaced: string[] = []
-    const applied = await applyShareHash(store, { hash }, (url) => replaced.push(url))
+    const applied = await applyShareHash(
+      store,
+      { hash, pathname: '/editor/', search: '?ui=en' },
+      (url) => replaced.push(url),
+    )
     expect(applied).toBe(true)
     expect(store.getState().source).toBe(SOURCE)
     expect(store.getState().profileId).toBe('en')
     expect(store.getState().name).toBe('compartido.stepcode')
-    expect(replaced).toEqual(['/'])
+    // The hash goes; everything else about the address stays.
+    expect(replaced).toEqual(['/editor/?ui=en'])
   })
 
   it('falls back to es with a toast for an unknown profile', async () => {

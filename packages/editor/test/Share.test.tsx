@@ -1,9 +1,26 @@
 // @vitest-environment happy-dom
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Share } from '../src/dialogs/Share'
 import { decodeShare } from '../src/share/link'
 import { renderWithStore, storeWith } from './render'
+
+const encodes = vi.hoisted(() => ({ count: 0 }))
+
+vi.mock('../src/share/link', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../src/share/link')>()
+  return {
+    ...actual,
+    encodeShare: async (payload: Parameters<typeof actual.encodeShare>[0]) => {
+      encodes.count += 1
+      return actual.encodeShare(payload)
+    },
+  }
+})
+
+beforeEach(() => {
+  encodes.count = 0
+})
 
 describe('Share', () => {
   it('shows the link, copies it and confirms', async () => {
@@ -33,6 +50,17 @@ describe('Share', () => {
     expect(screen.getByRole('link', { name: 'Abrir en nueva pestaña' }).getAttribute('href')).toBe(
       field.value,
     )
+  })
+
+  it('deflates nothing while the dialog is closed', async () => {
+    const { store } = storeWith({})
+    renderWithStore(<Share base="https://x.test/" />, store)
+    act(() => store.getState().setSource('Proceso B\nFinProceso\n'))
+    await act(async () => {})
+    expect(encodes.count).toBe(0)
+    act(() => store.getState().openDialog('share'))
+    await screen.findByRole('textbox', { name: 'Enlace' })
+    await waitFor(() => expect(encodes.count).toBe(1))
   })
 
   it('warns when the link is very long', async () => {

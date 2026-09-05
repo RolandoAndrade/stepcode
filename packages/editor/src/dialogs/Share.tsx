@@ -14,9 +14,13 @@ export function Share({ clipboard, base }: { clipboard?: Clipboard; base?: strin
   const strings = useEditorStore(stringsOf)
   const source = useEditorStore((s) => s.source)
   const profileId = useEditorStore((s) => s.profileId)
+  const open = useEditorStore((s) => s.dialog === 'share')
   const [hash, setHash] = useState('')
 
+  // The dialog host keeps this component mounted for the whole session; without the gate every
+  // keystroke in the editor would deflate the whole program again.
   useEffect(() => {
+    if (!open) return
     let cancelled = false
     encodeShare({ source, profileId }).then((next) => {
       if (!cancelled) setHash(next)
@@ -24,7 +28,7 @@ export function Share({ clipboard, base }: { clipboard?: Clipboard; base?: strin
     return () => {
       cancelled = true
     }
-  }, [source, profileId])
+  }, [open, source, profileId])
 
   const url = hash === '' ? '' : shareUrl(hash, base)
 
