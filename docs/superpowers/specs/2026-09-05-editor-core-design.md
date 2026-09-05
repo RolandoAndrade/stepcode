@@ -145,8 +145,8 @@ State machine (the driver's `state` mirrors `WorkerState`):
   `wait`. A rejected input surfaces as the next `StepResult` of kind `input` with `rejected`
   set, so the same path re-asks.
 - **`pause`** (legal in `running`): sets the flag; observed at the next budget pause.
-- **`setBreakpoints`** (legal always): forwards to `run.setBreakpoints` when a `Run` exists,
-  otherwise stores them for the next `start`.
+- **`setBreakpoints`** (legal always): forwards to `run.setBreakpoints` when a `Run` exists;
+  without one it is ignored, because every `start` carries the full set.
 - A command illegal in the current state is ignored. The driver never throws across the port.
 - **Output buffer:** `write` appends; `flush` posts one `output { chunks }` when non-empty.
   Flush points: each yield, and before every posted `paused`, `input`, `wait`, `done`, `error`,
@@ -341,9 +341,12 @@ identifiers, a light theme without its blue family) are dropped on purpose.
 ### 8.3 Contrast
 
 `theme/theme.ts` exports `contrastRatio(fg, bg)` (WCAG 2 relative luminance, hex only). A test
-parses `tokens.css` and asserts, for both themes, that `fg` and every `syn-*` token reach
-4.5:1 on `bg`, and that `error`, `warning`, `success`, and `accent` reach 3:1 on `surface`.
-`fg-muted` and `syn-comment` are exempt: One Light's comment gray is 2.9:1 by design.
+parses `tokens.css` and asserts, for both themes, that `fg` reaches 4.5:1 on `bg`, that every
+`syn-*` token reaches 3:1 on `bg`, and that `error`, `warning`, `success`, and `accent` reach
+3:1 on `surface`. The canonical One Light syntax colors sit between 3.06:1 and 4.7:1 on
+`#fafafa`, so 3:1 (the WCAG large-text and UI-component floor) is the bar for syntax; the
+palette stays canonical rather than being darkened. `fg-muted` and `syn-comment` are exempt:
+One Light's comment gray is 2.9:1 by design.
 
 ## 9. Deployment
 
