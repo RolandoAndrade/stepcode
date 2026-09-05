@@ -121,12 +121,15 @@ export function ProfilePopover({
   )
 }
 
+/** Spec §5, and §9 for `compact`: the phone bar carries the profile and the problems only. */
 export function StatusBar({
   onFocusEditor,
   onFocusConsole,
+  compact = false,
 }: {
   onFocusEditor?: () => void
   onFocusConsole?: () => void
+  compact?: boolean
 }) {
   const strings = useEditorStore(stringsOf)
   const cursor = useEditorStore((s) => s.cursor)
@@ -145,9 +148,16 @@ export function StatusBar({
 
   return (
     <footer className="flex h-6 items-center gap-1 border-t border-border bg-surface px-2">
-      <button type="button" className={ITEM} title={strings.status.cursor} onClick={onFocusEditor}>
-        {strings.status.position(cursor.line, cursor.column)}
-      </button>
+      {compact ? null : (
+        <button
+          type="button"
+          className={ITEM}
+          title={strings.status.cursor}
+          onClick={onFocusEditor}
+        >
+          {strings.status.position(cursor.line, cursor.column)}
+        </button>
+      )}
       <ProfilePopover disabled={!canEdit(state)}>
         <button type="button" className={ITEM} title={strings.toolbar.profile}>
           {profileName}
@@ -164,18 +174,20 @@ export function StatusBar({
           ? strings.status.noProblems
           : strings.status.problems(counts.errors, counts.warnings)}
       </button>
-      <button
-        type="button"
-        className={`${ITEM} ml-auto`}
-        title={strings.status.state}
-        onClick={() => {
-          requestPanel('console')
-          onFocusConsole?.()
-        }}
-      >
-        {state === 'running' ? <LoaderCircle size={12} className="animate-spin" /> : null}
-        {statusText(strings, state, currentLine, error)}
-      </button>
+      {compact ? null : (
+        <button
+          type="button"
+          className={`${ITEM} ml-auto`}
+          title={strings.status.state}
+          onClick={() => {
+            requestPanel('console')
+            onFocusConsole?.()
+          }}
+        >
+          {state === 'running' ? <LoaderCircle size={12} className="animate-spin" /> : null}
+          {statusText(strings, state, currentLine, error)}
+        </button>
+      )}
     </footer>
   )
 }

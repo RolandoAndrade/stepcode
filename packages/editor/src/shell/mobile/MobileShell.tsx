@@ -67,10 +67,15 @@ export function MobileShell({
       }
       if (next.runSeq !== before.runSeq) manuallyCollapsed.current = false
       const event = autoExpandTarget(before, next, next.settings.layout.showConsoleOnRun)
-      if (event !== null && event.panel !== 'editor' && !manuallyCollapsed.current) {
+      if (event === null || event.panel === 'editor') return
+      // An input request always wins: a program blocked on an off-screen prompt is unusable on a
+      // phone. A run or a pause respects a collapse the user made during this run.
+      if (event.reason === 'input') {
         setActive(event.panel)
-        if (event.reason === 'input') next.setSheet('full')
-        else if (next.layout.sheet === 'collapsed') next.setSheet('half')
+        next.setSheet('full')
+      } else if (!manuallyCollapsed.current) {
+        setActive(event.panel)
+        if (next.layout.sheet === 'collapsed') next.setSheet('half')
       }
     })
   }, [store])
@@ -113,9 +118,7 @@ export function MobileShell({
       >
         {page}
       </BottomSheet>
-      <div className="[&>footer>button:first-child]:hidden">
-        <StatusBar onFocusEditor={() => editorRef.current?.focus()} />
-      </div>
+      <StatusBar compact onFocusEditor={() => editorRef.current?.focus()} />
     </div>
   )
 }

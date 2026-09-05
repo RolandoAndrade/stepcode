@@ -50,9 +50,15 @@ export function BottomSheet<T extends string>({
     start.current = null
     if (from === null) return
     const delta = from - event.clientY
-    if (Math.abs(delta) < DRAG_THRESHOLD) return
+    // Spec §9: below the drag threshold the gesture is a tap, which cycles the three positions.
+    if (Math.abs(delta) < DRAG_THRESHOLD) {
+      onPosition(nextPosition(position, 'tap'))
+      return
+    }
     onPosition(nextPosition(position, delta > 0 ? 'up' : 'down'))
   }
+  // The tabs and the collapse button sit inside the handle; their taps are theirs, not the sheet's.
+  const stop = (event: PointerEvent): void => event.stopPropagation()
   return (
     <section
       aria-label={labels.sheet}
@@ -70,6 +76,8 @@ export function BottomSheet<T extends string>({
               type="button"
               role="tab"
               aria-selected={tab.id === active}
+              onPointerDown={stop}
+              onPointerUp={stop}
               onClick={() => {
                 onActive(tab.id)
                 if (position === 'collapsed') onPosition('half')
@@ -84,6 +92,8 @@ export function BottomSheet<T extends string>({
         <button
           type="button"
           aria-label={position === 'collapsed' ? labels.expand : labels.collapse}
+          onPointerDown={stop}
+          onPointerUp={stop}
           onClick={() => onPosition(position === 'collapsed' ? 'half' : 'collapsed')}
           className="flex h-9 w-11 items-center justify-center"
         >

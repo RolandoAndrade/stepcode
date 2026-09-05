@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { BottomSheet, nextPosition } from '../src/shell/mobile/BottomSheet'
+import type { SheetPosition } from '../src/store/layout'
 
 describe('nextPosition', () => {
   it('cycles on tap and follows drag direction', () => {
@@ -43,5 +44,58 @@ describe('BottomSheet', () => {
     fireEvent.pointerDown(handle, { clientY: 500, pointerId: 1 })
     fireEvent.pointerUp(handle, { clientY: 380, pointerId: 1 })
     expect(onPosition).toHaveBeenLastCalledWith('full')
+  })
+
+  it('cycles the position when the handle is tapped', () => {
+    const onPosition = vi.fn()
+    const sheet = (position: SheetPosition) => (
+      <BottomSheet
+        position={position}
+        onPosition={onPosition}
+        tabs={[{ id: 'console', label: 'Consola' }]}
+        active="console"
+        onActive={vi.fn()}
+        actions={null}
+        labels={{ collapse: 'Contraer', expand: 'Expandir', sheet: 'Paneles' }}
+      >
+        {(id) => <div>page {id}</div>}
+      </BottomSheet>
+    )
+    const tap = (): void => {
+      const handle = screen.getByRole('tablist').parentElement as HTMLElement
+      fireEvent.pointerDown(handle, { clientY: 300, pointerId: 1 })
+      fireEvent.pointerUp(handle, { clientY: 302, pointerId: 1 })
+    }
+    const { rerender } = render(sheet('collapsed'))
+    tap()
+    expect(onPosition).toHaveBeenLastCalledWith('half')
+    rerender(sheet('half'))
+    tap()
+    expect(onPosition).toHaveBeenLastCalledWith('full')
+    rerender(sheet('full'))
+    tap()
+    expect(onPosition).toHaveBeenLastCalledWith('collapsed')
+  })
+
+  it('leaves a tap on a tab or the collapse button to that control', () => {
+    const onPosition = vi.fn()
+    const onActive = vi.fn()
+    render(
+      <BottomSheet
+        position="half"
+        onPosition={onPosition}
+        tabs={[{ id: 'console', label: 'Consola' }]}
+        active="console"
+        onActive={onActive}
+        actions={null}
+        labels={{ collapse: 'Contraer', expand: 'Expandir', sheet: 'Paneles' }}
+      >
+        {(id) => <div>page {id}</div>}
+      </BottomSheet>,
+    )
+    const tab = screen.getByRole('tab', { name: 'Consola' })
+    fireEvent.pointerDown(tab, { clientY: 300, pointerId: 1 })
+    fireEvent.pointerUp(tab, { clientY: 300, pointerId: 1 })
+    expect(onPosition).not.toHaveBeenCalled()
   })
 })

@@ -53,6 +53,25 @@ describe('MobileShell', () => {
     expect(store.getState().layout.sheet).toBe('half')
   })
 
+  it('opens the sheet for an input request even after a manual collapse', () => {
+    const { store, host } = storeWith({})
+    const editorRef = createRef<EditorHandle>()
+    renderWithStore(
+      <TooltipProvider>
+        <MobileShell editorRef={editorRef} env={env} />
+      </TooltipProvider>,
+      store,
+    )
+    act(() => store.getState().run())
+    fireEvent.click(screen.getByRole('button', { name: 'Contraer' }))
+    expect(store.getState().layout.sheet).toBe('collapsed')
+    act(() => {
+      host.emit({ kind: 'state', state: 'input' })
+      host.emit({ kind: 'input', line: 1, target: null })
+    })
+    expect(store.getState().layout.sheet).toBe('full')
+  })
+
   it('does not import dockview', async () => {
     const { readFileSync } = await import('node:fs')
     const { fileURLToPath, URL: NodeURL } = await import('node:url')

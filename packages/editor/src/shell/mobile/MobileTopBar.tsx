@@ -1,10 +1,18 @@
 import * as RadixDialog from '@radix-ui/react-dialog'
 import * as Popover from '@radix-ui/react-popover'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FileEnvironment } from '../../files/actions'
 import { useEditorStore, useEditorStoreApi } from '../../store/context'
 import { hasErrors, stringsOf } from '../../store/store'
-import { ArrowDownToDot, ArrowUpFromDot, Bug, Ellipsis, Hexagon, StepForward } from '../../ui/icons'
+import {
+  ArrowDownToDot,
+  ArrowUpFromDot,
+  Bug,
+  Check,
+  Ellipsis,
+  Hexagon,
+  StepForward,
+} from '../../ui/icons'
 import { isMac, keyLabel } from '../../ui/keys'
 import { IconButton } from '../../ui/Tooltip'
 import { Filename } from '../Filename'
@@ -36,12 +44,16 @@ function SheetEntries({ entries, onDone }: { entries: MenuEntry[]; onDone: () =>
           <button
             key={entry.label}
             type="button"
+            {...(entry.checked === undefined
+              ? {}
+              : { role: 'menuitemradio', 'aria-checked': entry.checked })}
             onClick={() => {
               entry.onSelect()
               onDone()
             }}
             className={SHEET_ITEM}
           >
+            <span className="w-4">{entry.checked === true ? <Check /> : null}</span>
             {entry.label}
             {entry.shortcut !== undefined ? (
               <span aria-hidden="true" className="ml-auto pl-4 text-muted text-xs">
@@ -58,6 +70,16 @@ function SheetEntries({ entries, onDone }: { entries: MenuEntry[]; onDone: () =>
 function MenuSheet({ env }: { env: FileEnvironment }) {
   const store = useEditorStoreApi()
   const strings = useEditorStore(stringsOf)
+  // menuModel reads profileId/customProfiles/settings through the store, which this component
+  // never selects on its own; selecting them here keeps an open sheet current (as Menu.tsx does).
+  const profileId = useEditorStore((s) => s.profileId)
+  const customProfiles = useEditorStore((s) => s.customProfiles)
+  const settings = useEditorStore((s) => s.settings)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
+  const entries = useMemo(
+    () => menuModel(store, env, strings),
+    [store, env, strings, profileId, customProfiles, settings],
+  )
   const [open, setOpen] = useState(false)
   return (
     <RadixDialog.Root open={open} onOpenChange={setOpen}>
@@ -79,8 +101,7 @@ function MenuSheet({ env }: { env: FileEnvironment }) {
           <RadixDialog.Description className="sr-only">
             {strings.toolbar.menu}
           </RadixDialog.Description>
-          {/* Recomputed per render so profile checkmarks and names stay current. */}
-          <SheetEntries entries={menuModel(store, env, strings)} onDone={() => setOpen(false)} />
+          <SheetEntries entries={entries} onDone={() => setOpen(false)} />
         </RadixDialog.Content>
       </RadixDialog.Portal>
     </RadixDialog.Root>

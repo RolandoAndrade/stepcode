@@ -33,6 +33,16 @@ describe('StatusBar', () => {
     expect(screen.getByRole('button', { name: /Listo/ })).toBeDefined()
   })
 
+  it('shows profile and problems only when compact', () => {
+    const { store } = storeWith({ diagnostics: [err] })
+    store.getState().setCursor(12, 4)
+    renderWithStore(<StatusBar compact />, store)
+    expect(screen.queryByRole('button', { name: /Ln 12, Col 4/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Listo/ })).toBeNull()
+    expect(screen.getByRole('button', { name: /Español/ })).toBeDefined()
+    expect(screen.getByRole('button', { name: /✖ 1/ })).toBeDefined()
+  })
+
   it('says no problems when clean and requests the Problems panel on click', () => {
     const { store } = storeWith({})
     renderWithStore(<StatusBar />, store)
