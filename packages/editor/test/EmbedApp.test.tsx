@@ -1,12 +1,20 @@
 // @vitest-environment happy-dom
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
-import { allowRunWithWarnings, bootEmbed, forwardToasts, titleFor } from '../src/embed/boot'
-import { EmbedApp, installEmbedShortcuts } from '../src/embed/EmbedApp'
+import {
+  allowRunWithWarnings,
+  bootEmbed,
+  createEmbedStore,
+  forwardToasts,
+  titleFor,
+} from '../src/embed/boot'
+import { bandClasses, EmbedApp, installEmbedShortcuts, TIGHT_HEIGHT } from '../src/embed/EmbedApp'
 import { createEmbedOptions } from '../src/embed/options'
 import type { LoadFrom, LoadOutcome } from '../src/share/load'
 import { DEFAULT_URL_OPTIONS, readUrlOptions, type UrlOptions } from '../src/share/urlOptions'
 import type { EditorStore } from '../src/store/store'
+import type { Theme } from '../src/theme/types'
+import { FakeHost } from './fake-host'
 import { renderWithStore, storeWith } from './render'
 
 const WARNING = { from: 0, to: 1, severity: 'warning', source: 'W1001', message: 'w' } as const
@@ -245,5 +253,66 @@ describe('the way out to the full editor', () => {
     expect(opened[0]).toContain('&profile=es')
     expect(opened[0]).toContain('&name=Demo.stepcode')
     open.mockRestore()
+  })
+})
+
+describe('createEmbedStore', () => {
+  const themeDeps = () => {
+    const painted: Theme[] = []
+    let watched = 0
+    return {
+      painted,
+      watches: () => watched,
+      deps: {
+        applyTheme: (theme: Theme) => {
+          painted.push(theme)
+        },
+        watchSystemTheme: (onChange: (dark: boolean) => void) => {
+          watched += 1
+          onChange(true)
+          return () => {}
+        },
+      },
+    }
+  }
+
+  it('paints ?theme=dark once at boot, without watching the platform', () => {
+    const { painted, watches, deps } = themeDeps()
+    const store = createEmbedStore(new FakeHost(), { ...DEFAULT_URL_OPTIONS, theme: 'dark' }, deps)
+    expect(painted).toEqual(['dark'])
+    expect(watches()).toBe(0)
+    expect(store.getState().theme).toBe('dark')
+    expect(store.getState().source).toBe('')
+  })
+
+  it('paints light and follows the platform when the URL asked for system', () => {
+    const { painted, watches, deps } = themeDeps()
+    const store = createEmbedStore(new FakeHost(), DEFAULT_URL_OPTIONS, deps)
+    expect(painted).toEqual(['light', 'dark'])
+    expect(watches()).toBe(1)
+    expect(store.getState().theme).toBe('dark')
+  })
+
+  it('lets the frame run with warnings, since it renders no dialog host', () => {
+    const { deps } = themeDeps()
+    const store = createEmbedStore(new FakeHost(), DEFAULT_URL_OPTIONS, deps)
+    expect(store.getState().settings.execution.warnOnWarnings).toBe(false)
+  })
+})
+
+describe('bandClasses', () => {
+  it('gives up the editor floor before it lets a short frame overflow', () => {
+    expect(TIGHT_HEIGHT).toBe(36 + 120 + 96)
+    expect(bandClasses(true).editor).toContain('min-h-0')
+    expect(bandClasses(true).editor).not.toContain('min-h-[120px]')
+    expect(bandClasses(true).console).toContain('h-[72px]')
+    expect(bandClasses(false).editor).toContain('min-h-[120px]')
+    expect(bandClasses(false).console).toContain('h-[35%]')
+    expect(bandClasses(false).console).toContain('min-h-24')
+  })
+
+  it('clips the column rather than scrolling the host page', () => {
+    mount()
+    expect(screen.getByLabelText('Editor incrustado').className).toContain('overflow-hidden')
   })
 })

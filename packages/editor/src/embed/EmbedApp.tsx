@@ -70,8 +70,23 @@ export function installEmbedShortcuts(
   }
 }
 
-/** Below this frame height the console keeps its last line and its input row, nothing more. */
-const TIGHT_HEIGHT = 240
+/** The top bar, the editor's floor and the console's floor: what the tall layout needs (spec §3.2). */
+const BAR_HEIGHT = 36
+const EDITOR_MIN = 120
+const CONSOLE_MIN = 96
+
+/**
+ * Below this the tall layout's own minimums no longer fit, so the console drops to its last line
+ * and its input row and the editor gives up its floor — a short frame is filled, never overflowed.
+ */
+export const TIGHT_HEIGHT = BAR_HEIGHT + EDITOR_MIN + CONSOLE_MIN
+
+/** Spec §3.2: which band yields at this frame height. Exported for the layout test. */
+export function bandClasses(tight: boolean): { readonly editor: string; readonly console: string } {
+  return tight
+    ? { editor: 'min-h-0 flex-1', console: 'h-[72px]' }
+    : { editor: 'min-h-[120px] flex-1', console: 'h-[35%] min-h-24' }
+}
 
 /** Spec §3.2: top bar, editor, console — and Variables beside the console when `debug`. */
 export function EmbedApp({ options }: { options: EmbedOptionsStore }) {
@@ -99,21 +114,21 @@ export function EmbedApp({ options }: { options: EmbedOptionsStore }) {
   }, [])
 
   const reveal = (line: number): void => editor.current?.revealLine(line)
+  const bands = bandClasses(tight)
 
   return (
     <TooltipProvider>
+      {/* `overflow-hidden`: the host sizes the frame, and nothing inside may scroll the page. */}
       <section
         ref={root}
         aria-label={strings.embed.title}
-        className="flex h-full min-h-0 flex-col bg-bg text-fg"
+        className="flex h-full min-h-0 flex-col overflow-hidden bg-bg text-fg"
       >
         <TopBar options={options} onReveal={reveal} />
-        <div className="min-h-[120px] flex-1">
+        <div className={bands.editor}>
           <Editor handleRef={editor} readOnly={readOnly} />
         </div>
-        <div
-          className={`flex shrink-0 border-border border-t ${tight ? 'h-[72px]' : 'h-[35%] min-h-24'}`}
-        >
+        <div className={`flex shrink-0 border-border border-t ${bands.console}`}>
           <div className="min-w-0 flex-1">
             <Console onReveal={reveal} />
           </div>

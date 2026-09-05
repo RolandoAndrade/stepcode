@@ -1,9 +1,11 @@
+import type { HostApi } from '../runtime/host-api'
 import type { LoadDeps, LoadOutcome } from '../share/load'
 import { bootFromUrl } from '../share/onLoad'
 import type { UrlOptions } from '../share/urlOptions'
 import { displayName } from '../store/document'
 import { appendOutput } from '../store/output'
-import { type EditorStore, stringsOf } from '../store/store'
+import { createEditorStore, type EditorStore, stringsOf } from '../store/store'
+import type { Theme } from '../theme/types'
 import type { EmbedOptionsStore } from './options'
 
 /** Spec §3.1: no Toaster in the frame, so every message is a console line. */
@@ -47,6 +49,35 @@ export function forwardToasts(store: EditorStore): () => void {
  */
 export function allowRunWithWarnings(store: EditorStore): void {
   store.getState().updateSettings('execution', { warnOnWarnings: false })
+}
+
+export interface EmbedThemeDeps {
+  applyTheme(theme: Theme): void
+  watchSystemTheme(onChange: (dark: boolean) => void): () => void
+}
+
+/**
+ * Spec §2.4 and §8.2: the store's `applyTheme` is a change notification, so `?theme=light|dark`
+ * would never reach the root element on its own; the frame paints the resolved theme once here
+ * and only follows `prefers-color-scheme` while the URL asked for `system`. No localStorage, no
+ * IndexedDB, no service worker either: the frame starts empty every time.
+ */
+export function createEmbedStore(
+  host: HostApi,
+  options: UrlOptions,
+  deps: EmbedThemeDeps,
+): EditorStore {
+  const store = createEditorStore(host, {
+    applyTheme: deps.applyTheme,
+    initialTheme: options.theme,
+    initialSource: '',
+  })
+  allowRunWithWarnings(store)
+  deps.applyTheme(store.getState().theme)
+  if (options.theme === 'system') {
+    deps.watchSystemTheme((dark) => store.getState().setSystemDark(dark))
+  }
+  return store
 }
 
 /** Spec §3.3: `title=`, then the hash's name, then the example's title, then the file name. */

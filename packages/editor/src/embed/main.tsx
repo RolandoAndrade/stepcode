@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { RuntimeHost } from '../runtime/host'
 import { readUrlOptions } from '../share/urlOptions'
 import { StoreProvider } from '../store/context'
-import { createEditorStore, type EditorStore } from '../store/store'
+import type { EditorStore } from '../store/store'
 import { applyTheme, watchSystemTheme } from '../theme/theme'
-import { allowRunWithWarnings, bootEmbed, forwardToasts } from './boot'
+import { bootEmbed, createEmbedStore, forwardToasts } from './boot'
 import { type BridgeIo, createBridge, type Outbound } from './bridge'
 import { EmbedApp } from './EmbedApp'
 import { createEmbedOptions, type EmbedOptionsStore } from './options'
@@ -40,17 +40,8 @@ async function boot(): Promise<void> {
   if (root === null) throw new Error('Missing #root element')
   const url = new URL(window.location.href)
   const urlOptions = readUrlOptions(url)
-  // No localStorage, no IndexedDB, no service worker: the frame starts empty every time.
-  const store = createEditorStore(new RuntimeHost(), {
-    applyTheme,
-    initialTheme: urlOptions.theme,
-    initialSource: '',
-  })
-  allowRunWithWarnings(store)
+  const store = createEmbedStore(new RuntimeHost(), urlOptions, { applyTheme, watchSystemTheme })
   const stopForwarding = forwardToasts(store)
-  if (urlOptions.theme === 'system') {
-    watchSystemTheme((dark) => store.getState().setSystemDark(dark))
-  }
   const options = createEmbedOptions(urlOptions)
   // The query string stays: a reload of the frame must show the same program (spec §2.1).
   await bootEmbed(store, options, url)
@@ -73,7 +64,7 @@ boot().catch((error: unknown) => {
   console.warn('The embed could not load its program; starting empty', error)
   const root = document.getElementById('root')
   if (root === null) return
-  const store = createEditorStore(new RuntimeHost(), { applyTheme, initialSource: '' })
-  allowRunWithWarnings(store)
-  render(root, store, createEmbedOptions(readUrlOptions(new URL(window.location.href))))
+  const urlOptions = readUrlOptions(new URL(window.location.href))
+  const store = createEmbedStore(new RuntimeHost(), urlOptions, { applyTheme, watchSystemTheme })
+  render(root, store, createEmbedOptions(urlOptions))
 })
