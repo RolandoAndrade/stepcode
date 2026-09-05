@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  editorZoneFor,
   HIDDEN_PANEL_STATES,
   panelStatesOf,
   sidebarActionFor,
@@ -112,6 +113,17 @@ describe('zoneFor', () => {
   })
 })
 
+describe('editorZoneFor', () => {
+  const dock = rect(0, 40, 1280, 736)
+
+  it('puts the editor on the side of the dock it is docked on', () => {
+    expect(editorZoneFor(dock, rect(0, 40, 900, 736))).toBe('left-top')
+    expect(editorZoneFor(dock, rect(700, 40, 580, 736))).toBe('right')
+    // Nothing measured yet: keep whatever it had.
+    expect(editorZoneFor(dock, rect(0, 0, 0, 0), 'right')).toBe('right')
+  })
+})
+
 describe('panelStatesOf zones', () => {
   it('gives every panel the zone of its own group', () => {
     const states = panelStatesOf(
@@ -126,6 +138,24 @@ describe('panelStatesOf zones', () => {
     expect(states.console.zone).toBe('right')
     expect(states.problems.zone).toBe('left-top')
     expect(states.variables.zone).toBe('left-bottom')
+  })
+
+  it('places the editor against the dock, not against itself', () => {
+    const dock = rect(0, 40, 1280, 736)
+    const right = panelStatesOf(
+      api({ editor: { group: 'main', active: 'editor', box: rect(700, 40, 580, 736) } }),
+      () => false,
+      undefined,
+      dock,
+    )
+    expect(right.editor.zone).toBe('right')
+    const left = panelStatesOf(
+      api({ editor: { group: 'main', active: 'editor', box: rect(0, 40, 900, 736) } }),
+      () => false,
+      undefined,
+      dock,
+    )
+    expect(left.editor.zone).toBe('left-top')
   })
 
   it('keeps a panel on its own strip while its group is hidden', () => {

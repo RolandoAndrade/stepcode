@@ -11,7 +11,7 @@ const err: Diagnostic = { from: 0, to: 1, severity: 'error', message: 'x' }
 const warn: Diagnostic = { from: 0, to: 1, severity: 'warning', message: 'y' }
 
 const HIDDEN: PanelStates = {
-  editor: { visible: true, active: true, zone: 'left-bottom' },
+  editor: { visible: true, active: true, zone: 'left-top' },
   console: { visible: false, active: false, zone: 'left-bottom' },
   problems: { visible: false, active: false, zone: 'left-bottom' },
   variables: { visible: false, active: false, zone: 'left-bottom' },
@@ -46,12 +46,19 @@ function transfer(id: string) {
 }
 
 describe('Sidebar', () => {
-  it('offers one button per non-editor panel, in order, and reports clicks', () => {
+  it('offers one button per panel, the editor first, and reports clicks', () => {
     const { onToggle } = mount(HIDDEN)
     const names = screen.getAllByRole('button').map((button) => button.getAttribute('aria-label'))
-    expect(names).toEqual(['Consola', 'Problemas', 'Variables'])
+    expect(names).toEqual(['Editor', 'Consola', 'Problemas', 'Variables'])
     fireEvent.click(screen.getByRole('button', { name: 'Variables' }))
     expect(onToggle).toHaveBeenCalledWith('variables')
+    fireEvent.click(screen.getByRole('button', { name: 'Editor' }))
+    expect(onToggle).toHaveBeenCalledWith('editor')
+  })
+
+  it('never presses the editor button: the editor is always open', () => {
+    mount(HIDDEN)
+    expect(screen.getByRole('button', { name: 'Editor' }).getAttribute('aria-pressed')).toBeNull()
   })
 
   it('presses only the panel that is visible and active in its group', () => {
@@ -85,18 +92,30 @@ describe('Sidebar', () => {
 
   it('puts each button in the cluster its group sits in, and only then opens the right strip', () => {
     mount(HIDDEN)
+    expect(labelsIn('left-top')).toEqual(['Editor'])
     expect(labelsIn('left-bottom')).toEqual(['Consola', 'Problemas', 'Variables'])
-    expect(labelsIn('left-top')).toEqual([])
     expect(zone('right')).toBeNull()
     document.body.innerHTML = ''
     mount({
       ...HIDDEN,
+      editor: { visible: true, active: true, zone: 'right' },
       console: { visible: true, active: true, zone: 'right' },
       problems: { visible: false, active: false, zone: 'left-top' },
     })
-    expect(labelsIn('right')).toEqual(['Consola'])
+    // The editor leads its cluster; on the right strip that puts it at the top, the rest below.
+    expect(labelsIn('right')).toEqual(['Editor', 'Consola'])
     expect(labelsIn('left-top')).toEqual(['Problemas'])
     expect(labelsIn('left-bottom')).toEqual(['Variables'])
+  })
+
+  it('takes only a drag that carries a panel', () => {
+    // The dragover gate is what makes a cluster a drop target at all.
+    mount(HIDDEN)
+    const target = zone('left-top') as HTMLElement
+    expect(fireEvent.dragOver(target, { dataTransfer: transfer('console') })).toBe(false)
+    expect(
+      fireEvent.dragOver(target, { dataTransfer: { types: ['text/plain'], dropEffect: '' } }),
+    ).toBe(true)
   })
 
   it('moves a panel to the zone its icon is dropped on', () => {

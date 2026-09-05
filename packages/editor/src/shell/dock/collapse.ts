@@ -1,3 +1,5 @@
+import type { SlideView } from './slide'
+
 /**
  * The structural subset of `DockviewGroupPanel` collapse needs. `'edge'` is one of dockview's own
  * group locations; it is listed so a real `DockviewApi` stays assignable to {@link ApiLike}, and
@@ -15,7 +17,7 @@ export interface GroupLike {
    * Optional because dockview's `getGroup` is typed as the interface, which omits the element the
    * class it returns actually has.
    */
-  readonly element?: { inert: boolean }
+  readonly element?: { inert: boolean; readonly parentElement?: SlideView | null }
 }
 
 export interface ApiLike {
@@ -40,6 +42,14 @@ export interface RootLike {
 export interface DockAnimation {
   readonly root: RootLike
   readonly relayout: () => void
+  /**
+   * Place the group where its slide should start (or end) and hand back the write that runs it,
+   * so a group slides into the edge it is docked against instead of the grid's origin. The write
+   * is re-applied after every forced relayout of a hide, which would otherwise undo it.
+   */
+  readonly prepare?: (group: GroupLike, phase: 'collapse' | 'expand') => (() => void) | null
+  /** True when the user asked for no motion: `dock.css` then transitions nothing to wait for. */
+  readonly reducedMotion?: () => boolean
 }
 
 /** While it is on the dock root, dockview's grid views animate their position and size. */
@@ -83,6 +93,7 @@ export class CollapseController {
   private timer: ReturnType<typeof setTimeout> | null = null
   private frame: number | null = null
   private muted = false
+  private pin: (() => void) | null = null
 
   constructor(
     private readonly api: ApiLike,
@@ -95,7 +106,12 @@ export class CollapseController {
     if (isGridView(event.target)) this.endAnimation()
   }
 
-  private readonly endAnimation = (): void => {
+  /**
+   * Take the mark, the timer and the frame loop down. `settle` runs the last relayout and repeats
+   * the change: it is what leaves the panels at their final size. A disposed shell skips it —
+   * dockview is being torn down with it, and there is no one left to tell.
+   */
+  private stopAnimation(settle: boolean): void {
     if (this.timer === null) return
     clearTimeout(this.timer)
     this.timer = null
@@ -103,18 +119,27 @@ export class CollapseController {
       cancelAnimationFrame(this.frame)
       this.frame = null
     }
+    this.pin = null
     const animation = this.animation
     if (animation === null) return
     animation.root.classList.remove(ANIMATING_CLASS)
     animation.root.removeEventListener('transitionend', this.onTransitionEnd)
-    // The frames are over and the geometry is final: this pass is what leaves the panels right.
+    if (!settle) return
     animation.relayout()
+    // Anything measured from a group mid-slide read a box that was still moving; say so once more.
+    this.onChange(this.collapsedIds())
+  }
+
+  private readonly endAnimation = (): void => {
+    this.stopAnimation(true)
   }
 
   private readonly onFrame = (): void => {
     this.frame = null
     if (this.timer === null) return
     this.animation?.relayout()
+    // The relayout writes dockview's own geometry back over the slide's target; restore it.
+    this.pin?.()
     this.frame = requestAnimationFrame(this.onFrame)
   }
 
@@ -132,29 +157,42 @@ export class CollapseController {
   }
 
   /** Mark the dock just before the grid is relaid out; the first finished transition clears it. */
-  private beginAnimation(): void {
+  private beginAnimation(): boolean {
     const animation = this.animation
-    if (animation === null || this.muted) return
+    if (animation === null || this.muted) return false
+    // Nothing transitions under `prefers-reduced-motion`, so there is nothing to follow either.
+    if (animation.reducedMotion?.() === true) {
+      animation.relayout()
+      return false
+    }
     if (this.timer === null) animation.root.addEventListener('transitionend', this.onTransitionEnd)
     else clearTimeout(this.timer)
     animation.root.classList.add(ANIMATING_CLASS)
     this.timer = setTimeout(this.endAnimation, ANIMATION_FALLBACK_MS)
     if (this.frame === null) this.frame = requestAnimationFrame(this.onFrame)
+    return true
   }
 
   isCollapsed(id: string): boolean {
     return this.collapsed.has(id)
   }
 
+  /** Ids of groups dockview still knows: one destroyed while collapsed must not be persisted. */
   collapsedIds(): string[] {
-    return [...this.collapsed]
+    return [...this.collapsed].filter((id) => this.api.getGroup(id) !== undefined)
   }
 
   collapse(id: string): void {
     const group = this.api.getGroup(id)
     if (group === undefined || group.api.location.type !== 'grid' || this.collapsed.has(id)) return
-    this.beginAnimation()
+    // Read the box while the group still has one; the write goes on after dockview zeroes it.
+    const slide = this.muted ? null : (this.animation?.prepare?.(group, 'collapse') ?? null)
+    const animating = this.beginAnimation()
     group.api.setVisible(false)
+    if (animating && slide !== null) {
+      slide()
+      this.pin = slide
+    }
     setInert(group, true)
     this.collapsed.add(id)
     this.onChange(this.collapsedIds())
@@ -163,8 +201,11 @@ export class CollapseController {
   expand(id: string): void {
     const group = this.api.getGroup(id)
     if (group === undefined || !this.collapsed.has(id)) return
-    this.beginAnimation()
+    // Dockview restores the box first; `prepare` parks the view on its edge to slide back from.
     group.api.setVisible(true)
+    const slide = this.muted ? null : (this.animation?.prepare?.(group, 'expand') ?? null)
+    this.beginAnimation()
+    slide?.()
     setInert(group, false)
     this.collapsed.delete(id)
     this.onChange(this.collapsedIds())
@@ -176,15 +217,18 @@ export class CollapseController {
   }
 
   /**
-   * After `fromJSON`: re-apply the saved collapsed set; ids that name no grid group are dropped
-   * silently — the persisted list is plain strings, and a stale one must not hide the editor.
+   * After `fromJSON`: re-apply the saved collapsed set; ids that name no grid group, and the one
+   * named by `keepVisible`, are dropped silently — the persisted list is plain strings, and a
+   * stale one naming the editor's group would hide an editor with no way back.
    * Every other grid group is shown first: a layout serialized while a group was hidden comes
    * back hidden, and nothing else would ever bring it back.
    */
-  restoreFrom(ids: readonly string[]): void {
+  restoreFrom(ids: readonly string[], keepVisible?: string): void {
     this.withoutAnimation(() => {
       this.collapsed.clear()
-      const wanted = ids.filter((id) => this.api.getGroup(id)?.api.location.type === 'grid')
+      const wanted = ids.filter(
+        (id) => id !== keepVisible && this.api.getGroup(id)?.api.location.type === 'grid',
+      )
       for (const group of this.api.groups) {
         if (wanted.includes(group.id) || group.api.location.type !== 'grid') continue
         group.api.setVisible(true)
@@ -195,7 +239,7 @@ export class CollapseController {
   }
 
   dispose(): void {
-    this.endAnimation()
+    this.stopAnimation(false)
     this.collapsed.clear()
   }
 }

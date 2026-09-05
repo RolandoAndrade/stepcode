@@ -19,8 +19,11 @@ export interface PanelState {
 
 export type PanelStates = Readonly<Record<PanelId, PanelState>>
 
-/** Spec §3.3: the tool-window strips list the panels that are not the editor, in tab order. */
-export const SIDEBAR_PANELS: readonly PanelId[] = ['console', 'problems', 'variables']
+/**
+ * Spec §3.3: the strips list every panel, the editor first — its button focuses the editor and,
+ * dragged, moves it, but it never hides.
+ */
+export const SIDEBAR_PANELS: readonly PanelId[] = ['editor', 'console', 'problems', 'variables']
 
 /** A drag that carries a panel id, so a drop from anywhere else is ignored. */
 export const PANEL_MIME = 'application/x-stepcode-panel'
@@ -43,7 +46,8 @@ function PanelButton({
   onDragEnd: () => void
 }) {
   const Icon = PANEL_ICONS[id]
-  const pressed = state.visible && state.active
+  // The editor is always open and always its group's only tab: a permanent accent says nothing.
+  const pressed = id !== 'editor' && state.visible && state.active
   return (
     <div className="relative flex items-center justify-center">
       {pressed ? (
@@ -97,49 +101,65 @@ export function Sidebar({
   const strings = useEditorStore(stringsOf)
   const errors = useEditorStore((s) => s.diagnostics.filter((d) => d.severity === 'error').length)
   const [dragging, setDragging] = useState(false)
+  const [hovered, setHovered] = useState<Zone | null>(null)
 
   const panelsIn = (zone: Zone): readonly PanelId[] =>
     SIDEBAR_PANELS.filter((id) => states[id].zone === zone)
 
-  const cluster = (zone: Zone, extra: string): ReactNode => (
-    <div
-      // A strip of panel buttons that also takes their drops: an interactive container needs a
-      // role, and this one is a vertical toolbar.
-      role="toolbar"
-      aria-orientation="vertical"
-      data-zone={zone}
-      // Each cluster takes half the strip so a drop anywhere on it lands in one of the zones.
-      className={`flex flex-1 flex-col items-center gap-1 py-1 ${extra} ${
-        dragging ? 'bg-accent-soft' : ''
-      }`}
-      onDragOver={(event) => {
-        // Only a preventDefault-ed dragover makes an element a drop target.
-        if (event.dataTransfer.types.includes(PANEL_MIME)) event.preventDefault()
+  const button = (id: PanelId): ReactNode => (
+    <PanelButton
+      key={id}
+      id={id}
+      state={states[id]}
+      label={strings.panels[id]}
+      errors={errors}
+      onToggle={onToggle}
+      onDragStart={(panel, event) => {
+        event.dataTransfer.setData(PANEL_MIME, panel)
+        event.dataTransfer.effectAllowed = 'move'
+        setDragging(true)
       }}
-      onDrop={(event) => {
-        event.preventDefault()
+      onDragEnd={() => {
         setDragging(false)
-        const id = event.dataTransfer.getData(PANEL_MIME) as PanelId
-        if (SIDEBAR_PANELS.includes(id)) onMove(id, zone)
+        setHovered(null)
       }}
-    >
-      {panelsIn(zone).map((id) => (
-        <PanelButton
-          key={id}
-          id={id}
-          state={states[id]}
-          label={strings.panels[id]}
-          errors={errors}
-          onToggle={onToggle}
-          onDragStart={(panel, event) => {
-            event.dataTransfer.setData(PANEL_MIME, panel)
-            setDragging(true)
-          }}
-          onDragEnd={() => setDragging(false)}
-        />
-      ))}
-    </div>
+    />
   )
+
+  const cluster = (zone: Zone, extra: string): ReactNode => {
+    const panels = panelsIn(zone)
+    const lead = panels.filter((id) => id === 'editor')
+    const rest = panels.filter((id) => id !== 'editor')
+    return (
+      // A drop target for panel icons, not a widget: it has no keyboard behaviour to promise.
+      // biome-ignore lint/a11y/noStaticElementInteractions: the buttons inside carry the roles.
+      <div
+        data-zone={zone}
+        // Each cluster takes half its strip, so a drop anywhere on it lands in one of the zones.
+        className={`flex flex-1 flex-col items-center gap-1 py-1 ${extra} ${
+          hovered === zone ? 'bg-accent-soft' : dragging ? 'bg-accent-soft/40' : ''
+        }`}
+        onDragOver={(event) => {
+          // Only a preventDefault-ed dragover makes an element a drop target.
+          if (!event.dataTransfer.types.includes(PANEL_MIME)) return
+          event.dataTransfer.dropEffect = 'move'
+          event.preventDefault()
+          setHovered(zone)
+        }}
+        onDragLeave={() => setHovered((current) => (current === zone ? null : current))}
+        onDrop={(event) => {
+          event.preventDefault()
+          setDragging(false)
+          setHovered(null)
+          const id = event.dataTransfer.getData(PANEL_MIME) as PanelId
+          if (SIDEBAR_PANELS.includes(id)) onMove(id, zone)
+        }}
+      >
+        <div className="flex flex-col items-center gap-1">{lead.map(button)}</div>
+        <div className="flex flex-col items-center gap-1">{rest.map(button)}</div>
+      </div>
+    )
+  }
 
   // The right strip only exists once something lives there — or while a drag looks for a home.
   const right = panelsIn('right')
@@ -152,7 +172,7 @@ export function Sidebar({
       {children}
       {right.length > 0 || dragging ? (
         <div className="flex w-10 shrink-0 flex-col border-border border-l bg-surface">
-          {cluster('right', 'justify-end')}
+          {cluster('right', 'justify-between')}
         </div>
       ) : null}
     </div>

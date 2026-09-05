@@ -126,6 +126,30 @@ describe('CollapseController', () => {
     expect(bottom.visibility).toEqual([false, true])
   })
 
+  it('never hides the group it is told to keep visible', () => {
+    // A stale `layout.collapsed` naming the editor's group would hide an editor with no way back.
+    const editor = group('editor-group')
+    const bottom = group('bottom')
+    const controller = new CollapseController(api([editor, bottom]), () => {})
+    controller.restoreFrom(['editor-group', 'bottom'], 'editor-group')
+    expect(controller.collapsedIds()).toEqual(['bottom'])
+    expect(editor.visibility).toEqual([true])
+    expect(editor.element.inert).toBe(false)
+  })
+
+  it('forgets a collapsed group dockview has thrown away', () => {
+    // Moving the last panel out of a group destroys it; its id must not reach the saved layout.
+    const bottom = group('bottom')
+    const groups = [bottom]
+    const controller = new CollapseController(
+      { groups, getGroup: (id: string) => groups.find((g) => g.id === id) },
+      () => {},
+    )
+    controller.collapse('bottom')
+    groups.length = 0
+    expect(controller.collapsedIds()).toEqual([])
+  })
+
   it('forgets its collapsed set when disposed', () => {
     const bottom = group('bottom')
     const controller = new CollapseController(api([bottom]), () => {})
@@ -212,6 +236,78 @@ describe('CollapseController animation', () => {
     expect(marked.length).toBeGreaterThan(1)
     expect(marked.slice(0, -1).every(Boolean)).toBe(true)
     expect(marked.at(-1)).toBe(false)
+  })
+
+  it('slides a hiding group into its edge and a showing one back out of it', () => {
+    const dock = root()
+    const bottom = group('bottom')
+    const calls: string[] = []
+    const controller = new CollapseController(api([bottom]), () => {}, {
+      root: dock,
+      relayout: () => calls.push('relayout'),
+      prepare: (_group, phase) => {
+        calls.push(`prepare:${phase}`)
+        return () => calls.push(`slide:${phase}`)
+      },
+    })
+    controller.collapse('bottom')
+    // A hide is measured before dockview zeroes the view and written once it has.
+    expect(calls.slice(0, 2)).toEqual(['prepare:collapse', 'slide:collapse'])
+    // Every forced relayout writes dockview's geometry back, so the target is re-applied.
+    calls.length = 0
+    vi.advanceTimersByTime(20)
+    expect(calls.slice(0, 2)).toEqual(['relayout', 'slide:collapse'])
+    vi.advanceTimersByTime(ANIMATION_FALLBACK_MS)
+    controller.expand('bottom')
+    calls.length = 0
+    vi.advanceTimersByTime(40)
+    // A show ends on dockview's own geometry, so nothing is pinned over the relayout.
+    expect(calls).not.toContain('slide:expand')
+    expect(calls).toContain('relayout')
+  })
+
+  it('runs no frames at all when the user asked for no motion', () => {
+    const dock = root()
+    const bottom = group('bottom')
+    const relayout = vi.fn()
+    const controller = new CollapseController(api([bottom]), () => {}, {
+      root: dock,
+      relayout,
+      reducedMotion: () => true,
+    })
+    controller.collapse('bottom')
+    expect(dock.classes.has(ANIMATING_CLASS)).toBe(false)
+    expect(relayout).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(ANIMATION_FALLBACK_MS * 2)
+    expect(relayout).toHaveBeenCalledTimes(1)
+  })
+
+  it('says the collapsed set again once the geometry has settled', () => {
+    // Anything measured from a group mid-slide read a box that was still moving.
+    const dock = root()
+    const bottom = group('bottom')
+    const changes: string[][] = []
+    const controller = new CollapseController(api([bottom]), (ids) => changes.push(ids), {
+      root: dock,
+      relayout: () => {},
+    })
+    controller.collapse('bottom')
+    expect(changes).toEqual([['bottom']])
+    vi.advanceTimersByTime(ANIMATION_FALLBACK_MS)
+    expect(changes).toEqual([['bottom'], ['bottom']])
+  })
+
+  it('stops relaying out once it is disposed', () => {
+    // `DesktopShell` is lazy: crossing the phone breakpoint mid-slide unmounts it.
+    const dock = root()
+    const bottom = group('bottom')
+    const relayout = vi.fn()
+    const controller = new CollapseController(api([bottom]), () => {}, { root: dock, relayout })
+    controller.collapse('bottom')
+    relayout.mockClear()
+    controller.dispose()
+    vi.advanceTimersByTime(ANIMATION_FALLBACK_MS * 2)
+    expect(relayout).not.toHaveBeenCalled()
   })
 
   it('drops the mark and the timer when it is disposed mid-transition', () => {

@@ -17,6 +17,7 @@ import { applyDefaultLayout, hideEditorHeader, PANEL_TITLES } from './dock/defau
 import { HeaderActions } from './dock/HeaderActions'
 import { HIDDEN_PANEL_STATES, panelStatesOf, sidebarActionFor } from './dock/panelStates'
 import { DockContext, dockComponents } from './dock/panels'
+import { prepareSlide } from './dock/slide'
 import { Tab } from './dock/Tab'
 import { DOCK_THEME } from './dock/theme'
 import { type PanelStates, Sidebar, type Zone } from './Sidebar'
@@ -61,18 +62,41 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
   const animationFor = useCallback((api: DockviewApi) => {
     const root = dockRef.current?.querySelector<HTMLElement>('.sc-dock') ?? null
     if (root === null) return null
-    return { root, relayout: () => api.layout(api.width, api.height, true) }
+    return {
+      root,
+      relayout: () => api.layout(api.width, api.height, true),
+      // Spec §3.3: a group slides into the edge it is docked against, not the grid's origin.
+      prepare: (group: { element?: { parentElement?: unknown } }, phase: 'collapse' | 'expand') =>
+        prepareSlide(group.element?.parentElement as never, phase),
+      reducedMotion: () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
+    }
   }, [])
 
-  /** The sidebar's own view of the dock, recomputed whenever the dock reports a change. */
+  const syncFrame = useRef<number | null>(null)
+
+  /**
+   * The sidebar's own view of the dock, recomputed whenever the dock reports a change. The zones
+   * are read off the group boxes, and dockview reports some changes (a restored layout, a tab
+   * dropped on another edge) before it has written the new geometry — so every sync also happens
+   * again on the next frame, when the boxes are the ones the user is looking at.
+   */
   const syncPanelStates = useCallback(() => {
-    const api = apiRef.current
-    const controller = controllerRef.current
-    if (api === null || controller === null) return
-    // The previous states carry each panel's zone forward while its group has no box to measure.
-    setPanelStates((previous) =>
-      panelStatesOf(api, (groupId) => controller.isCollapsed(groupId), previous),
-    )
+    const read = (): void => {
+      const api = apiRef.current
+      const controller = controllerRef.current
+      if (api === null || controller === null) return
+      const dock = dockRef.current?.getBoundingClientRect()
+      // The previous states carry each panel's zone forward while its group has no box to measure.
+      setPanelStates((previous) =>
+        panelStatesOf(api, (groupId) => controller.isCollapsed(groupId), previous, dock),
+      )
+    }
+    read()
+    if (syncFrame.current !== null) cancelAnimationFrame(syncFrame.current)
+    syncFrame.current = requestAnimationFrame(() => {
+      syncFrame.current = null
+      read()
+    })
   }, [])
 
   const reset = useCallback(() => {
@@ -131,7 +155,8 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
           animationFor(api),
         )
         controllerRef.current = controller
-        controller.restoreFrom(saved.collapsed)
+        // A stale id naming the editor's group would hide an editor with no way to bring it back.
+        controller.restoreFrom(saved.collapsed, api.getPanel('editor')?.group.id)
         save()
       } else {
         reset()
@@ -145,6 +170,10 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         // A tab in front of its group is the sidebar's "active"; activating one always makes its
         // group the active group, so the component-level event covers every group.
         api.onDidActivePanelChange(() => syncPanelStates()),
+        // A tab dragged to another edge changes the zones without changing the layout's size.
+        api.onDidAddGroup(() => syncPanelStates()),
+        api.onDidRemoveGroup(() => syncPanelStates()),
+        api.onDidMovePanel(() => syncPanelStates()),
         // Spec §3.1: the editor cannot be dragged out of its group. `locked` only refuses drops,
         // so the drag has to be refused at the source.
         api.onWillDragPanel((event) => {
@@ -159,6 +188,12 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     () => () => {
       for (const disposable of disposablesRef.current) disposable.dispose()
       disposablesRef.current = []
+      // The shell is lazy: crossing the phone breakpoint mid-slide would leave the frame loop
+      // and the fallback timer running against a dockview that is going away.
+      controllerRef.current?.dispose()
+      controllerRef.current = null
+      if (syncFrame.current !== null) cancelAnimationFrame(syncFrame.current)
+      syncFrame.current = null
     },
     [],
   )
@@ -205,8 +240,10 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       }
       if (action === 'expand') controller.expand(groupId)
       target.api.setActive()
+      // Spec §3.1: the editor's own button is a way back to the caret, nothing else.
+      if (panel === 'editor') editorRef.current?.focus()
     },
-    [collapseManually],
+    [collapseManually, editorRef],
   )
 
   /**
@@ -220,16 +257,32 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       const controller = controllerRef.current
       const target = api?.getPanel(panel)
       if (api === null || controller === null || target === undefined) return
+      // Dropping an icon back on its own cluster would still rebuild the grid, losing the sizes
+      // the user dragged, for a layout that does not change.
+      if (panelStates[panel].zone === zone) {
+        target.api.setActive()
+        return
+      }
       const group = target.group
-      // A hidden group has nothing to show at its new edge, so the move brings it back first.
-      if (controller.isCollapsed(group.id)) controller.expand(group.id)
+      // A hidden group has nothing to show at its new edge, so the move brings it back first —
+      // unanimated, because the boxes the new zones are read from have to be the final ones.
+      if (controller.isCollapsed(group.id)) {
+        controller.withoutAnimation(() => controller.expand(group.id))
+      }
       const position = zone === 'right' ? 'right' : zone === 'left-top' ? 'top' : 'bottom'
       if (group.panels.length === 1) group.api.moveTo({ position })
       else target.api.moveTo({ group: api.addGroup({ direction: positionToDirection(position) }) })
       target.api.setActive()
+      // The move puts the panel in a group dockview just made, so the editor's group is a new one
+      // with none of its rules on it (spec §3.1).
+      const editorGroup = api.getPanel('editor')?.group
+      if (editorGroup !== undefined) {
+        editorGroup.locked = true
+        hideEditorHeader(editorGroup)
+      }
       syncPanelStates()
     },
-    [syncPanelStates],
+    [syncPanelStates, panelStates],
   )
 
   useEffect(() => {

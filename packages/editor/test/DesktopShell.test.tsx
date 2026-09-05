@@ -199,6 +199,19 @@ describe('DesktopShell', () => {
     expect(dock.classList.contains('sc-animating')).toBe(true)
   })
 
+  it('keeps the editor open when its own sidebar button is clicked', async () => {
+    const { store } = mount()
+    await panelSection('Editor')
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    const before = store.getState().layout.collapsed
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Editor' }))
+    })
+    // Spec §3.1: the editor never collapses, so its button only puts the caret back.
+    expect(store.getState().layout.collapsed).toEqual(before)
+    expect(await panelSection('Editor')).toBeDefined()
+  })
+
   it('docks a panel on the edge its sidebar icon is dropped on', async () => {
     const { store } = mount()
     await panelSection('Consola')
