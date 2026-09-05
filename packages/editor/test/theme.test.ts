@@ -13,16 +13,18 @@ import {
 } from '../src/theme/theme'
 import { THEMES } from '../src/theme/types'
 
-const srcRoot = fileURLToPath(new NodeURL('../src', import.meta.url))
+const pkgRoot = fileURLToPath(new NodeURL('..', import.meta.url))
+const srcRoot = join(pkgRoot, 'src')
 const tokensCss = readFileSync(join(srcRoot, 'theme', 'tokens.css'), 'utf8')
 const tokens = parseTokens(tokensCss)
 
-describe('tokens.css', () => {
-  it('defines every token in both themes', () => {
+const NEW_TOKENS = ['accent-soft', 'overlay', 'shadow', 'changed'] as const
+
+describe('tokens.css (4b)', () => {
+  it('defines the four shell tokens in both themes', () => {
+    expect(TOKEN_NAMES).toHaveLength(28)
     for (const theme of THEMES) {
-      for (const name of TOKEN_NAMES) {
-        expect(tokens[theme][name], `${theme} --sc-${name}`).toBeDefined()
-      }
+      for (const name of NEW_TOKENS) expect(tokens[theme][name], `${theme} ${name}`).toBeDefined()
       expect(Object.keys(tokens[theme]).sort()).toEqual([...TOKEN_NAMES].sort())
     }
   })
@@ -31,8 +33,8 @@ describe('tokens.css', () => {
     for (const theme of THEMES) {
       for (const name of TOKEN_NAMES) {
         const value = tokens[theme][name] ?? ''
-        if (HEX_TOKENS.includes(name)) expect(value).toMatch(/^#[0-9a-f]{6}$/)
-        else expect(value).toMatch(/^rgba\(\d+,\s?\d+,\s?\d+,\s?0\.\d+\)$/)
+        if (HEX_TOKENS.includes(name)) expect(value, name).toMatch(/^#[0-9a-f]{6}$/)
+        else expect(value, name).toMatch(/^rgba\(\d+,\s?\d+,\s?\d+,\s?0\.\d+\)$/)
       }
     }
   })
@@ -60,6 +62,38 @@ describe('tokens.css', () => {
         expect(contrastRatio(t[name] ?? '', surface), `${theme} ${name}`).toBeGreaterThanOrEqual(3)
       }
     }
+  })
+})
+
+function walk(dir: string): string[] {
+  return readdirSync(dir).flatMap((entry) => {
+    const full = join(dir, entry)
+    return statSync(full).isDirectory() ? walk(full) : [full]
+  })
+}
+
+const COLOR_LITERAL =
+  /#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(|\b(?:white|black|red|blue|gray|grey)\b/
+
+describe('tokens only', () => {
+  it('has no color literal outside tokens.css', () => {
+    const offenders = walk(srcRoot)
+      .filter((file) => /\.(tsx?|css)$/.test(file) && !file.endsWith('tokens.css'))
+      .filter((file) => COLOR_LITERAL.test(readFileSync(file, 'utf8')))
+      .map((file) => file.slice(srcRoot.length + 1))
+    expect(offenders).toEqual([])
+  })
+})
+
+describe('fonts', () => {
+  it('ships JetBrains Mono with its licence', () => {
+    for (const file of ['JetBrainsMono-Regular.woff2', 'JetBrainsMono-Bold.woff2', 'OFL.txt']) {
+      expect(statSync(join(pkgRoot, 'public', 'fonts', file)).size).toBeGreaterThan(1000)
+    }
+    const css = readFileSync(join(srcRoot, 'index.css'), 'utf8')
+    expect(css).toContain('@font-face')
+    expect(css).toContain('/fonts/JetBrainsMono-Regular.woff2')
+    expect(css).toContain('font-variant-ligatures: none')
   })
 })
 
@@ -124,15 +158,15 @@ describe('index.css', () => {
 
 describe('no raw colors outside tokens.css', () => {
   const files: string[] = []
-  const walk = (dir: string): void => {
+  const walkForColors = (dir: string): void => {
     for (const name of readdirSync(dir)) {
       const path = join(dir, name)
-      if (statSync(path).isDirectory()) walk(path)
+      if (statSync(path).isDirectory()) walkForColors(path)
       else if (/\.(ts|tsx|css)$/.test(name) && !path.endsWith(join('theme', 'tokens.css')))
         files.push(path)
     }
   }
-  walk(srcRoot)
+  walkForColors(srcRoot)
 
   it.each(files)('%s has no hex or rgb color', (file) => {
     const text = readFileSync(file, 'utf8')

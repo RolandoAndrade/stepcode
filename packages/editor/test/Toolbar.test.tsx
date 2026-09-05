@@ -23,7 +23,7 @@ describe('Toolbar controls', () => {
     ['done', ['Ejecutar', 'Paso']],
     ['error', ['Ejecutar', 'Paso']],
     ['running', ['Pausar', 'Detener']],
-    ['paused', ['Continuar', 'Pasar por encima', 'Entrar', 'Salir', 'Detener']],
+    ['paused', ['Continuar', 'Paso', 'Entrar', 'Salir', 'Detener']],
     ['input', ['Detener']],
     ['waiting', ['Detener']],
   ])('in %s shows %j', (state, expected) => {
@@ -44,7 +44,7 @@ describe('Toolbar controls', () => {
   it('dispatches the store actions', () => {
     const { store, host } = storeWith({ state: 'paused' })
     renderWithStore(<Toolbar />, store)
-    fireEvent.click(screen.getByRole('button', { name: 'Pasar por encima' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Paso' }))
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
     fireEvent.click(screen.getByRole('button', { name: 'Salir' }))
     fireEvent.click(screen.getByRole('button', { name: 'Continuar' }))

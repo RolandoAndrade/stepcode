@@ -1,42 +1,53 @@
 import { describe, expect, it } from 'vitest'
 import { stringsFor } from '../src/strings'
 
-describe('stringsFor', () => {
-  it('returns Spanish for es', () => {
-    const s = stringsFor('es')
-    expect(s.toolbar.run).toBe('Ejecutar')
-    expect(s.console.read('n', 'Entero')).toBe('Leer n (Entero)')
-    expect(s.console.waiting(500)).toBe('Esperando 500 ms')
-    expect(s.variables.arrayOf('Entero', 1)).toBe('Arreglo de Entero')
-    expect(s.variables.arrayOf('Entero', 2)).toBe('Arreglo de Entero (2D)')
-    expect(s.problems.summary(1, 2)).toBe('1 error, 2 advertencias')
-    expect(s.toolbar.errors(1)).toBe('1 error')
-    expect(s.toolbar.errors(3)).toBe('3 errores')
-  })
+function keysOf(value: unknown, prefix = ''): string[] {
+  if (typeof value !== 'object' || value === null) return [prefix]
+  return Object.entries(value).flatMap(([key, child]) =>
+    keysOf(child, prefix === '' ? key : `${prefix}.${key}`),
+  )
+}
 
-  it('returns English for en', () => {
-    const s = stringsFor('en')
-    expect(s.toolbar.stepOver).toBe('Step over')
-    expect(s.console.pressKey).toBe('Press a key')
-    expect(s.console.dropped(12)).toBe('… 12 chunks dropped')
-    expect(s.variables.empty).toBe('No program running')
-    expect(s.problems.summary(0, 1)).toBe('0 errors, 1 warning')
+describe('stringsFor', () => {
+  it('returns Spanish for es and English for en', () => {
+    expect(stringsFor('es').toolbar.run).toBe('Ejecutar')
+    expect(stringsFor('en').toolbar.run).toBe('Run')
+    expect(stringsFor('es').status.pausedAt(12)).toBe('En pausa en la línea 12')
+    expect(stringsFor('en').status.problems(2, 1)).toBe('✖ 2  ▲ 1')
+    expect(stringsFor('es').confirmSave.title('a.stepcode')).toBe(
+      '¿Guardar los cambios de a.stepcode?',
+    )
+    expect(stringsFor('es').app.untitled).toBe('sin título.stepcode')
   })
 
   it('falls back by primary subtag, then to es', () => {
     expect(stringsFor('en-US').toolbar.run).toBe('Run')
-    expect(stringsFor('es-MX').toolbar.run).toBe('Ejecutar')
     expect(stringsFor('pt-BR')).toBe(stringsFor('es'))
     expect(stringsFor('')).toBe(stringsFor('es'))
   })
 
-  it('names every symbol kind and every worker state in both locales', () => {
-    const kinds = ['variable', 'parameter', 'result', 'constant', 'counter', 'subprogram'] as const
-    const states = ['ready', 'running', 'paused', 'input', 'waiting', 'done', 'error'] as const
+  it('has the same key set in both locales', () => {
+    expect(keysOf(stringsFor('en')).sort()).toEqual(keysOf(stringsFor('es')).sort())
+  })
+
+  it('names every builtin profile, panel, dialog and worker state', () => {
     for (const locale of ['es', 'en']) {
       const s = stringsFor(locale)
-      for (const kind of kinds) expect(s.kinds[kind].length).toBeGreaterThan(0)
-      for (const state of states) expect(s.states[state].length).toBeGreaterThan(0)
+      for (const id of ['es', 'en', 'pseint']) expect(s.profiles[id]?.length).toBeGreaterThan(0)
+      for (const panel of ['editor', 'console', 'problems', 'variables'] as const) {
+        expect(s.panels[panel].length).toBeGreaterThan(0)
+      }
+      for (const state of [
+        'ready',
+        'running',
+        'paused',
+        'input',
+        'waiting',
+        'done',
+        'error',
+      ] as const) {
+        expect(s.states[state].length).toBeGreaterThan(0)
+      }
     }
   })
 })

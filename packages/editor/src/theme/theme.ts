@@ -26,13 +26,25 @@ export const TOKEN_NAMES = [
   'syn-operator',
   'syn-variable',
   'syn-definition',
+  'accent-soft',
+  'overlay',
+  'shadow',
+  'changed',
 ] as const
 
 export type TokenName = (typeof TOKEN_NAMES)[number]
 
-/** Tokens that are opaque hex colors; the other two are translucent overlays. */
+const OVERLAY_TOKENS: ReadonlySet<string> = new Set([
+  'line',
+  'current-line',
+  'accent-soft',
+  'overlay',
+  'shadow',
+])
+
+/** Tokens that are opaque hex colors; the others are translucent overlays. */
 export const HEX_TOKENS: readonly TokenName[] = TOKEN_NAMES.filter(
-  (name) => name !== 'line' && name !== 'current-line',
+  (name) => !OVERLAY_TOKENS.has(name),
 )
 
 const BLOCK = /(:root(?:\[data-theme="dark"\])?)\s*\{([^}]*)\}/g

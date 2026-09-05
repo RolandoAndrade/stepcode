@@ -85,7 +85,7 @@ describe('Editor', () => {
   it('follows the theme through the dark facet', () => {
     const { store, view } = mount(FINE)
     expect(view.state.facet(EditorView.darkTheme)).toBe(false)
-    store.getState().setTheme('dark')
+    store.getState().setThemePreference('dark')
     expect(view.state.facet(EditorView.darkTheme)).toBe(true)
   })
 

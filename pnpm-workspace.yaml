@@ -21,6 +21,7 @@ catalog:
   happy-dom: ^20.13.2
   '@codemirror/commands': ^6.11.0
   '@vitest/web-worker': ^4.1.11
+  zod: ^4.5.4
 
 minimumReleaseAgeExclude:
   - '@biomejs/biome@2.5.12'
@@ -34,3 +35,4 @@ minimumReleaseAgeExclude:
   - '@biomejs/cli-win32-x64@2.5.12'
   - '@types/react-dom@19.2.7'
   - happy-dom@20.13.2
+  - lucide-react@1.41.0

@@ -3,15 +3,21 @@ import { profiles } from '@stepcode/profiles'
 import { compile, type Frame } from 'stepcode'
 import { describe, expect, it } from 'vitest'
 import type { WorkerState } from '../src/runtime/protocol'
+import { DEFAULT_LAYOUT } from '../src/store/layout'
 import { OUTPUT_CAP } from '../src/store/output'
+import { DEFAULT_SETTINGS } from '../src/store/settings'
 import {
   canEdit,
   createEditorStore,
   DEFAULT_SOURCE,
   hasErrors,
+  isDirty,
   localeOf,
   profileInputOf,
+  profileNameOf,
   profileOf,
+  stringsOf,
+  uiLocaleOf,
 } from '../src/store/store'
 import { FakeHost } from './fake-host'
 
@@ -65,7 +71,7 @@ describe('document slice', () => {
     expect(profileOf(s)).toBe(profiles.en)
     expect(localeOf(s)).toBe('en')
     expect(hasErrors(s)).toBe(true)
-    expect(profileInputOf('pseint').id).toBe('pseint')
+    expect(profileInputOf({ profileId: 'pseint', customProfiles: [] }).id).toBe('pseint')
   })
 
   it('forwards breakpoints to the host at once', () => {
@@ -77,7 +83,7 @@ describe('document slice', () => {
 
   it('applies the theme through the option', () => {
     const { store, applied } = setup()
-    store.getState().setTheme('dark')
+    store.getState().setThemePreference('dark')
     expect(store.getState().theme).toBe('dark')
     expect(applied).toEqual(['dark'])
   })
@@ -89,7 +95,12 @@ describe('run guards', () => {
     store.getState().setBreakpoints([4])
     store.getState().run()
     expect(host.starts).toEqual([
-      { source: DEFAULT_SOURCE, profile: profileInputOf('es'), breakpoints: [4], mode: 'run' },
+      {
+        source: DEFAULT_SOURCE,
+        profile: profileInputOf({ profileId: 'es', customProfiles: [] }),
+        breakpoints: [4],
+        mode: 'run',
+      },
     ])
     host.emit({ kind: 'state', state: 'running' })
     store.getState().run()
@@ -238,5 +249,167 @@ describe('worker messages', () => {
     expect(s.pendingInput).toBeNull()
     expect(s.currentLine).toBeNull()
     expect(s.wait).toBeNull()
+  })
+})
+
+describe('store (4b slices)', () => {
+  it('starts with the starter document, es profile, defaults and a collapsed layout', () => {
+    const { store } = setup()
+    const s = store.getState()
+    expect(s.name).toBe('sin título.stepcode')
+    expect(s.savedSource).toBe(s.source)
+    expect(s.handle).toBeNull()
+    expect(s.settings).toEqual(DEFAULT_SETTINGS)
+    expect(s.themePreference).toBe('system')
+    expect(s.layout).toEqual(DEFAULT_LAYOUT)
+    expect(s.dialog).toBeNull()
+    expect(isDirty(s)).toBe(false)
+  })
+
+  it('resolves the theme from the preference and the system', () => {
+    const { store, applied } = setup()
+    store.getState().setSystemDark(true)
+    expect(store.getState().theme).toBe('dark')
+    store.getState().setThemePreference('light')
+    expect(store.getState().theme).toBe('light')
+    store.getState().setThemePreference('system')
+    expect(store.getState().theme).toBe('dark')
+    expect(applied).toEqual(['dark', 'light', 'dark'])
+  })
+
+  it('replaces the document directly when clean and parks it when dirty', () => {
+    const { store } = setup()
+    store.getState().requestReplace({ name: 'a.stepcode', source: 'Proceso A\nFinProceso\n' })
+    expect(store.getState().name).toBe('a.stepcode')
+    expect(store.getState().pendingReplace).toBeNull()
+    store.getState().setSource('Proceso B\nFinProceso\n')
+    expect(isDirty(store.getState())).toBe(true)
+    store.getState().requestReplace({ name: 'c.stepcode', source: 'x' })
+    expect(store.getState().name).toBe('a.stepcode')
+    expect(store.getState().dialog).toBe('confirmSave')
+    expect(store.getState().pendingReplace?.name).toBe('c.stepcode')
+    store.getState().applyReplace()
+    expect(store.getState().name).toBe('c.stepcode')
+    expect(store.getState().source).toBe('x')
+    expect(store.getState().dialog).toBeNull()
+    expect(store.getState().breakpoints).toEqual([])
+  })
+
+  it('cancels a parked replacement', () => {
+    const { store } = setup()
+    store.getState().setSource('changed')
+    store.getState().requestReplace({ name: 'c.stepcode', source: 'x' })
+    store.getState().cancelReplace()
+    expect(store.getState().pendingReplace).toBeNull()
+    expect(store.getState().dialog).toBeNull()
+    expect(store.getState().source).toBe('changed')
+  })
+
+  it('does not ask when the dirty text is blank', () => {
+    const { store } = setup()
+    store.getState().setSource('   ')
+    store.getState().requestReplace({ name: 'c.stepcode', source: 'x' })
+    expect(store.getState().source).toBe('x')
+  })
+
+  it('marks saved and tracks the handle', () => {
+    const { store } = setup()
+    store.getState().setSource('a')
+    store.getState().markSaved('a', { name: 'a.stepcode' })
+    expect(isDirty(store.getState())).toBe(false)
+    expect(store.getState().handle?.name).toBe('a.stepcode')
+  })
+
+  it('stores and resolves custom profiles', () => {
+    const { store } = setup()
+    store.getState().saveCustomProfile({ id: 'mio', extends: 'es', keywords: { write: ['Di'] } })
+    store.getState().setProfile('mio')
+    expect(profileOf(store.getState()).keywords.write).toEqual(['Di'])
+    expect(profileInputOf(store.getState()).id).toBe('mio')
+    expect(profileNameOf(store.getState(), 'mio')).toBe('mio')
+    store.getState().deleteCustomProfile('mio')
+    expect(store.getState().profileId).toBe('es')
+  })
+
+  it('updates and resets settings per section', () => {
+    const { store } = setup()
+    store.getState().updateSettings('editor', { fontSize: 16 })
+    expect(store.getState().settings.editor.fontSize).toBe(16)
+    store.getState().resetSettings('editor')
+    expect(store.getState().settings.editor).toEqual(DEFAULT_SETTINGS.editor)
+  })
+
+  it('derives the UI locale from the setting or the profile', () => {
+    const { store } = setup()
+    expect(uiLocaleOf(store.getState())).toBe('es')
+    store.getState().setProfile('en')
+    expect(uiLocaleOf(store.getState())).toBe('en')
+    store.getState().updateSettings('appearance', { uiLocale: 'es' })
+    expect(uiLocaleOf(store.getState())).toBe('es')
+    expect(localeOf(store.getState())).toBe('en')
+    expect(stringsOf(store.getState()).toolbar.run).toBe('Ejecutar')
+  })
+
+  it('asks before running with warnings when the setting is on', () => {
+    const { store, host } = setup()
+    store.getState().setDiagnostics([warningDiagnostic])
+    store.getState().run()
+    expect(host.calls).toEqual([])
+    expect(store.getState().dialog).toBe('warnings')
+    store.getState().confirmRun()
+    expect(host.calls).toEqual(['start:run'])
+    expect(store.getState().dialog).toBeNull()
+    store.getState().updateSettings('execution', { warnOnWarnings: false })
+    host.emit({ kind: 'state', state: 'done' })
+    store.getState().run()
+    expect(host.calls).toEqual(['start:run', 'start:run'])
+  })
+
+  it('keeps the console when clearConsoleOnRun is off', () => {
+    const { store, host } = setup()
+    host.emit({ kind: 'output', chunks: ['x'] })
+    store.getState().updateSettings('execution', { clearConsoleOnRun: false })
+    store.getState().run()
+    expect(store.getState().output.chunks).toEqual(['x'])
+  })
+
+  it('counts runs and first pauses', () => {
+    const { store, host } = setup()
+    store.getState().run()
+    expect(store.getState().runSeq).toBe(1)
+    expect(store.getState().pausedInRun).toBe(false)
+    host.emit({ kind: 'state', state: 'paused' })
+    host.emit({ kind: 'paused', reason: 'breakpoint', line: 2, frames: [] })
+    expect(store.getState().pausedInRun).toBe(true)
+    host.emit({ kind: 'state', state: 'ready' })
+    store.getState().run()
+    expect(store.getState().runSeq).toBe(2)
+    expect(store.getState().pausedInRun).toBe(false)
+  })
+
+  it('tracks layout intents, dialogs and toasts', () => {
+    const { store } = setup()
+    store.getState().setDockLayout({ grid: {} }, ['g1'])
+    expect(store.getState().layout.dockview).toEqual({ grid: {} })
+    expect(store.getState().layout.collapsed).toEqual(['g1'])
+    store.getState().setSheet('half')
+    expect(store.getState().layout.sheet).toBe('half')
+    store.getState().resetLayout()
+    expect(store.getState().layout).toEqual(DEFAULT_LAYOUT)
+    expect(store.getState().layoutReset).toBe(1)
+    store.getState().requestPanel('problems')
+    expect(store.getState().panelRequest).toEqual({ id: 'problems', seq: 1 })
+    store.getState().openDialog('about')
+    expect(store.getState().dialog).toBe('about')
+    store.getState().closeDialog()
+    expect(store.getState().dialog).toBeNull()
+    store.getState().notify('hola')
+    expect(store.getState().toasts.map((t) => t.message)).toEqual(['hola'])
+    store.getState().dismissToast(store.getState().toasts[0]?.id ?? -1)
+    expect(store.getState().toasts).toEqual([])
+    store.getState().setCursor(3, 4)
+    expect(store.getState().cursor).toEqual({ line: 3, column: 4 })
+    store.getState().setAutoScroll(false)
+    expect(store.getState().autoScroll).toBe(false)
   })
 })

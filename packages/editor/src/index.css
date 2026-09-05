@@ -1,7 +1,23 @@
 @import "tailwindcss";
 @import "./theme/tokens.css";
 
-/* Spec §8.2: chrome colors are the tokens, never a literal. */
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/JetBrainsMono-Bold.woff2") format("woff2");
+}
+
+/* Spec §2.3: chrome colors are the tokens, never a literal. */
 @theme inline {
   --color-bg: var(--sc-bg);
   --color-surface: var(--sc-surface);
@@ -10,11 +26,17 @@
   --color-fg: var(--sc-fg);
   --color-muted: var(--sc-fg-muted);
   --color-accent: var(--sc-accent);
+  --color-accent-soft: var(--sc-accent-soft);
   --color-selection: var(--sc-selection);
   --color-error: var(--sc-error);
   --color-warning: var(--sc-warning);
   --color-success: var(--sc-success);
-  --font-mono: ui-monospace, "Cascadia Code", "Fira Code", Menlo, Consolas, monospace;
+  --color-overlay: var(--sc-overlay);
+  --color-changed: var(--sc-changed);
+  --shadow-panel: 0 8px 24px var(--sc-shadow);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --ease-shell: cubic-bezier(0.2, 0, 0, 1);
 }
 
 @layer base {
@@ -27,5 +49,25 @@
   body {
     background-color: var(--sc-bg);
     color: var(--sc-fg);
+    font-family: var(--font-sans);
+  }
+
+  code,
+  pre,
+  .cm-editor {
+    font-family: var(--font-mono);
+    font-variant-ligatures: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--sc-accent);
+    outline-offset: 1px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition-duration: 0ms !important;
+      animation-duration: 0ms !important;
+    }
   }
 }

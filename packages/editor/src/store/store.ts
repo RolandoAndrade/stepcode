@@ -2,20 +2,38 @@ import type { Diagnostic as LintDiagnostic } from '@codemirror/lint'
 import {
   builtinProfiles,
   type ProfileInput,
+  type ProfileRegistry,
   profiles,
   type ResolvedProfile,
+  resolveProfile,
 } from '@stepcode/profiles'
 import { type Diagnostic, type Frame, formatDiagnostic, LineMap } from 'stepcode'
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { HostApi } from '../runtime/host-api'
 import type { InputTarget, RunMode, WorkerMessage, WorkerState } from '../runtime/protocol'
 import { type Strings, stringsFor } from '../strings'
-import type { Theme } from '../theme/types'
+import type { Theme, ThemePreference } from '../theme/types'
+import { type DocumentDraft, type FileHandle, isDirty } from './document'
+import {
+  DEFAULT_LAYOUT,
+  type LayoutState,
+  type PanelId,
+  type PanelRequest,
+  type SheetPosition,
+} from './layout'
 import { appendOutput, emptyOutput, type OutputBuffer } from './output'
+import { DEFAULT_SETTINGS, type Settings, type SettingsSection } from './settings'
 
-export type ProfileId = 'es' | 'en' | 'pseint'
+export type ProfileId = string
 
-export const PROFILE_IDS: readonly ProfileId[] = ['es', 'en', 'pseint']
+export const PROFILE_IDS: readonly string[] = ['es', 'en', 'pseint']
+
+export type DialogName = 'settings' | 'examples' | 'share' | 'about' | 'confirmSave' | 'warnings'
+
+export interface Toast {
+  readonly id: number
+  readonly message: string
+}
 
 export interface PendingInput {
   readonly line: number
@@ -34,13 +52,25 @@ export interface Wait {
   readonly millis: number
 }
 
-/** Spec §6: the document slice, the runtime slice, and their actions. */
+/** Spec §6: the document, settings, runtime, layout and UI slices, and their actions. */
 export interface StoreState {
+  // document
   readonly source: string
-  readonly profileId: ProfileId
+  readonly name: string
+  readonly savedSource: string
+  readonly handle: FileHandle | null
+  readonly pendingReplace: DocumentDraft | null
+  readonly profileId: string
+  readonly customProfiles: readonly ProfileInput[]
   readonly diagnostics: readonly LintDiagnostic[]
   readonly breakpoints: readonly number[]
+  readonly cursor: { readonly line: number; readonly column: number }
+  // settings + theme
+  readonly settings: Settings
+  readonly themePreference: ThemePreference
+  readonly systemDark: boolean
   readonly theme: Theme
+  // runtime (4a)
   readonly state: WorkerState
   readonly output: OutputBuffer
   readonly currentLine: number | null
@@ -48,12 +78,34 @@ export interface StoreState {
   readonly pendingInput: PendingInput | null
   readonly wait: Wait | null
   readonly error: RuntimeError | null
+  readonly runSeq: number
+  readonly pausedInRun: boolean
+  readonly autoScroll: boolean
+  // layout + ui
+  readonly layout: LayoutState
+  readonly layoutReset: number
+  readonly panelRequest: PanelRequest | null
+  readonly dialog: DialogName | null
+  readonly toasts: readonly Toast[]
+  // actions
   setSource(source: string): void
-  setProfile(id: ProfileId): void
+  setName(name: string): void
+  markSaved(source: string, handle: FileHandle | null): void
+  requestReplace(draft: DocumentDraft): void
+  applyReplace(): void
+  cancelReplace(): void
+  setProfile(id: string): void
+  saveCustomProfile(input: ProfileInput): void
+  deleteCustomProfile(id: string): void
   setDiagnostics(diagnostics: readonly LintDiagnostic[]): void
   setBreakpoints(lines: readonly number[]): void
-  setTheme(theme: Theme): void
+  setCursor(line: number, column: number): void
+  updateSettings<K extends SettingsSection>(section: K, patch: Partial<Settings[K]>): void
+  resetSettings(section: SettingsSection): void
+  setThemePreference(preference: ThemePreference): void
+  setSystemDark(dark: boolean): void
   run(): void
+  confirmRun(): void
   /** From ready/done/error: start in step mode. From paused: one `step`. */
   stepInto(): void
   stepOver(): void
@@ -63,34 +115,111 @@ export interface StoreState {
   stop(): void
   submitInput(text: string): void
   clearOutput(): void
+  setAutoScroll(on: boolean): void
+  setDockLayout(dockview: Record<string, unknown>, collapsed: readonly string[]): void
+  setSheet(position: SheetPosition): void
+  resetLayout(): void
+  requestPanel(id: PanelId): void
+  openDialog(name: DialogName): void
+  closeDialog(): void
+  notify(message: string): void
+  dismissToast(id: number): void
 }
 
 export type EditorStore = StoreApi<StoreState>
 
 export interface StoreOptions {
   readonly applyTheme?: (theme: Theme) => void
-  readonly initialTheme?: Theme
+  readonly initialTheme?: ThemePreference
+  readonly systemDark?: boolean
   readonly initialSource?: string
+  readonly initialName?: string
 }
 
-export const DEFAULT_SOURCE = ['Proceso Hola', "  Escribir 'Hola, mundo';", 'FinProceso', ''].join(
-  '\n',
-)
+export const DEFAULT_SOURCE = [
+  'Proceso Hola',
+  '  // Escribe tu programa aquí',
+  "  Escribir 'Hola, mundo';",
+  'FinProceso',
+  '',
+].join('\n')
 
-export function profileOf(state: Pick<StoreState, 'profileId'>): ResolvedProfile {
-  return profiles[state.profileId]
+export { isDirty }
+
+/** Resolved custom profiles, memoized by input identity (inputs are replaced, never mutated). */
+const resolvedCache = new WeakMap<ProfileInput, ResolvedProfile>()
+
+function registryWith(customs: readonly ProfileInput[]): ProfileRegistry {
+  const registry = new Map(builtinProfiles)
+  for (const input of customs) registry.set(input.id, input)
+  return registry
 }
 
-export function localeOf(state: Pick<StoreState, 'profileId'>): string {
+export function customProfileOf(
+  state: Pick<StoreState, 'customProfiles'>,
+  id: string,
+): ProfileInput | undefined {
+  return state.customProfiles.find((input) => input.id === id)
+}
+
+export function profileOf(
+  state: Pick<StoreState, 'profileId' | 'customProfiles'>,
+): ResolvedProfile {
+  const builtin = (profiles as Record<string, ResolvedProfile | undefined>)[state.profileId]
+  if (builtin !== undefined) return builtin
+  const input = customProfileOf(state, state.profileId)
+  if (input === undefined) return profiles.es
+  let resolved = resolvedCache.get(input)
+  if (resolved === undefined) {
+    resolved = resolveProfile(input, registryWith(state.customProfiles))
+    resolvedCache.set(input, resolved)
+  }
+  return resolved
+}
+
+/** The JSON that crosses the worker boundary: a builtin's input or the custom input itself. */
+export function profileInputOf(
+  state: Pick<StoreState, 'profileId' | 'customProfiles'>,
+): ProfileInput {
+  return (
+    builtinProfiles.get(state.profileId) ??
+    customProfileOf(state, state.profileId) ??
+    (builtinProfiles.get('es') as ProfileInput)
+  )
+}
+
+export function profileNameOf(
+  state: Pick<StoreState, 'profileId' | 'customProfiles'>,
+  id: string,
+): string {
+  return stringsOf(state).profiles[id] ?? id
+}
+
+/** Diagnostics and runtime rendering follow the profile. */
+export function localeOf(state: Pick<StoreState, 'profileId' | 'customProfiles'>): string {
   return profileOf(state).locale
 }
 
-export function stringsOf(state: Pick<StoreState, 'profileId'>): Strings {
-  return stringsFor(localeOf(state))
+/** UI copy follows the setting, or the profile when `auto`. */
+export function uiLocaleOf(
+  state: Pick<StoreState, 'profileId' | 'customProfiles'> & { readonly settings?: Settings },
+): string {
+  const setting = state.settings?.appearance.uiLocale ?? 'auto'
+  return setting === 'auto' ? localeOf(state) : setting
+}
+
+export function stringsOf(
+  state: Pick<StoreState, 'profileId' | 'customProfiles'> & { readonly settings?: Settings },
+): Strings {
+  return stringsFor(uiLocaleOf(state))
 }
 
 export function hasErrors(state: Pick<StoreState, 'diagnostics'>): boolean {
   return state.diagnostics.some((diagnostic) => diagnostic.severity === 'error')
+}
+
+export function hasWarnings(state: Pick<StoreState, 'diagnostics'>): boolean {
+  return state.diagnostics.some((diagnostic) => diagnostic.severity === 'warning')
 }
 
 /** Spec §6: editing, running, and stepping from scratch are allowed in these states only. */
@@ -98,11 +227,8 @@ export function canEdit(state: WorkerState): boolean {
   return state === 'ready' || state === 'done' || state === 'error'
 }
 
-/** The JSON a builtin profile crosses the worker boundary as. */
-export function profileInputOf(id: ProfileId): ProfileInput {
-  const input = builtinProfiles.get(id)
-  if (input === undefined) throw new Error(`no builtin profile ${id}`)
-  return input
+export function resolveTheme(preference: ThemePreference, systemDark: boolean): Theme {
+  return preference === 'system' ? (systemDark ? 'dark' : 'light') : preference
 }
 
 interface Snapshot {
@@ -113,28 +239,62 @@ interface Snapshot {
 export function createEditorStore(host: HostApi, options: StoreOptions = {}): EditorStore {
   /** What the worker is running: errors and rejections are formatted against it. */
   let snapshot: Snapshot | null = null
+  let toastSeq = 0
+  const initialPreference = options.initialTheme ?? 'system'
+  const initialSystemDark = options.systemDark ?? false
+  const initialSource = options.initialSource ?? DEFAULT_SOURCE
 
   const store = createStore<StoreState>((set, get) => {
+    const applyTheme = (preference: ThemePreference, systemDark: boolean): void => {
+      const theme = resolveTheme(preference, systemDark)
+      set({ themePreference: preference, systemDark, theme })
+      options.applyTheme?.(theme)
+    }
     const begin = (mode: RunMode): void => {
       const s = get()
       if (!canEdit(s.state) || hasErrors(s)) return
       snapshot = { source: s.source, profile: profileOf(s) }
       set({
-        output: emptyOutput,
+        output: s.settings.execution.clearConsoleOnRun ? emptyOutput : s.output,
         currentLine: null,
         frames: [],
         pendingInput: null,
         wait: null,
         error: null,
+        runSeq: s.runSeq + 1,
+        pausedInRun: false,
+        dialog: s.dialog === 'warnings' ? null : s.dialog,
       })
-      host.start(s.source, profileInputOf(s.profileId), s.breakpoints, mode)
+      host.start(s.source, profileInputOf(s), s.breakpoints, mode)
+    }
+    const applyDraft = (draft: DocumentDraft): void => {
+      set({
+        name: draft.name,
+        source: draft.source,
+        savedSource: draft.source,
+        handle: null,
+        breakpoints: [],
+        pendingReplace: null,
+        dialog: null,
+        ...(draft.profileId === undefined ? {} : { profileId: draft.profileId }),
+      })
+      host.setBreakpoints([])
     }
     return {
-      source: options.initialSource ?? DEFAULT_SOURCE,
+      source: initialSource,
+      name: options.initialName ?? stringsFor('es').app.untitled,
+      savedSource: initialSource,
+      handle: null,
+      pendingReplace: null,
       profileId: 'es',
+      customProfiles: [],
       diagnostics: [],
       breakpoints: [],
-      theme: options.initialTheme ?? 'light',
+      cursor: { line: 1, column: 1 },
+      settings: DEFAULT_SETTINGS,
+      themePreference: initialPreference,
+      systemDark: initialSystemDark,
+      theme: resolveTheme(initialPreference, initialSystemDark),
       state: 'ready',
       output: emptyOutput,
       currentLine: null,
@@ -142,18 +302,74 @@ export function createEditorStore(host: HostApi, options: StoreOptions = {}): Ed
       pendingInput: null,
       wait: null,
       error: null,
+      runSeq: 0,
+      pausedInRun: false,
+      autoScroll: true,
+      layout: DEFAULT_LAYOUT,
+      layoutReset: 0,
+      panelRequest: null,
+      dialog: null,
+      toasts: [],
       setSource: (source) => set({ source }),
+      setName: (name) => set({ name }),
+      markSaved: (source, handle) => set({ savedSource: source, handle }),
+      requestReplace: (draft) => {
+        const s = get()
+        if (isDirty(s) && s.source.trim() !== '')
+          set({ pendingReplace: draft, dialog: 'confirmSave' })
+        else applyDraft(draft)
+      },
+      applyReplace: () => {
+        const draft = get().pendingReplace
+        if (draft !== null) applyDraft(draft)
+      },
+      cancelReplace: () => set({ pendingReplace: null, dialog: null }),
       setProfile: (profileId) => set({ profileId }),
+      saveCustomProfile: (input) =>
+        set((s) => ({
+          customProfiles: [...s.customProfiles.filter((c) => c.id !== input.id), input],
+        })),
+      deleteCustomProfile: (id) =>
+        set((s) => ({
+          customProfiles: s.customProfiles.filter((c) => c.id !== id),
+          profileId:
+            s.profileId === id
+              ? ((customProfileOf(s, id) as { extends?: string } | undefined)?.extends ?? 'es')
+              : s.profileId,
+        })),
       setDiagnostics: (diagnostics) => set({ diagnostics }),
       setBreakpoints: (breakpoints) => {
         set({ breakpoints })
         host.setBreakpoints(breakpoints)
       },
-      setTheme: (theme) => {
-        set({ theme })
-        options.applyTheme?.(theme)
+      setCursor: (line, column) => set({ cursor: { line, column } }),
+      updateSettings: (section, patch) =>
+        set((s) => ({
+          settings: { ...s.settings, [section]: { ...s.settings[section], ...patch } },
+        })),
+      resetSettings: (section) =>
+        set((s) => ({ settings: { ...s.settings, [section]: DEFAULT_SETTINGS[section] } })),
+      setThemePreference: (preference) => {
+        applyTheme(preference, get().systemDark)
+        set((s) => ({
+          settings: { ...s.settings, appearance: { ...s.settings.appearance, theme: preference } },
+        }))
       },
-      run: () => begin('run'),
+      setSystemDark: (dark) => applyTheme(get().themePreference, dark),
+      run: () => {
+        const s = get()
+        if (
+          s.settings.execution.warnOnWarnings &&
+          hasWarnings(s) &&
+          canEdit(s.state) &&
+          !hasErrors(s)
+        ) {
+          set({ dialog: 'warnings' })
+          return
+        }
+        begin('run')
+      },
+      confirmRun: () => begin('run'),
       stepInto: () => {
         if (get().state === 'paused') host.step()
         else begin('step')
@@ -177,6 +393,17 @@ export function createEditorStore(host: HostApi, options: StoreOptions = {}): Ed
         if (get().state === 'input') host.input(text)
       },
       clearOutput: () => set({ output: emptyOutput }),
+      setAutoScroll: (autoScroll) => set({ autoScroll }),
+      setDockLayout: (dockview, collapsed) =>
+        set((s) => ({ layout: { ...s.layout, dockview, collapsed } })),
+      setSheet: (sheet) => set((s) => ({ layout: { ...s.layout, sheet } })),
+      resetLayout: () => set((s) => ({ layout: DEFAULT_LAYOUT, layoutReset: s.layoutReset + 1 })),
+      requestPanel: (id) =>
+        set((s) => ({ panelRequest: { id, seq: (s.panelRequest?.seq ?? 0) + 1 } })),
+      openDialog: (dialog) => set({ dialog }),
+      closeDialog: () => set({ dialog: null }),
+      notify: (message) => set((s) => ({ toasts: [...s.toasts, { id: ++toastSeq, message }] })),
+      dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
     }
   })
 
@@ -213,6 +440,7 @@ export function createEditorStore(host: HostApi, options: StoreOptions = {}): Ed
           frames: message.frames,
           pendingInput: null,
           wait: null,
+          pausedInRun: true,
         })
         return
       case 'input': {
@@ -255,3 +483,7 @@ export function createEditorStore(host: HostApi, options: StoreOptions = {}): Ed
   host.subscribe(receive)
   return store
 }
+
+export type { DocumentDraft, FileHandle } from './document'
+export type { LayoutState, PanelId, PanelRequest, SheetPosition } from './layout'
+export type { Settings, SettingsSection } from './settings'

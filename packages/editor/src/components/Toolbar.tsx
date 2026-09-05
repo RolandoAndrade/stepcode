@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { useEditorStore } from '../store/context'
-import { canEdit, hasErrors, PROFILE_IDS, type ProfileId, stringsOf } from '../store/store'
+import { canEdit, hasErrors, PROFILE_IDS, stringsOf } from '../store/store'
 
 const ICON = 'h-4 w-4 fill-current'
 
@@ -100,7 +100,7 @@ export function Toolbar() {
       pause: s.pause,
       stop: s.stop,
       setProfile: s.setProfile,
-      setTheme: s.setTheme,
+      setThemePreference: s.setThemePreference,
     })),
   )
   const t = strings.toolbar
@@ -170,7 +170,7 @@ export function Toolbar() {
           aria-label={t.profile}
           value={profileId}
           disabled={!canEdit(state)}
-          onChange={(event) => actions.setProfile(event.target.value as ProfileId)}
+          onChange={(event) => actions.setProfile(event.target.value)}
           className="rounded border border-border bg-surface px-1 py-0.5 text-fg"
         >
           {PROFILE_IDS.map((id) => (
@@ -189,7 +189,7 @@ export function Toolbar() {
       <span className="ml-auto text-xs text-muted">{strings.states[state]}</span>
       <Control
         label={theme === 'dark' ? t.toLight : t.toDark}
-        onClick={() => actions.setTheme(theme === 'dark' ? 'light' : 'dark')}
+        onClick={() => actions.setThemePreference(theme === 'dark' ? 'light' : 'dark')}
       >
         {theme === 'dark' ? icons.sun : icons.moon}
       </Control>
