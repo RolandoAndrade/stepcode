@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { undo } from '@codemirror/commands'
 import { forceParsing } from '@codemirror/language'
 import { EditorState } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
@@ -42,6 +43,29 @@ describe('Editor', () => {
     expect(store.getState().source).toBe(`${FINE}\nEscribir z;`)
     forceParsing(view, view.state.doc.length, 1e9)
     expect(store.getState().diagnostics.length).toBeGreaterThan(0)
+  })
+
+  it('shows the program a replacement put in the store, with no way to undo back to the old one', () => {
+    const REPLACEMENT = ['Proceso q', 'FinProceso'].join('\n')
+    const { store, view } = mount(FINE)
+    act(() => {
+      // A clean document replaces without the unsaved prompt (spec §8.1).
+      store.setState({ savedSource: FINE })
+      store.getState().requestReplace({ name: 'otro.stepcode', source: REPLACEMENT })
+    })
+    expect(store.getState().pendingReplace).toBeNull()
+    expect(view.state.doc.toString()).toBe(REPLACEMENT)
+    undo(view)
+    expect(view.state.doc.toString()).toBe(REPLACEMENT)
+  })
+
+  it('leaves typed edits undoable and does not re-replace the document it just reported', () => {
+    const { store, view } = mount(FINE)
+    view.dispatch({ changes: { from: view.state.doc.length, insert: '\n// nota' } })
+    expect(store.getState().source).toBe(`${FINE}\n// nota`)
+    undo(view)
+    expect(view.state.doc.toString()).toBe(FINE)
+    expect(store.getState().source).toBe(FINE)
   })
 
   it('forwards breakpoint changes to the store and the host', () => {

@@ -12,11 +12,12 @@ import { type RefObject, useEffect, useRef } from 'react'
 import {
   createExtensions,
   darkExtension,
+  type EditorCompartments,
   readOnlyExtension,
   settingsExtension,
 } from '../editor/extensions'
 import { useEditorStore, useEditorStoreApi } from '../store/context'
-import { canEdit, localeOf, profileOf, stringsOf } from '../store/store'
+import { canEdit, localeOf, profileOf, type StoreState, stringsOf } from '../store/store'
 
 /** Spec §7.1: what the rest of the app may do to the editor. */
 export interface EditorHandle {
@@ -36,34 +37,40 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
     if (parent === null) return
     const initial = store.getState()
     let options = { profile: profileOf(initial), locale: localeOf(initial) }
-    const { extensions, compartments } = createExtensions({
-      ...options,
-      readOnly: !canEdit(initial.state),
-      dark: initial.theme === 'dark',
-      settings: initial.settings.editor,
+    // Assigned by `stateFor` below, which runs before the view (and so before any subscriber)
+    // can reach these compartments.
+    let compartments!: EditorCompartments
+    const listener = EditorView.updateListener.of((update) => {
+      const actions = store.getState()
+      if (update.docChanged) actions.setSource(update.state.doc.toString())
+      if (syntaxTree(update.state) !== syntaxTree(update.startState)) {
+        actions.setDiagnostics(stepcodeDiagnostics(update.state, options))
+      }
+      if (breakpointsChanged(update)) actions.setBreakpoints(breakpointLines(update.state))
+      if (update.selectionSet || update.docChanged) {
+        const head = update.state.selection.main.head
+        const line = update.state.doc.lineAt(head)
+        actions.setCursor(line.number, head - line.from + 1)
+      }
     })
-    const view = new EditorView({
-      parent,
-      state: EditorState.create({
-        doc: initial.source,
-        extensions: [
-          extensions,
-          EditorView.updateListener.of((update) => {
-            const actions = store.getState()
-            if (update.docChanged) actions.setSource(update.state.doc.toString())
-            if (syntaxTree(update.state) !== syntaxTree(update.startState)) {
-              actions.setDiagnostics(stepcodeDiagnostics(update.state, options))
-            }
-            if (breakpointsChanged(update)) actions.setBreakpoints(breakpointLines(update.state))
-            if (update.selectionSet || update.docChanged) {
-              const head = update.state.selection.main.head
-              const line = update.state.doc.lineAt(head)
-              actions.setCursor(line.number, head - line.from + 1)
-            }
-          }),
-        ],
-      }),
-    })
+    /**
+     * Spec §8.1: a whole new document (Nuevo, Abrir, an example, a share link) is not an edit —
+     * it arrives as a fresh state, so the undo history of the program it replaced dies with it.
+     * `options` follows the state's profile, and the compartments the rest of this effect
+     * reconfigures are the ones this state was built from.
+     */
+    const stateFor = (state: StoreState): EditorState => {
+      options = { profile: profileOf(state), locale: localeOf(state) }
+      const built = createExtensions({
+        ...options,
+        readOnly: !canEdit(state.state),
+        dark: state.theme === 'dark',
+        settings: state.settings.editor,
+      })
+      compartments = built.compartments
+      return EditorState.create({ doc: state.source, extensions: [built.extensions, listener] })
+    }
+    const view = new EditorView({ parent, state: stateFor(initial) })
     // The stepcode parser is a single-shot, non-incremental `Parser`, so a short document is
     // often fully parsed by the time `EditorState.create` returns — before any transaction
     // exists for the update listener above to observe a tree transition on. Push whatever the
@@ -94,6 +101,18 @@ export function Editor({ handleRef }: { handleRef?: RefObject<EditorHandle | nul
 
     let previous = initial
     const unsubscribe = store.subscribe((next) => {
+      // The panel itself pushes every keystroke into `source`; only a change the document does
+      // not already show is a replacement worth rebuilding the state for.
+      if (next.source !== previous.source && next.source !== view.state.doc.toString()) {
+        view.setState(stateFor(next))
+        store.getState().setDiagnostics(stepcodeDiagnostics(view.state, options))
+        if (next.breakpoints.length > 0) {
+          view.dispatch({ effects: setBreakpoints.of(next.breakpoints) })
+        }
+        if (next.currentLine !== null) {
+          view.dispatch({ effects: setCurrentLine.of(next.currentLine) })
+        }
+      }
       if (next.currentLine !== previous.currentLine) {
         view.dispatch({ effects: setCurrentLine.of(next.currentLine) })
       }
