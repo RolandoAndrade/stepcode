@@ -89,18 +89,32 @@ describe('Toolbar controls', () => {
 })
 
 describe('installShortcuts', () => {
-  it('runs legal actions and prevents default only then', () => {
+  it('runs legal actions and prevents default', () => {
     const { store, host } = storeWith({})
     const uninstall = installShortcuts(store)
     const legal = new KeyboardEvent('keydown', { key: 'F5', cancelable: true })
     window.dispatchEvent(legal)
     expect(legal.defaultPrevented).toBe(true)
     expect(host.calls).toEqual(['start:run'])
-    const illegal = new KeyboardEvent('keydown', { key: 'F10', cancelable: true })
-    window.dispatchEvent(illegal)
-    expect(illegal.defaultPrevented).toBe(false)
     uninstall()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F5', cancelable: true }))
     expect(host.calls).toEqual(['start:run'])
+  })
+
+  it('swallows a bound key even when the action is illegal, so browser F10 never fires', () => {
+    const { store, host } = storeWith({})
+    installShortcuts(store)
+    const illegal = new KeyboardEvent('keydown', { key: 'F10', cancelable: true })
+    window.dispatchEvent(illegal)
+    expect(illegal.defaultPrevented).toBe(true)
+    expect(host.calls).toEqual([])
+  })
+
+  it('never swallows an unbound key', () => {
+    const { store } = storeWith({})
+    installShortcuts(store)
+    const unbound = new KeyboardEvent('keydown', { key: 'F9', cancelable: true })
+    window.dispatchEvent(unbound)
+    expect(unbound.defaultPrevented).toBe(false)
   })
 })

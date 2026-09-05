@@ -78,11 +78,17 @@ export function performShortcut(store: EditorStore, action: ShortcutAction): boo
   }
 }
 
-/** Window-level keydown; `preventDefault` only when the action ran (spec §7.5). */
+/**
+ * Window-level keydown. A bound key is always swallowed with `preventDefault` — so, for
+ * example, browser F5 can never discard the unsaved document — regardless of whether the
+ * action is legal right now; legality only decides whether the action runs (spec §7.5).
+ */
 export function installShortcuts(store: EditorStore, target: Window = window): () => void {
   const onKeyDown = (event: KeyboardEvent): void => {
     const action = shortcutFor(event)
-    if (action !== null && performShortcut(store, action)) event.preventDefault()
+    if (action === null) return
+    event.preventDefault()
+    performShortcut(store, action)
   }
   target.addEventListener('keydown', onKeyDown)
   return () => {

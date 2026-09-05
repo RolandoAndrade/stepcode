@@ -392,3 +392,37 @@ describe('clear', () => {
     expect(port.text()).toBe('b\n')
   })
 })
+
+describe('internal failures never escape the port', () => {
+  it('reports an E4009 error when a wait fails instead of rejecting silently', async () => {
+    const port = recordingPort()
+    createDriver(port, {
+      sleep: async () => {
+        throw new Error('sleep exploded')
+      },
+    })
+    port.send(startMessage(WAIT, 'run'))
+    await until(() => port.kinds().includes('error'))
+    expect(states(port)).toEqual(['running', 'waiting', 'error'])
+    const error = last(port, 'error')
+    expect(error.diagnostic.code).toBe('E4009')
+    expect(error.diagnostic.data.message).toContain('sleep exploded')
+    expect(error.frames).toEqual([])
+  })
+
+  it('reports an E4009 error when resolving the start profile throws', () => {
+    const { port, driver } = harness()
+    port.send({
+      kind: 'start',
+      source: COUNT,
+      profile: { id: 'bogus', extends: 'nonexistent' },
+      breakpoints: [],
+      mode: 'run',
+    })
+    expect(states(port)).toEqual(['error'])
+    const error = last(port, 'error')
+    expect(error.diagnostic.code).toBe('E4009')
+    expect(error.frames).toEqual([])
+    expect(driver.state).toBe('error')
+  })
+})

@@ -30,19 +30,27 @@ const LOOP = [
 class FakeWorker {
   readonly posted: HostMessage[] = []
   terminated = false
-  private handler: ((event: MessageEvent<WorkerMessage>) => void) | null = null
+  private readonly handlers = new Map<string, (event: unknown) => void>()
   postMessage(message: HostMessage): void {
     this.posted.push(message)
   }
   terminate(): void {
     this.terminated = true
   }
-  addEventListener(type: string, handler: (event: MessageEvent<WorkerMessage>) => void): void {
-    if (type === 'message') this.handler = handler
+  addEventListener(type: string, handler: (event: unknown) => void): void {
+    this.handlers.set(type, handler)
   }
   /** Speak as the worker. */
   say(message: WorkerMessage): void {
-    this.handler?.({ data: message } as MessageEvent<WorkerMessage>)
+    this.handlers.get('message')?.({ data: message } as MessageEvent<WorkerMessage>)
+  }
+  /** Dispatch a worker `error` event, as an uncaught exception inside the worker would. */
+  fail(message: string): void {
+    this.handlers.get('error')?.({ message })
+  }
+  /** Dispatch a worker `messageerror` event, as an unclonable posted value would. */
+  failToDeserialize(): void {
+    this.handlers.get('messageerror')?.({})
   }
   asWorker(): Worker {
     return this as unknown as Worker
@@ -64,7 +72,7 @@ function fakes(): { host: RuntimeHost; workers: FakeWorker[]; received: WorkerMe
 }
 
 describe('RuntimeHost with a fake worker', () => {
-  it('spawns on the first command and posts commands as-is', () => {
+  it('spawns on start and posts commands as-is', () => {
     const { host, workers } = fakes()
     expect(workers.length).toBe(0)
     host.start(COUNT, es, [4], 'run')
@@ -86,6 +94,19 @@ describe('RuntimeHost with a fake worker', () => {
       { kind: 'input', text: 'x' },
       { kind: 'setBreakpoints', lines: [1, 2] },
     ])
+  })
+
+  it('spawns nothing for a command other than start when there is no worker yet', () => {
+    const { host, workers, received } = fakes()
+    host.setBreakpoints([1, 2])
+    host.step()
+    host.stepOver()
+    host.stepOut()
+    host.continue()
+    host.pause()
+    host.input('x')
+    expect(workers.length).toBe(0)
+    expect(received).toEqual([])
   })
 
   it('relays worker messages to every subscriber until unsubscribed', () => {
@@ -124,6 +145,39 @@ describe('RuntimeHost with a fake worker', () => {
     workers[1]?.say({ kind: 'state', state: 'running' })
     expect(received.map((message) => message.kind)).toEqual(['state', 'state'])
     expect(received[1]).toEqual({ kind: 'state', state: 'running' })
+  })
+
+  it('surfaces a worker error as state:error then an E4009 error', () => {
+    const { host, workers, received } = fakes()
+    host.start(COUNT, es, [], 'run')
+    workers[0]?.fail('boom')
+    expect(received.map((message) => message.kind)).toEqual(['state', 'error'])
+    expect(received[0]).toEqual({ kind: 'state', state: 'error' })
+    const error = received[1]
+    if (error?.kind !== 'error') throw new Error('expected an error message')
+    expect(error.diagnostic.code).toBe('E4009')
+    expect(error.diagnostic.data.message).toContain('boom')
+    expect(error.frames).toEqual([])
+  })
+
+  it('surfaces a worker messageerror as state:error then an E4009 error', () => {
+    const { host, workers, received } = fakes()
+    host.start(COUNT, es, [], 'run')
+    workers[0]?.failToDeserialize()
+    expect(received.map((message) => message.kind)).toEqual(['state', 'error'])
+    const error = received[1]
+    if (error?.kind !== 'error') throw new Error('expected an error message')
+    expect(error.diagnostic.code).toBe('E4009')
+  })
+
+  it('drops a worker error from a terminated generation', () => {
+    const { host, workers, received } = fakes()
+    host.start(LOOP, es, [], 'run')
+    const old = workers[0]
+    host.stop()
+    received.length = 0
+    old?.fail('too late')
+    expect(received).toEqual([])
   })
 
   it('disposes without respawning', () => {

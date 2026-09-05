@@ -5154,6 +5154,41 @@ git commit -m "ci(editor): assets-only Worker config, wrangler dry run, Workers 
 
 The executor appends here: `N. **Title.** What the plan said, what was done instead, why, and what it costs if wrong.`
 
+10. **A rejected input resumes with `run.step()`, not the resume helper.** The plan had every
+    resume go through `resumeInterrupted()`. A rejected answer re-asks without having executed
+    anything, so `handleInput` calls `run.step()` directly instead, to avoid announcing a
+    spurious `running` state for a resume that runs nothing (Task 2).
+11. **`RuntimeHost` listens with `addEventListener`, and `dispose()` makes it inert.** The plan
+    assumed `worker.onmessage = ...` was enough. `@vitest/web-worker` double-fires an
+    `onmessage`-property assignment under happy-dom, so the host always uses
+    `addEventListener('message', ...)`; `dispose()` also flips a flag so `post`/`stop` become
+    no-ops afterward, since a disposed host must never spawn or emit again (Task 3).
+12. **The Toolbar renders a `strings.states` label.** The plan did not call out a state label;
+    a `strings.states[state]` string next to the diagnostic badge was added so the user can see
+    `waiting`/`input`/etc. without reading the console (Task 4).
+13. **Variables' empty state covers `ready` and no frames, not just `ready`.** The plan's empty
+    state was keyed only on `state === 'ready'`; `frames.length === 0` was added too, since
+    `done` and `error` can also carry no frames and should not render a stale table (Task 4).
+14. **The Editor panel pushes initial diagnostics right after construction.** The plan expected
+    diagnostics only after an edit; because the parser and checker are synchronous, the panel
+    runs `compile` once up front so a program with existing errors shows them before the first
+    keystroke (Task 4).
+15. **Problems rows show a glyph with a visually hidden severity label.** The plan did not
+    specify how severity renders per row; a `✖`/`▲` glyph marked `aria-hidden` plus a
+    `sr-only` text label were used so the row stays compact but still reads aloud correctly
+    (Task 4).
+16. **The App test finds the toolbar by its title text, not role `banner`.** The plan assumed
+    one `banner` landmark; testing-library's `aria-query` counts a nested panel header as a
+    banner too, so the test locates the toolbar by its `StepCode` title text instead (Task 6).
+17. **Final-review fix wave: driver/host error surfacing, spawn only on start, shortcuts
+    always swallowed.** Whole-branch review found three gaps the plan's tasks did not cover:
+    a throw inside the driver's fire-and-forget promise chains could become an unhandled
+    rejection, a dead worker's `error`/`messageerror` events were unobserved, and shortcuts
+    only called `preventDefault` when their action was legal. All three now report through the
+    same `E4009` internal-failure diagnostic or, for shortcuts, always swallow the bound key,
+    so a defect degrades to a visible error state instead of wedging the UI or leaking a
+    browser default action.
+
 ## Strings
 
 Every UI string lives in `packages/editor/src/strings.ts` (Task 1) and is reached through

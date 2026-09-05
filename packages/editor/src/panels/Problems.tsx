@@ -48,7 +48,8 @@ export function Problems({ onReveal }: { onReveal: (from: number, to: number) =>
                 const label = isError ? strings.problems.error : strings.problems.warning
                 return (
                   <tr
-                    key={`${diagnostic.from}-${diagnostic.source ?? index}`}
+                    // biome-ignore lint/suspicious/noArrayIndexKey: diagnostics can repeat the same offset and code, so the index is needed to keep two rows distinct.
+                    key={`${diagnostic.from}-${diagnostic.source ?? ''}-${index}`}
                     onClick={() => onReveal(diagnostic.from, diagnostic.to)}
                     className="cursor-pointer border-t border-border hover:bg-surface-raised"
                   >

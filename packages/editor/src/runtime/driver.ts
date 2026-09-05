@@ -1,5 +1,5 @@
 import { builtinProfiles, resolveProfile } from '@stepcode/profiles'
-import { compile, type Frame, type Run, type StepResult, start } from 'stepcode'
+import { compile, createDiagnostic, type Frame, type Run, type StepResult, start } from 'stepcode'
 import type { DriverPort, HostMessage, WorkerMessage, WorkerState } from './protocol'
 
 export interface DriverOptions {
@@ -69,6 +69,24 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
   const transition = (next: WorkerState): void => {
     state = next
     post({ kind: 'state', state: next })
+  }
+
+  /** Nothing fails silently across the port (§4): flush, go to `error`, and post a synthetic diagnostic. */
+  const reportInternalFailure = (error: unknown): void => {
+    flush()
+    transition('error')
+    post({
+      kind: 'error',
+      diagnostic: createDiagnostic('E4009', { start: 0, end: 0 }, { message: String(error) }),
+      frames: [],
+    })
+  }
+
+  /** Attaches a `.catch` so a rejection inside a fire-and-forget async chain cannot escape unhandled. */
+  const escapeRejection = (promise: Promise<void>): void => {
+    promise.catch((error: unknown) => {
+      reportInternalFailure(error)
+    })
   }
 
   /** `Run.inspect()` keeps reporting main's final frame after `done` (interpreter spec §3.2). */
@@ -182,9 +200,9 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
     run = active
     if (message.mode === 'step') {
       resume = 'step'
-      void deliver(active.step())
+      escapeRejection(deliver(active.step()))
     } else {
-      void runLoop()
+      escapeRejection(runLoop())
     }
   }
 
@@ -194,10 +212,10 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
     if (run.state === 'input') {
       // Rejected: the next command re-reports the request with `rejected` set (§4). Re-ask
       // without announcing `running` for a resume that executes nothing.
-      void deliver(run.step())
+      escapeRejection(deliver(run.step()))
       return
     }
-    void resumeInterrupted()
+    escapeRejection(resumeInterrupted())
   }
 
   function dispatch(message: HostMessage): void {
@@ -210,11 +228,11 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
       case 'stepOut':
         if (state !== 'paused' || run === null) return
         resume = message.kind
-        void deliver(run[message.kind]())
+        escapeRejection(deliver(run[message.kind]()))
         return
       case 'continue':
         if (state !== 'paused') return
-        void runLoop()
+        escapeRejection(runLoop())
         return
       case 'pause':
         if (state === 'running') pauseRequested = true
@@ -234,6 +252,7 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
     } catch (error) {
       // Never across the port (§4): a defect here must not kill the worker.
       console.error('stepcode driver', error)
+      reportInternalFailure(error)
     }
   }
 

@@ -273,8 +273,9 @@ and moon), then controls by `state`:
 | `paused` | Continue (F5), Step Over (F10), Step Into (F11), Step Out (Shift+F11), Stop |
 | `input`, `waiting` | Stop |
 
-Shortcuts are window-level `keydown` handlers that call store actions and `preventDefault`
-only when the action is legal. A diagnostic badge shows error and warning counts.
+Shortcuts are window-level `keydown` handlers. A bound key is always swallowed with
+`preventDefault` (so browser F5 cannot discard the unsaved document); whether the action runs
+is decided by the store's guards. A diagnostic badge shows error and warning counts.
 
 ### 7.6 Layout
 
@@ -430,3 +431,6 @@ Technical artifacts stay in English; UI copy is the user's locale.
   branch until release.
 - `packageName` leaves the codemirror barrel when `App.tsx` stops importing it (this
   sub-project).
+- A bound shortcut key always calls `preventDefault`, whether or not its action is legal
+  right now: the store's guards decide what runs, the handler only decides what the browser
+  never sees.
