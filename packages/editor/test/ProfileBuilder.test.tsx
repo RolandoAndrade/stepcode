@@ -77,4 +77,23 @@ describe('ProfileBuilder', () => {
       (screen.getByRole('button', { name: 'Guardar perfil' }) as HTMLButtonElement).disabled,
     ).toBe(true)
   })
+
+  it('edits a profile that extends "en" without rebasing it onto the `base` prop', async () => {
+    const editing = { id: 'mio2', extends: 'en', locale: 'en-GB', keywords: { write: ['Say'] } }
+    const { store } = storeWith({ customProfiles: [editing] })
+    // `base="es"` here is deliberately wrong: editing a custom profile must always rebase on
+    // its own `extends`, never on whatever `base` the caller happened to pass.
+    renderWithStore(<ProfileBuilder base="es" editing={editing} onDone={() => {}} />, store)
+    fireEvent.change(screen.getByRole('textbox', { name: 'write' }), { target: { value: 'Tell' } })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Guardar perfil' }))
+    })
+    const saved = store.getState().customProfiles.find((p) => p.id === 'mio2')
+    expect(saved).toEqual({
+      id: 'mio2',
+      extends: 'en',
+      locale: 'en-GB',
+      keywords: { write: ['Tell'] },
+    })
+  })
 })

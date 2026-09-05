@@ -23,6 +23,7 @@ type Spellings = Readonly<Record<string, readonly string[]>>
 export interface BuilderForm {
   readonly id: string
   readonly base: string
+  readonly locale?: string
   readonly keywords: Spellings
   readonly types: Spellings
   readonly operators: Spellings
@@ -53,6 +54,7 @@ export function spellingsToText(list: readonly string[]): string {
 /** Only the sections and options that differ from the base survive into the input. */
 export function buildInput(form: BuilderForm): ProfileInput {
   const input: Record<string, unknown> = { id: form.id, extends: form.base }
+  if (form.locale !== undefined) input.locale = form.locale
   for (const section of ['keywords', 'types', 'operators', 'builtins'] as const) {
     if (Object.keys(form[section]).length > 0) input[section] = form[section]
   }
@@ -95,19 +97,29 @@ export function ProfileBuilder({
   const store = useEditorStoreApi()
   const strings = useEditorStore(stringsOf)
   const customs = useEditorStore((s) => s.customProfiles)
-  const baseProfile = (profiles as Record<string, ResolvedProfile | undefined>)[base] ?? profiles.es
+  // Editing a custom profile rebases on its own `extends`, never on the `base` prop (which
+  // is only meaningful when creating a new profile): a profile extending `en` must stay on
+  // `en` after a save, not silently move onto `es`.
+  const editingExtends = editing !== undefined && 'extends' in editing ? editing.extends : undefined
+  const effectiveBase = editingExtends ?? base
+  const baseProfile =
+    (profiles as Record<string, ResolvedProfile | undefined>)[effectiveBase] ?? profiles.es
   const seed = editing as
-    | (Partial<Record<SectionKey, Spellings>> & { options?: Partial<ProfileOptions> })
+    | (Partial<Record<SectionKey, Spellings>> & {
+        options?: Partial<ProfileOptions>
+        locale?: string
+      })
     | undefined
   const [name, setName] = useState(editing?.id ?? '')
   const [form, setForm] = useState<BuilderForm>(() => ({
     id: editing?.id ?? '',
-    base,
+    base: effectiveBase,
     keywords: seed?.keywords ?? {},
     types: seed?.types ?? {},
     operators: seed?.operators ?? {},
     builtins: seed?.builtins ?? {},
     options: seed?.options ?? {},
+    ...(seed?.locale === undefined ? {} : { locale: seed.locale }),
   }))
   const id = editing?.id ?? slugify(name)
   const input = useMemo(() => buildInput({ ...form, id }), [form, id])
@@ -170,7 +182,7 @@ export function ProfileBuilder({
         {t.nameHint} · {t.spellingsHint}
       </p>
       <p className="mt-1 text-sm">
-        {t.base}: {strings.profiles[base] ?? base}
+        {t.base}: {strings.profiles[effectiveBase] ?? effectiveBase}
       </p>
       {table('keywords', KEYWORD_KEYS, t.keywords)}
       {table('types', TYPE_KEYS, t.types)}

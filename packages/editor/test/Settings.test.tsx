@@ -68,4 +68,22 @@ describe('Settings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Customize…' }))
     expect(screen.getByRole('textbox', { name: 'Name' })).toBeDefined()
   })
+
+  it('moves focus inside the dialog on open instead of leaving it on the close button', () => {
+    open()
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.contains(document.activeElement)).toBe(true)
+  })
+
+  it('opens an empty create form from "Personalizar…" even with a custom profile active', () => {
+    // This custom profile extends "en", so the active UI locale follows it (English).
+    const custom = { id: 'mio', extends: 'en', keywords: { write: ['Say'] } }
+    const { store } = storeWith({ dialog: 'settings', customProfiles: [custom], profileId: 'mio' })
+    renderWithStore(<Settings />, store)
+    fireEvent.click(screen.getByRole('button', { name: 'Customize…' }))
+    const nameField = screen.getByRole('textbox', { name: 'Name' }) as HTMLInputElement
+    expect(nameField.value).toBe('')
+    expect(nameField.disabled).toBe(false)
+    expect(screen.queryByRole('button', { name: 'Delete profile' })).toBeNull()
+  })
 })

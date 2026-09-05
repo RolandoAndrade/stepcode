@@ -1,5 +1,5 @@
 import { useEditorStore } from '../../store/context'
-import type { UiLocale } from '../../store/settings'
+import { DEFAULT_SETTINGS, type UiLocale } from '../../store/settings'
 import { stringsOf } from '../../store/store'
 import type { ThemePreference } from '../../theme/types'
 import { Section, Select } from './controls'
@@ -11,10 +11,22 @@ export function Appearance() {
   const uiLocale = useEditorStore((s) => s.settings.appearance.uiLocale)
   const setThemePreference = useEditorStore((s) => s.setThemePreference)
   const updateSettings = useEditorStore((s) => s.updateSettings)
+  const resetSettings = useEditorStore((s) => s.resetSettings)
   const t = strings.settings.appearance
 
   return (
-    <Section title={strings.settings.sections.appearance} resetLabel={strings.settings.reset}>
+    <Section
+      title={strings.settings.sections.appearance}
+      onReset={() => {
+        // `theme` lives twice: on `settings.appearance` (persisted) and mirrored onto the
+        // store's own `themePreference` (what actually drives rendering) — only
+        // `setThemePreference` keeps both in sync, so `resetSettings` alone would reset the
+        // setting but leave the screen's current theme untouched.
+        resetSettings('appearance')
+        setThemePreference(DEFAULT_SETTINGS.appearance.theme)
+      }}
+      resetLabel={strings.settings.reset}
+    >
       <Select<ThemePreference>
         label={t.theme}
         value={themePreference}

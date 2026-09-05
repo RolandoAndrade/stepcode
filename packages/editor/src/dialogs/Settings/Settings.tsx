@@ -1,5 +1,5 @@
 import * as Dialog from '@radix-ui/react-dialog'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useEditorStore, useEditorStoreApi } from '../../store/context'
 import { stringsOf } from '../../store/store'
 import { X } from '../../ui/icons'
@@ -20,6 +20,7 @@ export function Settings({ initialSection = 'language' }: { initialSection?: Set
   const strings = useEditorStore(stringsOf)
   const open = useEditorStore((s) => s.dialog === 'settings')
   const [page, setPage] = useState<SettingsPage>(initialSection)
+  const contentRef = useRef<HTMLDivElement>(null)
   const body = {
     language: <Language />,
     editor: <EditorSection />,
@@ -32,7 +33,15 @@ export function Settings({ initialSection = 'language' }: { initialSection?: Set
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-overlay" />
         <Dialog.Content
-          onOpenAutoFocus={(event) => event.preventDefault()}
+          ref={contentRef}
+          tabIndex={-1}
+          onOpenAutoFocus={(event) => {
+            // The close button (the first focusable descendant) opens its tooltip as soon as
+            // it is keyboard-focused, which then steals Escape from the dialog itself. Focus
+            // the content wrapper instead, which is still inside the dialog for a11y purposes.
+            event.preventDefault()
+            contentRef.current?.focus()
+          }}
           className="fixed inset-0 z-50 flex flex-col bg-surface text-fg sm:inset-auto sm:top-1/2 sm:left-1/2 sm:h-[min(90vh,520px)] sm:w-[min(95vw,720px)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-lg sm:shadow-panel"
         >
           <TooltipProvider>
