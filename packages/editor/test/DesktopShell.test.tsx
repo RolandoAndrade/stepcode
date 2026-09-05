@@ -111,15 +111,19 @@ describe('DesktopShell', () => {
     expect(screen.getByRole('tab', { name: 'Consola', selected: true })).toBeDefined()
   })
 
-  it('expands the collapsed group when a tab label in its strip is clicked', async () => {
+  it('hides the whole group when it collapses and shows it again on expand', async () => {
+    // Spec §3.3: collapse is `setVisible(false)` on the grid view, not a header-sized strip.
     const { store } = mount()
-    await panelSection('Problemas')
+    await panelSection('Consola')
     await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
-    await act(async () => {
-      fireEvent.click(screen.getByRole('tab', { name: 'Problemas' }))
-    })
+    // `.dv-view` is the grid slot dockview marks `visible`; `defaultRenderer="always"` moves the
+    // panel body itself into an overlay outside the group, so the tab is what locates the group.
+    const view = (): Element | null =>
+      document.querySelector('.dv-tab[aria-label="Consola"]')?.closest('.dv-view') ?? null
+    expect(view()?.classList.contains('visible')).toBe(false)
+    act(() => store.getState().run())
     await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
-    expect(screen.getByRole('tab', { name: 'Problemas', selected: true })).toBeDefined()
+    expect(view()?.classList.contains('visible')).toBe(true)
   })
 
   it('hides the header of the editor group', async () => {

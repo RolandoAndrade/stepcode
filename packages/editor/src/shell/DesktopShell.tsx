@@ -13,16 +13,11 @@ import type { PanelId } from '../store/layout'
 import { stringsOf } from '../store/store'
 import { autoExpandTarget } from './autoExpand'
 import { CollapseController } from './dock/collapse'
-import {
-  applyDefaultLayout,
-  DEFAULT_BOTTOM_MIN,
-  hideEditorHeader,
-  PANEL_TITLES,
-} from './dock/defaultLayout'
+import { applyDefaultLayout, hideEditorHeader, PANEL_TITLES } from './dock/defaultLayout'
 import { HeaderActions } from './dock/HeaderActions'
 import { DockContext, dockComponents } from './dock/panels'
 import { Tab } from './dock/Tab'
-import { DOCK_THEME, HEADER_HEIGHT } from './dock/theme'
+import { DOCK_THEME } from './dock/theme'
 
 const tabComponents = { tab: Tab }
 
@@ -33,7 +28,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
   const disposablesRef = useRef<{ dispose(): void }[]>([])
   const [collapsedIds, setCollapsedIds] = useState<readonly string[]>([])
   const manuallyCollapsed = useRef(new Set<string>())
-  const context = useMemo(() => ({ editor: editorRef, controller: controllerRef }), [editorRef])
+  const context = useMemo(() => ({ editor: editorRef }), [editorRef])
 
   // `api.clear()` empties the grid one view at a time and fires a layout change per step; asking a
   // half-torn-down dockview for its JSON throws, so rebuilding suspends saving until it is done.
@@ -55,15 +50,10 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     controllerRef.current?.dispose()
     api.clear()
     const { bottomGroupId } = applyDefaultLayout(api, PANEL_TITLES(stringsOf(store.getState())))
-    const controller = new CollapseController(
-      api,
-      HEADER_HEIGHT,
-      (ids) => {
-        setCollapsedIds(ids)
-        save()
-      },
-      DEFAULT_BOTTOM_MIN,
-    )
+    const controller = new CollapseController(api, (ids) => {
+      setCollapsedIds(ids)
+      save()
+    })
     controllerRef.current = controller
     controller.collapse(bottomGroupId)
     manuallyCollapsed.current.clear()
@@ -96,15 +86,10 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         // The serialized titles are whatever locale saved them; re-apply the current ones.
         const titles = PANEL_TITLES(stringsOf(store.getState()))
         for (const id of Object.keys(titles) as PanelId[]) api.getPanel(id)?.setTitle(titles[id])
-        const controller = new CollapseController(
-          api,
-          HEADER_HEIGHT,
-          (ids) => {
-            setCollapsedIds(ids)
-            save()
-          },
-          DEFAULT_BOTTOM_MIN,
-        )
+        const controller = new CollapseController(api, (ids) => {
+          setCollapsedIds(ids)
+          save()
+        })
         controllerRef.current = controller
         controller.restoreFrom(saved.collapsed)
         save()

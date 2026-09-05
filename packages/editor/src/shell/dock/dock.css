@@ -36,9 +36,3 @@
   height: 2px;
   background: var(--sc-accent);
 }
-
-/* Spec §3.3: a side group collapsed to a strip reads bottom to top. */
-.sc-dock .sc-collapsed-vertical .dv-tabs-and-actions-container {
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}

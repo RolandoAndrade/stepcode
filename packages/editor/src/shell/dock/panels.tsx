@@ -4,12 +4,9 @@ import { Console } from '../../panels/Console'
 import { Editor, type EditorHandle } from '../../panels/Editor'
 import { Problems } from '../../panels/Problems'
 import { Variables } from '../../panels/Variables'
-import type { CollapseController } from './collapse'
 
 export interface DockContextValue {
   readonly editor: RefObject<EditorHandle | null>
-  /** The live controller, so a tab in a collapsed group can expand it (spec §3.3). */
-  readonly controller: RefObject<CollapseController | null>
 }
 
 export const DockContext = createContext<DockContextValue | null>(null)
