@@ -70,6 +70,27 @@ describe('loadProgramFromUrl', () => {
     expect(s.getState().name).toBe('tarea.stepcode')
   })
 
+  it('keeps the raw file name when it cannot be percent-decoded', async () => {
+    const s = store()
+    const raw = 'https://raw.githubusercontent.com/ana/curso/main/100%.stepcode'
+    const url = new URL(`https://x.test/?src=${encodeURIComponent(raw)}`)
+    expect(await loadProgramFromUrl(s, url, { fetchImpl: textFetch(FETCHED) })).toEqual({
+      kind: 'loaded',
+      from: 'src',
+      title: '100%',
+    })
+    expect(s.getState().name).toBe('100%.stepcode')
+    expect(s.getState().source).toBe(FETCHED)
+  })
+
+  it('decodes an escaped file name', async () => {
+    const s = store()
+    const raw = 'https://raw.githubusercontent.com/ana/curso/main/mi%20tarea.stepcode'
+    const url = new URL(`https://x.test/?src=${encodeURIComponent(raw)}`)
+    await loadProgramFromUrl(s, url, { fetchImpl: textFetch(FETCHED) })
+    expect(s.getState().name).toBe('mi tarea.stepcode')
+  })
+
   it('resolves the sources in order: hash beats example beats src', async () => {
     const s = store()
     const hash = await encodeShare({ source: SOURCE, profileId: 'es', name: 'del-hash.stepcode' })

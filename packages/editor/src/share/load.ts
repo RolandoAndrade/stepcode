@@ -55,7 +55,14 @@ function srcName(pasted: string): string {
   }
   const segments = path.split('/').filter((part) => part !== '' && part !== 'raw')
   const last = segments[segments.length - 1] ?? 'programa'
-  return nameWithExtension(decodeURIComponent(last))
+  let decoded = last
+  try {
+    decoded = decodeURIComponent(last)
+  } catch {
+    // A stray `%` (`100%.stepcode`) is not valid escaping; the program downloaded fine, so the
+    // name is taken as written rather than failing the load.
+  }
+  return nameWithExtension(decoded)
 }
 
 /**
