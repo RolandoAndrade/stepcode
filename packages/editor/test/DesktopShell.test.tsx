@@ -121,12 +121,17 @@ describe('DesktopShell', () => {
     // panel body itself into an overlay outside the group, so the tab is what locates the group.
     const view = (): Element | null =>
       document.querySelector('.dv-tab[aria-label="Consola"]')?.closest('.dv-view') ?? null
+    const groupElement = (): HTMLElement | null =>
+      document.querySelector('.dv-tab[aria-label="Consola"]')?.closest('.dv-groupview') ?? null
     expect(view()?.classList.contains('visible')).toBe(false)
+    // A hidden group is a zero-sized box, so its tabs and buttons are taken out of reach too.
+    expect(groupElement()?.inert).toBe(true)
     // The header goes with the group, so the chevron only ever collapses: there is no Expandir.
     expect(screen.queryByRole('button', { name: 'Expandir' })).toBeNull()
     act(() => store.getState().run())
     await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
     expect(view()?.classList.contains('visible')).toBe(true)
+    expect(groupElement()?.inert).toBe(false)
   })
 
   it('hides the header of the editor group', async () => {

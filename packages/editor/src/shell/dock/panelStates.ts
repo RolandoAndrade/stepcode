@@ -43,3 +43,24 @@ export function panelStatesOf(
   }
   return states as PanelStates
 }
+
+/** What a sidebar click does to the panel's group. */
+export type SidebarAction = 'activate' | 'expand' | 'collapse'
+
+/**
+ * Spec §3.3. A floating or popped-out group never collapses — `CollapseController` refuses it —
+ * so the click only brings its panel forward; collapsing it anyway would leave the group marked
+ * manually collapsed (§3.4) for a collapse that never happened.
+ */
+export function sidebarActionFor(
+  group: {
+    readonly api: { readonly location: { readonly type: string } }
+    readonly activePanel?: { readonly id: string } | undefined
+  },
+  panel: PanelId,
+  collapsed: boolean,
+): SidebarAction {
+  if (group.api.location.type !== 'grid') return 'activate'
+  if (collapsed) return 'expand'
+  return group.activePanel?.id === panel ? 'collapse' : 'activate'
+}

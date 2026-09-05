@@ -15,7 +15,7 @@ import { autoExpandTarget } from './autoExpand'
 import { CollapseController } from './dock/collapse'
 import { applyDefaultLayout, hideEditorHeader, PANEL_TITLES } from './dock/defaultLayout'
 import { HeaderActions } from './dock/HeaderActions'
-import { HIDDEN_PANEL_STATES, panelStatesOf } from './dock/panelStates'
+import { HIDDEN_PANEL_STATES, panelStatesOf, sidebarActionFor } from './dock/panelStates'
 import { DockContext, dockComponents } from './dock/panels'
 import { Tab } from './dock/Tab'
 import { DOCK_THEME } from './dock/theme'
@@ -47,6 +47,17 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       .setDockLayout(api.toJSON() as unknown as Record<string, unknown>, controller.collapsedIds())
   }, [store])
 
+  /**
+   * What the collapse animation needs: the dock root to mark, and a forced relayout. The forced
+   * one re-fires the size events dockview's render overlays are positioned from, so the panels
+   * follow the sliding frames instead of staying at the geometry they had when the slide began.
+   */
+  const animationFor = useCallback((api: DockviewApi) => {
+    const root = dockRef.current?.querySelector<HTMLElement>('.sc-dock') ?? null
+    if (root === null) return null
+    return { root, relayout: () => api.layout(api.width, api.height, true) }
+  }, [])
+
   /** The sidebar's own view of the dock, recomputed whenever the dock reports a change. */
   const syncPanelStates = useCallback(() => {
     const api = apiRef.current
@@ -68,14 +79,14 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         syncPanelStates()
         save()
       },
-      dockRef.current?.querySelector<HTMLElement>('.sc-dock') ?? null,
+      animationFor(api),
     )
     controllerRef.current = controller
     controller.withoutAnimation(() => controller.collapse(bottomGroupId))
     manuallyCollapsed.current.clear()
     rebuilding.current = false
     save()
-  }, [save, store, syncPanelStates])
+  }, [save, store, syncPanelStates, animationFor])
 
   const onReady = useCallback(
     (event: DockviewReadyEvent) => {
@@ -108,7 +119,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
             syncPanelStates()
             save()
           },
-          dockRef.current?.querySelector<HTMLElement>('.sc-dock') ?? null,
+          animationFor(api),
         )
         controllerRef.current = controller
         controller.restoreFrom(saved.collapsed)
@@ -132,7 +143,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         }),
       )
     },
-    [store, save, reset, syncPanelStates],
+    [store, save, reset, syncPanelStates, animationFor],
   )
 
   useEffect(
@@ -157,29 +168,37 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     target.api.setActive()
   }, [])
 
+  // A collapse the user performs during a run is remembered until the next run (spec §3.4).
+  const collapseManually = useCallback((groupId: string) => {
+    const controller = controllerRef.current
+    if (controller === null || controller.isCollapsed(groupId)) return
+    controller.collapse(groupId)
+    // Only a collapse that happened is remembered: the controller refuses non-grid groups.
+    if (controller.isCollapsed(groupId)) manuallyCollapsed.current.add(groupId)
+  }, [])
+
   /**
    * Spec §3.3: the sidebar button shows a hidden group, brings its own tab to the front, or —
    * when its panel is already in front — hides the group again. That last one is a manual
    * collapse, exactly like the header chevron, so auto-expand leaves it alone until the next run.
    */
-  const toggleFromSidebar = useCallback((panel: PanelId) => {
-    const api = apiRef.current
-    const controller = controllerRef.current
-    const target = api?.getPanel(panel)
-    if (controller === null || target === undefined) return
-    const groupId = target.group.id
-    if (controller.isCollapsed(groupId)) {
-      controller.expand(groupId)
+  const toggleFromSidebar = useCallback(
+    (panel: PanelId) => {
+      const api = apiRef.current
+      const controller = controllerRef.current
+      const target = api?.getPanel(panel)
+      if (controller === null || target === undefined) return
+      const groupId = target.group.id
+      const action = sidebarActionFor(target.group, panel, controller.isCollapsed(groupId))
+      if (action === 'collapse') {
+        collapseManually(groupId)
+        return
+      }
+      if (action === 'expand') controller.expand(groupId)
       target.api.setActive()
-      return
-    }
-    if (target.group.activePanel?.id === panel) {
-      manuallyCollapsed.current.add(groupId)
-      controller.collapse(groupId)
-      return
-    }
-    target.api.setActive()
-  }, [])
+    },
+    [collapseManually],
+  )
 
   useEffect(() => {
     let previous = store.getState()
@@ -198,14 +217,6 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       if (event !== null) reveal(event.panel, event.reason !== 'input')
     })
   }, [store, reset, reveal])
-
-  // A collapse the user performs during a run is remembered until the next run (spec §3.4).
-  const collapseManually = useCallback((groupId: string) => {
-    const controller = controllerRef.current
-    if (controller === null || controller.isCollapsed(groupId)) return
-    manuallyCollapsed.current.add(groupId)
-    controller.collapse(groupId)
-  }, [])
 
   const rightHeaderActionsComponent = useCallback(
     (props: IDockviewHeaderActionsProps) => (

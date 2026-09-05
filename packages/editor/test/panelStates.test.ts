@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HIDDEN_PANEL_STATES, panelStatesOf } from '../src/shell/dock/panelStates'
+import { HIDDEN_PANEL_STATES, panelStatesOf, sidebarActionFor } from '../src/shell/dock/panelStates'
 
 function api(groups: Record<string, { group: string; active: string }>) {
   return {
@@ -40,5 +40,27 @@ describe('panelStatesOf', () => {
 
   it('reads a panel the layout does not hold as hidden', () => {
     expect(panelStatesOf(api({}), () => false)).toEqual(HIDDEN_PANEL_STATES)
+  })
+})
+
+describe('sidebarActionFor', () => {
+  const grid = (active: string) => ({
+    api: { location: { type: 'grid' as const } },
+    activePanel: { id: active },
+  })
+
+  it('shows a hidden group, hides one whose panel is already in front, activates otherwise', () => {
+    expect(sidebarActionFor(grid('console'), 'console', true)).toBe('expand')
+    expect(sidebarActionFor(grid('console'), 'console', false)).toBe('collapse')
+    expect(sidebarActionFor(grid('problems'), 'console', false)).toBe('activate')
+  })
+
+  it('never collapses a floating or popped-out group', () => {
+    // Spec §3.3 gives them no chevron, and `collapse()` refuses them: the click would be a
+    // no-op that still marked the group manually collapsed for auto-expand.
+    for (const type of ['floating', 'popout'] as const) {
+      const group = { api: { location: { type } }, activePanel: { id: 'console' } }
+      expect(sidebarActionFor(group, 'console', false)).toBe('activate')
+    }
   })
 })
