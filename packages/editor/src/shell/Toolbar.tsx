@@ -1,6 +1,6 @@
 import { type FileEnvironment, newDocument, openFile, saveFile } from '../files/actions'
 import { useEditorStore, useEditorStoreApi } from '../store/context'
-import { stringsOf } from '../store/store'
+import { isDirty, stringsOf } from '../store/store'
 import { FilePlus, FolderOpen, Save } from '../ui/icons'
 import { IconButton } from '../ui/Tooltip'
 import { Filename } from './Filename'
@@ -12,6 +12,7 @@ import { SHORTCUTS } from './shortcuts'
 export function Toolbar({ env, compact = false }: { env: FileEnvironment; compact?: boolean }) {
   const store = useEditorStoreApi()
   const strings = useEditorStore(stringsOf)
+  const dirty = useEditorStore(isDirty)
   return (
     <header className="flex h-10 items-center gap-2 border-b border-border bg-surface px-2 text-fg">
       <Menu env={env} />
@@ -33,11 +34,20 @@ export function Toolbar({ env, compact = false }: { env: FileEnvironment; compac
             <FolderOpen />
           </IconButton>
           <IconButton
-            label={strings.toolbar.save}
+            label={dirty ? strings.toolbar.saveDirty : strings.toolbar.save}
             shortcut={SHORTCUTS.save}
             onClick={() => void saveFile(store, env)}
           >
-            <Save />
+            <span className="relative inline-flex">
+              <Save />
+              {dirty ? (
+                <span
+                  aria-hidden="true"
+                  data-testid="unsaved-dot"
+                  className="-top-0.5 -right-0.5 absolute h-1.5 w-1.5 rounded-full bg-accent"
+                />
+              ) : null}
+            </span>
           </IconButton>
         </span>
       )}

@@ -224,9 +224,11 @@ cluster is right-aligned. Nothing in the center.
 
 An inline text input styled as plain text (no border until hover or focus), 14 px, width fits
 content with a 32 ch maximum. Enter or blur commits; Escape reverts; an empty name reverts. The
-name is the document name (§8), extension included. A `●` after the name marks a document whose
-text differs from the last file save (or from the starter program, for a document never saved).
-The browser title is `● name · StepCode` or `name · StepCode`.
+name is the document name (§8), extension included. Nothing marks the name itself: a document
+whose text differs from the last file save (or from the starter program, for a document never
+saved) shows an accent dot on the corner of the Save button, and that button's tooltip reads
+"Guardar · cambios sin guardar". The browser title still is `● name · StepCode`, since a tab
+strip has no Save button to carry the mark.
 
 ### 4.3 Run cluster
 

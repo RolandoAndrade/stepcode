@@ -25,11 +25,10 @@ describe('Filename', () => {
     expect(store.getState().name).toBe('hola.stepcode')
   })
 
-  it('marks an unsaved document', () => {
+  it('leaves the unsaved mark to the Save button', () => {
     const { store } = storeWith({})
     renderWithStore(<Filename />, store)
-    expect(screen.queryByText('●')).toBeNull()
     act(() => store.getState().setSource('x'))
-    expect(screen.getByText('●')).toBeDefined()
+    expect(screen.queryByText('●')).toBeNull()
   })
 })

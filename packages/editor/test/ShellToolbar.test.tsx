@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { fireEvent, screen } from '@testing-library/react'
+import { act, fireEvent, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { Toolbar } from '../src/shell/Toolbar'
 import { TooltipProvider } from '../src/ui/Tooltip'
@@ -30,6 +30,23 @@ describe('Toolbar (shell)', () => {
       store,
     )
     expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull()
+  })
+
+  it('badges Save while the document is dirty, and says so in its label', () => {
+    const { store } = storeWith({})
+    renderWithStore(
+      <TooltipProvider>
+        <Toolbar env={env} />
+      </TooltipProvider>,
+      store,
+    )
+    const dot = (): Element | null => document.querySelector('[data-testid="unsaved-dot"]')
+    expect(dot()).toBeNull()
+    act(() => store.getState().setSource('x'))
+    expect(screen.queryByRole('button', { name: 'Guardar' })).toBeNull()
+    const save = screen.getByRole('button', { name: 'Guardar · cambios sin guardar' })
+    expect(save.contains(dot())).toBe(true)
+    expect(dot()?.getAttribute('aria-hidden')).toBe('true')
   })
 
   it('Nuevo replaces the document with the starter', () => {

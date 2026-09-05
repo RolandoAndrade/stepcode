@@ -1,13 +1,15 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useEditorStore } from '../store/context'
 import { nameWithExtension } from '../store/document'
-import { isDirty, stringsOf } from '../store/store'
+import { stringsOf } from '../store/store'
 
-/** Spec §4.2: plain text until hovered or focused; Enter/blur commit, Escape reverts. */
+/**
+ * Spec §4.2: plain text until hovered or focused; Enter/blur commit, Escape reverts. The unsaved
+ * mark is on the Save button, where the action that clears it is.
+ */
 export function Filename() {
   const strings = useEditorStore(stringsOf)
   const name = useEditorStore((s) => s.name)
-  const dirty = useEditorStore(isDirty)
   const setName = useEditorStore((s) => s.setName)
   const [draft, setDraft] = useState(name)
   useEffect(() => setDraft(name), [name])
@@ -50,11 +52,6 @@ export function Filename() {
         spellCheck={false}
         className="rounded border border-transparent bg-transparent px-1 text-fg outline-none hover:border-border focus:border-accent"
       />
-      {dirty ? (
-        <span aria-hidden="true" className="text-muted">
-          ●
-        </span>
-      ) : null}
     </span>
   )
 }

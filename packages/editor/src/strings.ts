@@ -28,6 +28,7 @@ export interface Strings {
     readonly new: string
     readonly open: string
     readonly save: string
+    readonly saveDirty: string
     readonly saveAs: string
     readonly more: string
     readonly filename: string
@@ -250,6 +251,7 @@ const es: Strings = {
     new: 'Nuevo',
     open: 'Abrir…',
     save: 'Guardar',
+    saveDirty: 'Guardar · cambios sin guardar',
     saveAs: 'Guardar como…',
     more: 'Más acciones',
     filename: 'Nombre del archivo',
@@ -477,6 +479,7 @@ const en: Strings = {
     new: 'New',
     open: 'Open…',
     save: 'Save',
+    saveDirty: 'Save · unsaved changes',
     saveAs: 'Save as…',
     more: 'More actions',
     filename: 'File name',
