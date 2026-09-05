@@ -16,6 +16,22 @@ export interface ApiLike {
   getGroup(id: string): GroupLike | undefined
 }
 
+/** The dock root, `.sc-dock`: what `dock.css` hangs the collapse transition off. */
+export interface RootLike {
+  readonly classList: { add(token: string): void; remove(token: string): void }
+  addEventListener(type: 'transitionend', listener: () => void): void
+  removeEventListener(type: 'transitionend', listener: () => void): void
+}
+
+/** While it is on the dock root, dockview's grid views animate their position and size. */
+export const ANIMATING_CLASS = 'sc-animating'
+
+/**
+ * A transition that never ends (an interrupted one, a view that was already at its target size)
+ * would leave the dock animating into the next sash drag, so the mark also expires on its own.
+ */
+export const ANIMATION_FALLBACK_MS = 250
+
 /**
  * Spec §3.3: a collapsed group is hidden outright — `setVisible(false)` on the grid view. Dockview
  * caches the hidden view's size and clamps it back when the view is shown again, so the previous
@@ -26,14 +42,37 @@ export interface ApiLike {
  *
  * Only grid groups collapse. Dockview would hide a floating group's overlay and merely warn for a
  * popped-out one, but neither has a chevron (§3.3), so both are refused here too.
+ *
+ * Hiding and showing are marked on `root` so the grid slides instead of jumping; the mark is only
+ * ever on around a collapse, never while the user drags a sash.
  */
 export class CollapseController {
   private readonly collapsed = new Set<string>()
+  private timer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
     private readonly api: ApiLike,
     private readonly onChange: (ids: string[]) => void,
+    private readonly root: RootLike | null = null,
   ) {}
+
+  private readonly endAnimation = (): void => {
+    if (this.timer === null) return
+    clearTimeout(this.timer)
+    this.timer = null
+    this.root?.classList.remove(ANIMATING_CLASS)
+    this.root?.removeEventListener('transitionend', this.endAnimation)
+  }
+
+  /** Mark the dock just before the grid is relaid out; the first finished transition clears it. */
+  private beginAnimation(): void {
+    const root = this.root
+    if (root === null) return
+    if (this.timer === null) root.addEventListener('transitionend', this.endAnimation)
+    else clearTimeout(this.timer)
+    root.classList.add(ANIMATING_CLASS)
+    this.timer = setTimeout(this.endAnimation, ANIMATION_FALLBACK_MS)
+  }
 
   isCollapsed(id: string): boolean {
     return this.collapsed.has(id)
@@ -46,6 +85,7 @@ export class CollapseController {
   collapse(id: string): void {
     const group = this.api.getGroup(id)
     if (group === undefined || group.api.location.type !== 'grid' || this.collapsed.has(id)) return
+    this.beginAnimation()
     group.api.setVisible(false)
     this.collapsed.add(id)
     this.onChange(this.collapsedIds())
@@ -54,6 +94,7 @@ export class CollapseController {
   expand(id: string): void {
     const group = this.api.getGroup(id)
     if (group === undefined || !this.collapsed.has(id)) return
+    this.beginAnimation()
     group.api.setVisible(true)
     this.collapsed.delete(id)
     this.onChange(this.collapsedIds())
@@ -79,6 +120,7 @@ export class CollapseController {
   }
 
   dispose(): void {
+    this.endAnimation()
     this.collapsed.clear()
   }
 }

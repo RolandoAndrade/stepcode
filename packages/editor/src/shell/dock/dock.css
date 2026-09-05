@@ -36,3 +36,24 @@
   height: 2px;
   background: var(--sc-accent);
 }
+
+/* Collapsing a group hides its grid view; dockview positions every view with inline `top`,
+   `left`, `width` and `height`, so transitioning those slides the grid instead of jumping it.
+   The class is only on while the shell hides or shows a group — never during a sash drag.
+   The easing is spelled out: `--ease-shell` is a Tailwind theme variable, and this file is
+   plain CSS that only ever reads the `--sc-*` tokens. */
+.sc-dock.sc-animating .dv-view,
+.sc-dock.sc-animating .dv-sash {
+  transition:
+    height 180ms cubic-bezier(0.2, 0, 0, 1),
+    width 180ms cubic-bezier(0.2, 0, 0, 1),
+    top 180ms cubic-bezier(0.2, 0, 0, 1),
+    left 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-dock.sc-animating .dv-view,
+  .sc-dock.sc-animating .dv-sash {
+    transition: none;
+  }
+}

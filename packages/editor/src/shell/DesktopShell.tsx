@@ -26,6 +26,8 @@ const tabComponents = { tab: Tab }
 export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle | null> }) {
   const store = useEditorStoreApi()
   const apiRef = useRef<DockviewApi | null>(null)
+  // Dockview owns its root element; the shell reaches it through the box it renders into.
+  const dockRef = useRef<HTMLDivElement | null>(null)
   const controllerRef = useRef<CollapseController | null>(null)
   const disposablesRef = useRef<{ dispose(): void }[]>([])
   const [collapsedIds, setCollapsedIds] = useState<readonly string[]>([])
@@ -61,11 +63,15 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     controllerRef.current?.dispose()
     api.clear()
     const { bottomGroupId } = applyDefaultLayout(api, PANEL_TITLES(stringsOf(store.getState())))
-    const controller = new CollapseController(api, (ids) => {
-      setCollapsedIds(ids)
-      syncPanelStates()
-      save()
-    })
+    const controller = new CollapseController(
+      api,
+      (ids) => {
+        setCollapsedIds(ids)
+        syncPanelStates()
+        save()
+      },
+      dockRef.current?.querySelector<HTMLElement>('.sc-dock') ?? null,
+    )
     controllerRef.current = controller
     controller.collapse(bottomGroupId)
     manuallyCollapsed.current.clear()
@@ -98,11 +104,15 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         // The serialized titles are whatever locale saved them; re-apply the current ones.
         const titles = PANEL_TITLES(stringsOf(store.getState()))
         for (const id of Object.keys(titles) as PanelId[]) api.getPanel(id)?.setTitle(titles[id])
-        const controller = new CollapseController(api, (ids) => {
-          setCollapsedIds(ids)
-          syncPanelStates()
-          save()
-        })
+        const controller = new CollapseController(
+          api,
+          (ids) => {
+            setCollapsedIds(ids)
+            syncPanelStates()
+            save()
+          },
+          dockRef.current?.querySelector<HTMLElement>('.sc-dock') ?? null,
+        )
         controllerRef.current = controller
         controller.restoreFrom(saved.collapsed)
         save()
@@ -220,21 +230,23 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     <DockContext.Provider value={context}>
       <div className="flex h-full w-full">
         <Sidebar states={panelStates} onToggle={toggleFromSidebar} />
-        <DockviewReact
-          className="h-full min-w-0 flex-1"
-          theme={DOCK_THEME}
-          components={dockComponents}
-          tabComponents={tabComponents}
-          rightHeaderActionsComponent={rightHeaderActionsComponent}
-          onReady={onReady}
-          // Spec §3.1: no watermark, ever.
-          noPanelsOverlay="emptyGroup"
-          // Spec §3.1/§3.6: every panel stays mounted, so CodeMirror keeps its view and the console
-          // keeps its scroll position while another tab of the group is in front.
-          defaultRenderer="always"
-          singleTabMode="fullwidth"
-          floatingGroupBounds="boundedWithinViewport"
-        />
+        <div ref={dockRef} className="h-full min-w-0 flex-1">
+          <DockviewReact
+            className="h-full w-full"
+            theme={DOCK_THEME}
+            components={dockComponents}
+            tabComponents={tabComponents}
+            rightHeaderActionsComponent={rightHeaderActionsComponent}
+            onReady={onReady}
+            // Spec §3.1: no watermark, ever.
+            noPanelsOverlay="emptyGroup"
+            // Spec §3.1/§3.6: every panel stays mounted, so CodeMirror keeps its view and the console
+            // keeps its scroll position while another tab of the group is in front.
+            defaultRenderer="always"
+            singleTabMode="fullwidth"
+            floatingGroupBounds="boundedWithinViewport"
+          />
+        </div>
       </div>
     </DockContext.Provider>
   )

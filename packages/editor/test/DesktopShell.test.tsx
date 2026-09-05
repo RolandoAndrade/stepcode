@@ -179,6 +179,19 @@ describe('DesktopShell', () => {
     expect(store.getState().layout.collapsed).toHaveLength(1)
   })
 
+  it('marks the dock root while a group is hiding', async () => {
+    const { store } = mount()
+    await panelSection('Consola')
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    const dock = document.querySelector('.sc-dock') as HTMLElement
+    // The default layout collapses the bottom group, so the mark starts on and expires by itself:
+    // nothing transitions in happy-dom, which is exactly what the fallback timer is for.
+    await waitFor(() => expect(dock.classList.contains('sc-animating')).toBe(false))
+    act(() => store.getState().run())
+    await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
+    expect(dock.classList.contains('sc-animating')).toBe(true)
+  })
+
   it('refuses to drag the editor out of its locked group', async () => {
     mount()
     await panelSection('Editor')
