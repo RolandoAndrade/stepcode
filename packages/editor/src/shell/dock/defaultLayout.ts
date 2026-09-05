@@ -1,4 +1,4 @@
-import type { DockviewApi } from 'dockview-react'
+import type { DockviewApi, DockviewGroupPanel } from 'dockview-react'
 import type { PanelId } from '../../store/layout'
 import type { Strings } from '../../strings'
 
@@ -13,6 +13,15 @@ export function PANEL_TITLES(strings: Strings): Record<PanelId, string> {
   return { ...strings.panels }
 }
 
+/**
+ * Spec §3.1: the editor group renders no tab strip. Hiding the header only sets `display: none`,
+ * so the group has to be relaid out for its content to claim the freed 28 px.
+ */
+export function hideEditorHeader(group: DockviewGroupPanel): void {
+  group.header.hidden = true
+  group.relayout()
+}
+
 /** Spec §3.2: editor alone; Consola, Problemas, Variables as tabs of one group below it. */
 export function applyDefaultLayout(
   api: DockviewApi,
@@ -25,6 +34,7 @@ export function applyDefaultLayout(
     title: titles.editor,
   })
   editor.group.locked = true
+  hideEditorHeader(editor.group)
   const consolePanel = api.addPanel({
     id: 'console',
     component: 'console',

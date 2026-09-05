@@ -34,6 +34,21 @@ function panelSection(label: string): Promise<HTMLElement> {
   })
 }
 
+/** The editor group's tab strip, hidden by spec §3.1 and so unreachable through its role. */
+function editorTab(): HTMLElement {
+  const found = document.querySelector<HTMLElement>('.dv-tab[aria-label="Editor"]')
+  expect(found).not.toBeNull()
+  return found as HTMLElement
+}
+
+function editorHeader(): HTMLElement {
+  const found = editorTab()
+    .closest('.dv-groupview')
+    ?.querySelector<HTMLElement>('.dv-tabs-and-actions-container')
+  expect(found).toBeDefined()
+  return found as HTMLElement
+}
+
 describe('DesktopShell', () => {
   it('mounts the four panels in the default layout and saves it', async () => {
     const { store } = mount()
@@ -107,10 +122,24 @@ describe('DesktopShell', () => {
     expect(screen.getByRole('tab', { name: 'Problemas', selected: true })).toBeDefined()
   })
 
+  it('hides the header of the editor group', async () => {
+    // Spec §3.1: the editor group renders no tab strip, restored layouts included.
+    const first = mount()
+    await panelSection('Editor')
+    await waitFor(() => expect(editorHeader().style.display).toBe('none'))
+    expect(screen.queryByRole('tab', { name: 'Editor' })).toBeNull()
+    await waitFor(() => expect(first.store.getState().layout.dockview).not.toBeNull())
+    const saved = first.store.getState().layout
+    first.rendered.unmount()
+    mount({ layout: saved })
+    await panelSection('Editor')
+    await waitFor(() => expect(editorHeader().style.display).toBe('none'))
+  })
+
   it('refuses to drag the editor out of its locked group', async () => {
     mount()
     await panelSection('Editor')
-    const tab = screen.getByRole('tab', { name: 'Editor' })
+    const tab = editorTab()
     const drag = new Event('dragstart', { bubbles: true, cancelable: true })
     tab.dispatchEvent(drag)
     expect(drag.defaultPrevented).toBe(true)
