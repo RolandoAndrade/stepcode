@@ -54,13 +54,6 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
   let pending: string[] = []
   let pauseRequested = false
   let resume: Resume = 'run'
-  /**
-   * The last frames a live `Run` handed us. `Run.inspect()` reports `[]` once the run is
-   * `done` (its frames are gone by design), but `done`'s `WorkerMessage` still carries the
-   * frames as they stood at the last pause — so we keep them here instead of re-asking a
-   * `Run` that has already forgotten them.
-   */
-  let lastFrames: readonly Frame[] = []
 
   const post = (message: WorkerMessage): void => {
     port.postMessage(message)
@@ -78,12 +71,14 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
     post({ kind: 'state', state: next })
   }
 
+  /** `Run.inspect()` keeps reporting main's final frame after `done` (interpreter spec §3.2). */
+  const frames = (): readonly Frame[] => run?.inspect() ?? []
+
   /** Everything before the first `await` runs synchronously, so step results post at once. */
   async function deliver(result: StepResult): Promise<void> {
     flush()
     switch (result.kind) {
       case 'paused':
-        lastFrames = result.frames
         transition('paused')
         post({
           kind: 'paused',
@@ -113,10 +108,9 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
         return
       case 'done':
         transition('done')
-        post({ kind: 'done', frames: lastFrames })
+        post({ kind: 'done', frames: frames() })
         return
       case 'error':
-        lastFrames = result.frames
         transition('error')
         post({ kind: 'error', diagnostic: result.diagnostic, frames: result.frames })
         return
@@ -145,7 +139,6 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
         await deliver(result)
         return
       }
-      lastFrames = result.frames
       if (pauseRequested) {
         pauseRequested = false
         flush()
@@ -168,7 +161,6 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
     const firstError = program.diagnostics.find((one) => one.severity === 'error')
     if (firstError !== undefined) {
       run = null
-      lastFrames = []
       transition('error')
       post({ kind: 'error', diagnostic: firstError, frames: [] })
       return
@@ -188,7 +180,6 @@ export function createDriver(port: DriverPort, options: DriverOptions = {}): Dri
     })
     active.setBreakpoints(message.breakpoints)
     run = active
-    lastFrames = active.inspect()
     if (message.mode === 'step') {
       resume = 'step'
       void deliver(active.step())
