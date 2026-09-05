@@ -35,14 +35,22 @@ export function TopBar({
     onReveal(line)
   }
 
-  const openInStepCode = async (): Promise<void> => {
+  const openInStepCode = (): void => {
     const s = store.getState()
-    const hash = await encodeShare(
+    encodeShare(
       title === null
         ? { source: s.source, profileId: s.profileId }
         : { source: s.source, profileId: s.profileId, name: `${title}.stepcode` },
     )
-    window.open(`${location.origin}/${hash}`, '_blank', 'noopener')
+      .then((hash) => {
+        // A blocked pop-up answers null; there is nothing to do with the handle either way.
+        window.open(`${location.origin}/${hash}`, '_blank', 'noopener')
+      })
+      .catch((error: unknown) => {
+        // Compression can fail or be torn down mid-flight; an unhandled rejection would take
+        // the frame (or a test run) with it.
+        console.warn('stepcode: could not build the share link', error)
+      })
   }
 
   return (
@@ -75,7 +83,7 @@ export function TopBar({
         </span>
         <span className="hidden max-[479px]:inline">{errors + warnings}</span>
       </button>
-      <IconButton label={strings.embed.openInStepCode} onClick={() => void openInStepCode()}>
+      <IconButton label={strings.embed.openInStepCode} onClick={openInStepCode}>
         <ExternalLink />
       </IconButton>
     </header>

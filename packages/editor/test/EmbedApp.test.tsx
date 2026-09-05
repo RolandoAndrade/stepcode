@@ -1,12 +1,23 @@
 // @vitest-environment happy-dom
-import { act, fireEvent, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { allowRunWithWarnings, bootEmbed, forwardToasts, titleFor } from '../src/embed/boot'
 import { EmbedApp, installEmbedShortcuts } from '../src/embed/EmbedApp'
 import { createEmbedOptions } from '../src/embed/options'
-import { DEFAULT_URL_OPTIONS, type UrlOptions } from '../src/share/urlOptions'
+import type { LoadFrom, LoadOutcome } from '../src/share/load'
+import { DEFAULT_URL_OPTIONS, readUrlOptions, type UrlOptions } from '../src/share/urlOptions'
+import type { EditorStore } from '../src/store/store'
 import { renderWithStore, storeWith } from './render'
 
+const WARNING = { from: 0, to: 1, severity: 'warning', source: 'W1001', message: 'w' } as const
+
+/** Everything the frame's console holds, since the embed renders no toasts. */
+const consoleText = (store: EditorStore): string => store.getState().output.chunks.join('')
+
+const loaded = (from: LoadFrom, title: string): LoadOutcome => ({ kind: 'loaded', from, title })
+
 const SOURCE = 'Proceso p\n  Escribir 1;\nFinProceso\n'
+const EXAMPLE = { title: 'Hola mundo', source: SOURCE }
 
 function mount(overrides: Partial<UrlOptions> = {}, title: string | null = null) {
   const { store, host } = storeWith({ source: SOURCE })
@@ -122,5 +133,117 @@ describe('installEmbedShortcuts', () => {
     fireEvent.keyDown(window, { key: ',', ctrlKey: true })
     expect(store.getState().dialog).toBeNull()
     dispose()
+  })
+})
+
+describe('allowRunWithWarnings', () => {
+  it('turns off the warning prompt the frame has no dialog host to render', () => {
+    const { store, host } = storeWith({ source: SOURCE, diagnostics: [WARNING] })
+    store.getState().run()
+    expect(store.getState().dialog).toBe('warnings')
+    expect(host.starts).toHaveLength(0)
+
+    store.setState({ dialog: null })
+    allowRunWithWarnings(store)
+    store.getState().run()
+    expect(store.getState().dialog).toBeNull()
+    expect(host.starts).toHaveLength(1)
+  })
+})
+
+describe('forwardToasts', () => {
+  it('moves every toast — waiting and later — to the console, and stops when disposed', () => {
+    const { store } = storeWith({ source: '' })
+    store.getState().notify('antes')
+    const stop = forwardToasts(store)
+    expect(consoleText(store)).toBe('antes\n')
+    expect(store.getState().toasts).toEqual([])
+
+    store.getState().notify('primero')
+    store.getState().notify('segundo')
+    expect(consoleText(store)).toBe('antes\nprimero\nsegundo\n')
+    expect(store.getState().toasts).toEqual([])
+
+    stop()
+    store.getState().notify('después')
+    expect(consoleText(store)).toBe('antes\nprimero\nsegundo\n')
+  })
+})
+
+describe('titleFor', () => {
+  it('prefers ?title=, then the hash name, then the example or file title', () => {
+    expect(
+      titleFor({ ...DEFAULT_URL_OPTIONS, title: 'Mío' }, loaded('hash', 'otro.stepcode')),
+    ).toBe('Mío')
+    expect(titleFor(DEFAULT_URL_OPTIONS, loaded('hash', 'tabla.stepcode'))).toBe('tabla')
+    expect(titleFor(DEFAULT_URL_OPTIONS, loaded('example', 'Hola mundo'))).toBe('Hola mundo')
+    expect(titleFor(DEFAULT_URL_OPTIONS, loaded('src', 'programa'))).toBe('programa')
+    expect(titleFor(DEFAULT_URL_OPTIONS, { kind: 'none' })).toBeNull()
+    expect(titleFor(DEFAULT_URL_OPTIONS, { kind: 'failed', reason: 'example' })).toBeNull()
+  })
+})
+
+describe('bootEmbed', () => {
+  const embedFor = (url: URL) => createEmbedOptions(readUrlOptions(url))
+
+  it('titles the frame from the program and runs it when ?autorun loaded one', async () => {
+    const { store, host } = storeWith({ source: '' })
+    const url = new URL('https://stepcode.test/embed?autorun&example=saludo')
+    const embed = embedFor(url)
+    const outcome = await bootEmbed(store, embed, url, { example: () => EXAMPLE })
+    expect(outcome.kind).toBe('loaded')
+    expect(embed.getState().title).toBe('Hola mundo')
+    expect(host.starts).toHaveLength(1)
+  })
+
+  it('writes the unknown profile and the failure to the console, and never autoruns', async () => {
+    const { store, host } = storeWith({ source: '' })
+    const url = new URL('https://stepcode.test/embed?autorun&profile=klingon&example=nada')
+    const embed = embedFor(url)
+    const outcome = await bootEmbed(store, embed, url, { example: () => null })
+    expect(outcome).toEqual({ kind: 'failed', reason: 'example' })
+    expect(consoleText(store)).toContain('El enlace usa un perfil que no existe aquí')
+    expect(consoleText(store)).toContain('No se pudo cargar el programa: no existe ese ejemplo')
+    expect(embed.getState().title).toBeNull()
+    expect(host.starts).toHaveLength(0)
+  })
+
+  it('keeps the boot messages that ?autorun would otherwise clear', async () => {
+    const { store, host } = storeWith({ source: '' })
+    const url = new URL('https://stepcode.test/embed?autorun&profile=klingon&example=saludo')
+    await bootEmbed(store, embedFor(url), url, { example: () => EXAMPLE })
+    expect(host.starts).toHaveLength(1)
+    expect(store.getState().settings.execution.clearConsoleOnRun).toBe(true)
+    expect(consoleText(store)).toContain('El enlace usa un perfil que no existe aquí')
+  })
+
+  it('says nothing about the profile when the URL named a real one', async () => {
+    const { store } = storeWith({ source: '' })
+    const url = new URL('https://stepcode.test/embed?profile=pseint&example=saludo')
+    await bootEmbed(store, embedFor(url), url, { example: () => EXAMPLE })
+    expect(consoleText(store)).toBe('')
+    expect(store.getState().profileId).toBe('pseint')
+  })
+})
+
+describe('the way out to the full editor', () => {
+  it('opens a share link for the program in a new tab', async () => {
+    const opened: string[] = []
+    const open = vi.spyOn(window, 'open').mockImplementation((url) => {
+      opened.push(String(url))
+      // A blocked pop-up answers null; the embed must not throw over it.
+      return null
+    })
+    mount({}, 'Demo')
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Abrir en StepCode' }))
+    })
+    await waitFor(() => {
+      expect(opened).toHaveLength(1)
+    })
+    expect(opened[0]).toContain('/#code=')
+    expect(opened[0]).toContain('&profile=es')
+    expect(opened[0]).toContain('&name=Demo.stepcode')
+    open.mockRestore()
   })
 })

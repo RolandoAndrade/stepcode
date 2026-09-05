@@ -1,14 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RuntimeHost } from '../runtime/host'
-import type { LoadOutcome } from '../share/load'
-import { bootFromUrl } from '../share/onLoad'
-import { readUrlOptions, type UrlOptions } from '../share/urlOptions'
+import { readUrlOptions } from '../share/urlOptions'
 import { StoreProvider } from '../store/context'
-import { displayName } from '../store/document'
-import { appendOutput } from '../store/output'
 import { createEditorStore, type EditorStore } from '../store/store'
 import { applyTheme, watchSystemTheme } from '../theme/theme'
+import { allowRunWithWarnings, bootEmbed, forwardToasts } from './boot'
 import { type BridgeIo, createBridge, type Outbound } from './bridge'
 import { EmbedApp } from './EmbedApp'
 import { createEmbedOptions, type EmbedOptionsStore } from './options'
@@ -26,18 +23,6 @@ function bridgeIo(): BridgeIo {
       return () => window.removeEventListener('message', onMessage)
     },
   }
-}
-
-/** Spec §3.1: no Toaster in the frame, so every message is a console line. */
-function note(store: EditorStore, text: string): void {
-  store.setState((s) => ({ output: appendOutput(s.output, [`${text}\n`]) }))
-}
-
-/** Spec §3.3: `title=`, then the hash's name, then the example's title, then the file name. */
-function titleFor(options: UrlOptions, outcome: LoadOutcome): string | null {
-  if (options.title !== null) return options.title
-  if (outcome.kind !== 'loaded' || outcome.title === null) return null
-  return outcome.from === 'hash' ? displayName(outcome.title) : outcome.title
 }
 
 function render(root: HTMLElement, store: EditorStore, options: EmbedOptionsStore): void {
@@ -61,19 +46,26 @@ async function boot(): Promise<void> {
     initialTheme: urlOptions.theme,
     initialSource: '',
   })
+  allowRunWithWarnings(store)
+  const stopForwarding = forwardToasts(store)
   if (urlOptions.theme === 'system') {
     watchSystemTheme((dark) => store.getState().setSystemDark(dark))
   }
   const options = createEmbedOptions(urlOptions)
   // The query string stays: a reload of the frame must show the same program (spec §2.1).
-  // `bootFromUrl` applies `?profile=` and `?lang=` before loading, so the failure below is
-  // already phrased in the locale the URL asked for.
-  const { outcome, message } = await bootFromUrl(store, url)
-  if (message !== null) note(store, message)
-  options.getState().setTitle(titleFor(urlOptions, outcome))
+  await bootEmbed(store, options, url)
   render(root, store, options)
-  createBridge(store, bridgeIo())
-  if (urlOptions.autorun && outcome.kind === 'loaded') store.getState().run()
+  const disposeBridge = createBridge(store, bridgeIo())
+  // `pagehide`, not `unload`: a frame put in the back/forward cache is torn down through it and
+  // the host page must stop hearing from a bridge that is no longer alive.
+  window.addEventListener(
+    'pagehide',
+    () => {
+      disposeBridge()
+      stopForwarding()
+    },
+    { once: true },
+  )
 }
 
 boot().catch((error: unknown) => {
@@ -82,5 +74,6 @@ boot().catch((error: unknown) => {
   const root = document.getElementById('root')
   if (root === null) return
   const store = createEditorStore(new RuntimeHost(), { applyTheme, initialSource: '' })
+  allowRunWithWarnings(store)
   render(root, store, createEmbedOptions(readUrlOptions(new URL(window.location.href))))
 })
