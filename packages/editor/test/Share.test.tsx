@@ -90,3 +90,108 @@ describe('Share', () => {
     ).toBeDefined()
   })
 })
+
+const value = (element: HTMLElement): string => (element as HTMLTextAreaElement).value
+
+async function openInsertar() {
+  const { store } = storeWith({ dialog: 'share', name: 'tarea.stepcode' })
+  const copied: string[] = []
+  renderWithStore(
+    <Share
+      base="https://x.test/"
+      origin="https://x.test/"
+      clipboard={{ writeText: async (text) => void copied.push(text) }}
+    />,
+    store,
+  )
+  await waitFor(() =>
+    expect(value(screen.getByLabelText('Enlace', { selector: 'input' }))).toContain('#code='),
+  )
+  act(() => {
+    fireEvent.click(screen.getByRole('tab', { name: 'Insertar' }))
+  })
+  return { store, copied, snippet: () => value(screen.getByRole('textbox', { name: 'Insertar' })) }
+}
+
+describe('Share: the Insertar tab', () => {
+  it('puts the document name in the hash so the embed can title itself', async () => {
+    const { store } = storeWith({ dialog: 'share', name: 'tarea.stepcode' })
+    renderWithStore(<Share base="https://x.test/" />, store)
+    await waitFor(() =>
+      expect(value(screen.getByLabelText('Enlace', { selector: 'input' }))).toContain('#code='),
+    )
+    const hash = value(screen.getByLabelText('Enlace', { selector: 'input' })).replace(
+      'https://x.test/',
+      '',
+    )
+    expect(await decodeShare(hash)).toMatchObject({ name: 'tarea.stepcode' })
+  })
+
+  it('builds a default snippet with no query and the default height', async () => {
+    const { snippet } = await openInsertar()
+    await waitFor(() => expect(snippet()).toContain('https://x.test/embed#code='))
+    expect(snippet()).toContain('width="100%"')
+    expect(snippet()).toContain('height="480"')
+    expect(snippet()).toContain('title="tarea"')
+    expect(snippet()).toContain('loading="lazy"')
+  })
+
+  it('writes each option into the URL as it is chosen', async () => {
+    const { snippet } = await openInsertar()
+    act(() => {
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Solo lectura' }))
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Ejecutar al abrir' }))
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Depuración' }))
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Mostrar perfil' }))
+    })
+    await waitFor(() =>
+      expect(snippet()).toContain('embed?readonly&amp;autorun&amp;debug&amp;showProfile#'),
+    )
+    act(() => {
+      fireEvent.change(screen.getByLabelText('Tema'), { target: { value: 'dark' } })
+    })
+    await waitFor(() => expect(snippet()).toContain('&amp;theme=dark#'))
+  })
+
+  it('takes the height from the number field and keeps a floor', async () => {
+    const { snippet } = await openInsertar()
+    act(() => {
+      fireEvent.change(screen.getByLabelText('Alto (px)'), { target: { value: '800' } })
+    })
+    await waitFor(() => expect(snippet()).toContain('height="800"'))
+    act(() => {
+      fireEvent.change(screen.getByLabelText('Alto (px)'), { target: { value: '10' } })
+    })
+    await waitFor(() => expect(snippet()).toContain('height="200"'))
+  })
+
+  it('previews the same URL, capped at 360 px', async () => {
+    await openInsertar()
+    act(() => {
+      fireEvent.change(screen.getByLabelText('Alto (px)'), { target: { value: '800' } })
+    })
+    const frame = await waitFor(() => {
+      const found = document.querySelector('iframe')
+      if (found === null) throw new Error('no preview yet')
+      return found
+    })
+    expect(frame.getAttribute('title')).toBe('Vista previa')
+    expect(frame.getAttribute('height')).toBe('360')
+    expect(frame.getAttribute('src') ?? '').toContain('https://x.test/embed#code=')
+  })
+
+  it('copies the snippet and the URL, each with its own confirmation', async () => {
+    const { store, copied, snippet } = await openInsertar()
+    await waitFor(() => expect(snippet()).toContain('<iframe'))
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Copiar código' }))
+    })
+    await waitFor(() => expect(copied[0]).toContain('<iframe'))
+    await waitFor(() => expect(store.getState().toasts.at(-1)?.message).toBe('Código copiado'))
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Copiar URL' }))
+    })
+    await waitFor(() => expect(copied[1]).toContain('https://x.test/embed'))
+    expect(copied[1]).not.toContain('<iframe')
+  })
+})
