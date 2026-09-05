@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RuntimeHost } from '../runtime/host'
-import { readUrlOptions } from '../share/urlOptions'
+import { readUrlOptions, type UrlOptions } from '../share/urlOptions'
 import { StoreProvider } from '../store/context'
 import type { EditorStore } from '../store/store'
 import { applyTheme, watchSystemTheme } from '../theme/theme'
@@ -25,6 +25,14 @@ function bridgeIo(): BridgeIo {
   }
 }
 
+/**
+ * Spec §2.3: `?lang=` chooses the frame's language, so the document has to say which one — a
+ * screen reader and the browser's own hyphenation both read it off the root element.
+ */
+function applyDocumentLang(options: UrlOptions): void {
+  document.documentElement.lang = options.lang ?? 'es'
+}
+
 function render(root: HTMLElement, store: EditorStore, options: EmbedOptionsStore): void {
   createRoot(root).render(
     <StrictMode>
@@ -40,6 +48,7 @@ async function boot(): Promise<void> {
   if (root === null) throw new Error('Missing #root element')
   const url = new URL(window.location.href)
   const urlOptions = readUrlOptions(url)
+  applyDocumentLang(urlOptions)
   const store = createEmbedStore(new RuntimeHost(), urlOptions, { applyTheme, watchSystemTheme })
   const stopForwarding = forwardToasts(store)
   const options = createEmbedOptions(urlOptions)
@@ -65,6 +74,9 @@ boot().catch((error: unknown) => {
   const root = document.getElementById('root')
   if (root === null) return
   const urlOptions = readUrlOptions(new URL(window.location.href))
+  applyDocumentLang(urlOptions)
   const store = createEmbedStore(new RuntimeHost(), urlOptions, { applyTheme, watchSystemTheme })
+  // The frame renders no toasts, so without this the fallback store's messages go nowhere.
+  forwardToasts(store)
   render(root, store, createEmbedOptions(urlOptions))
 })

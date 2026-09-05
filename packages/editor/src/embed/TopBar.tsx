@@ -2,6 +2,7 @@ import { useStore } from 'zustand'
 import { encodeShare } from '../share/link'
 import { RunControls } from '../shell/RunControls'
 import { useEditorStore, useEditorStoreApi } from '../store/context'
+import { nameWithExtension } from '../store/document'
 import { profileNameOf, stringsOf } from '../store/store'
 import { ExternalLink, Lock } from '../ui/icons'
 import { IconButton } from '../ui/Tooltip'
@@ -29,9 +30,14 @@ export function TopBar({
   const clean = errors === 0 && warnings === 0
 
   const reveal = (): void => {
-    const first = diagnostics[0]
-    if (first === undefined) return
-    const line = store.getState().source.slice(0, first.from).split('\n').length
+    // The linter reports in no particular order, so the earliest problem in the text is the one
+    // to jump to, not whichever came back first.
+    const earliest = diagnostics.reduce<(typeof diagnostics)[number] | undefined>(
+      (best, diagnostic) => (best === undefined || diagnostic.from < best.from ? diagnostic : best),
+      undefined,
+    )
+    if (earliest === undefined) return
+    const line = store.getState().source.slice(0, earliest.from).split('\n').length
     onReveal(line)
   }
 
@@ -40,7 +46,7 @@ export function TopBar({
     encodeShare(
       title === null
         ? { source: s.source, profileId: s.profileId }
-        : { source: s.source, profileId: s.profileId, name: `${title}.stepcode` },
+        : { source: s.source, profileId: s.profileId, name: nameWithExtension(title) },
     )
       .then((hash) => {
         // A blocked pop-up answers null; there is nothing to do with the handle either way.

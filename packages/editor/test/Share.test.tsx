@@ -1,4 +1,7 @@
 // @vitest-environment happy-dom
+// The preview iframe has a real `src`: without this, happy-dom fetches it over the network
+// during `pnpm test`.
+// @vitest-environment-options { "settings": { "disableIframePageLoading": true } }
 import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Share } from '../src/dialogs/Share'
@@ -163,6 +166,19 @@ describe('Share: the Insertar tab', () => {
       fireEvent.change(screen.getByLabelText('Alto (px)'), { target: { value: '10' } })
     })
     await waitFor(() => expect(snippet()).toContain('height="200"'))
+  })
+
+  it('keeps the last height while the field is empty', async () => {
+    const { snippet } = await openInsertar()
+    act(() => {
+      fireEvent.change(screen.getByLabelText('Alto (px)'), { target: { value: '800' } })
+    })
+    await waitFor(() => expect(snippet()).toContain('height="800"'))
+    act(() => {
+      fireEvent.change(screen.getByLabelText('Alto (px)'), { target: { value: '' } })
+    })
+    await waitFor(() => expect(snippet()).toContain('height="800"'))
+    expect(snippet()).not.toContain('height="0"')
   })
 
   it('previews the same URL, capped at 360 px', async () => {

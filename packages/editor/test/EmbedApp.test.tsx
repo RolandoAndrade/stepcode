@@ -10,10 +10,12 @@ import {
 } from '../src/embed/boot'
 import { bandClasses, EmbedApp, installEmbedShortcuts, TIGHT_HEIGHT } from '../src/embed/EmbedApp'
 import { createEmbedOptions } from '../src/embed/options'
+import { TopBar } from '../src/embed/TopBar'
 import type { LoadFrom, LoadOutcome } from '../src/share/load'
 import { DEFAULT_URL_OPTIONS, readUrlOptions, type UrlOptions } from '../src/share/urlOptions'
 import type { EditorStore } from '../src/store/store'
 import type { Theme } from '../src/theme/types'
+import { TooltipProvider } from '../src/ui/Tooltip'
 import { FakeHost } from './fake-host'
 import { renderWithStore, storeWith } from './render'
 
@@ -100,6 +102,30 @@ describe('EmbedApp', () => {
       fireEvent.click(problems)
     })
     expect(store.getState().state).toBe('ready')
+  })
+
+  it('reveals the earliest problem, not the first one reported', () => {
+    const { store } = storeWith({ source: SOURCE })
+    const options = createEmbedOptions(DEFAULT_URL_OPTIONS)
+    const lines: number[] = []
+    renderWithStore(
+      <TooltipProvider>
+        <TopBar options={options} onReveal={(line) => lines.push(line)} />
+      </TooltipProvider>,
+      store,
+    )
+    act(() => {
+      store.setState({
+        diagnostics: [
+          { from: 20, to: 21, severity: 'error', source: 'E3001', message: 'later' },
+          { from: 2, to: 3, severity: 'error', source: 'E3001', message: 'earlier' },
+        ],
+      })
+    })
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Problemas' }))
+    })
+    expect(lines).toEqual([1])
   })
 
   it('offers a way out to the full editor', () => {
@@ -252,6 +278,24 @@ describe('the way out to the full editor', () => {
     expect(opened[0]).toContain('/#code=')
     expect(opened[0]).toContain('&profile=es')
     expect(opened[0]).toContain('&name=Demo.stepcode')
+    open.mockRestore()
+  })
+
+  it('does not append a second extension to a title that already has one', async () => {
+    const opened: string[] = []
+    const open = vi.spyOn(window, 'open').mockImplementation((url) => {
+      opened.push(String(url))
+      return null
+    })
+    mount({}, 'Demo.psc')
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Abrir en StepCode' }))
+    })
+    await waitFor(() => {
+      expect(opened).toHaveLength(1)
+    })
+    expect(opened[0]).toContain('&name=Demo.psc')
+    expect(opened[0]).not.toContain('Demo.psc.stepcode')
     open.mockRestore()
   })
 })

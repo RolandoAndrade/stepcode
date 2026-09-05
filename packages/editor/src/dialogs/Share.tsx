@@ -193,6 +193,9 @@ export function Share({
                 min={MIN_EMBED_HEIGHT}
                 value={height}
                 onChange={(event) => {
+                  // An emptied field is someone typing a new number, not a request for a 0 px
+                  // frame: the last height stands until they finish.
+                  if (event.target.value.trim() === '') return
                   const next = Number(event.target.value)
                   setHeight(Number.isFinite(next) ? next : DEFAULT_EMBED_HEIGHT)
                 }}
