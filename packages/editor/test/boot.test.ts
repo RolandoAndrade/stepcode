@@ -1,10 +1,17 @@
 // @vitest-environment happy-dom
 import 'fake-indexeddb/auto'
 import '@vitest/web-worker'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { until } from './helpers'
 
 describe('boot', () => {
+  // The app keeps scheduling React work (worker messages, run state) after a test ends; once
+  // happy-dom is torn down that work throws "window is not defined" as an unhandled error.
+  afterEach(async () => {
+    const main = await import('../src/main')
+    main.unmountAll()
+  })
+
   it('renders the app even when localStorage is blocked', async () => {
     Object.defineProperty(window, 'localStorage', {
       configurable: true,

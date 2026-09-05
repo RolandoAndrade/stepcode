@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { createRoot, type Root as ReactRoot } from 'react-dom/client'
 import { App } from './App'
 import { browserEnvironment } from './files/actions'
 import { useUpdatePrompt } from './pwa/register'
@@ -49,8 +49,18 @@ function storageOrNull(): StorageLike | null {
   }
 }
 
+const roots = new Set<ReactRoot>()
+
+/** Tests mount the real app through this module; they unmount it before their environment ends. */
+export function unmountAll(): void {
+  for (const root of roots) root.unmount()
+  roots.clear()
+}
+
 function render(root: HTMLElement, store: EditorStore): void {
-  createRoot(root).render(
+  const reactRoot = createRoot(root)
+  roots.add(reactRoot)
+  reactRoot.render(
     <StrictMode>
       <Root store={store} />
     </StrictMode>,
