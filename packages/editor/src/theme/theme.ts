@@ -1,4 +1,4 @@
-import type { Theme } from './types'
+import type { Theme, ThemePreference } from './types'
 
 /** Every `--sc-*` custom property, without the prefix. Both blocks of tokens.css define all. */
 export const TOKEN_NAMES = [
@@ -98,4 +98,34 @@ export function applyTheme(theme: Theme, root: HTMLElement = document.documentEl
   if (theme === 'dark') root.dataset.theme = 'dark'
   else delete root.dataset.theme
   root.style.colorScheme = theme
+}
+
+interface MediaList {
+  readonly matches: boolean
+  addEventListener?(type: 'change', listener: (event: { matches: boolean }) => void): void
+  removeEventListener?(type: 'change', listener: (event: { matches: boolean }) => void): void
+}
+
+type MatchMediaFn = (query: string) => MediaList
+
+/** Spec §2.4: follow `prefers-color-scheme` while the preference is `system`. */
+export function watchSystemTheme(
+  onChange: (dark: boolean) => void,
+  matchMedia: MatchMediaFn | undefined = typeof window === 'undefined'
+    ? undefined
+    : window.matchMedia?.bind(window),
+): () => void {
+  if (matchMedia === undefined) {
+    onChange(false)
+    return () => {}
+  }
+  const list = matchMedia('(prefers-color-scheme: dark)')
+  onChange(list.matches)
+  const listener = (event: { matches: boolean }): void => onChange(event.matches)
+  list.addEventListener?.('change', listener)
+  return () => list.removeEventListener?.('change', listener)
+}
+
+export function resolveInitialPreference(persisted: ThemePreference | undefined): ThemePreference {
+  return persisted ?? 'system'
 }
