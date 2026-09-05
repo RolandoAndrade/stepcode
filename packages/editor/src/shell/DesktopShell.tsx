@@ -10,9 +10,10 @@ import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } fro
 import type { EditorHandle } from '../panels/Editor'
 import { useEditorStoreApi } from '../store/context'
 import type { PanelId } from '../store/layout'
+import { stringsOf } from '../store/store'
 import { autoExpandTarget } from './autoExpand'
 import { CollapseController } from './dock/collapse'
-import { applyDefaultLayout } from './dock/defaultLayout'
+import { applyDefaultLayout, PANEL_TITLES } from './dock/defaultLayout'
 import { HeaderActions } from './dock/HeaderActions'
 import { DockContext, dockComponents } from './dock/panels'
 import { Tab } from './dock/Tab'
@@ -24,10 +25,10 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
   const store = useEditorStoreApi()
   const apiRef = useRef<DockviewApi | null>(null)
   const controllerRef = useRef<CollapseController | null>(null)
-  const layoutListenerRef = useRef<{ dispose(): void } | null>(null)
+  const disposablesRef = useRef<{ dispose(): void }[]>([])
   const [collapsedIds, setCollapsedIds] = useState<readonly string[]>([])
   const manuallyCollapsed = useRef(new Set<string>())
-  const context = useMemo(() => ({ editor: editorRef }), [editorRef])
+  const context = useMemo(() => ({ editor: editorRef, controller: controllerRef }), [editorRef])
 
   // `api.clear()` empties the grid one view at a time and fires a layout change per step; asking a
   // half-torn-down dockview for its JSON throws, so rebuilding suspends saving until it is done.
@@ -48,7 +49,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     rebuilding.current = true
     controllerRef.current?.dispose()
     api.clear()
-    const { bottomGroupId } = applyDefaultLayout(api)
+    const { bottomGroupId } = applyDefaultLayout(api, PANEL_TITLES(stringsOf(store.getState())))
     const controller = new CollapseController(api, HEADER_HEIGHT, (ids) => {
       setCollapsedIds(ids)
       save()
@@ -58,7 +59,7 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
     manuallyCollapsed.current.clear()
     rebuilding.current = false
     save()
-  }, [save])
+  }, [save, store])
 
   const onReady = useCallback(
     (event: DockviewReadyEvent) => {
@@ -79,6 +80,9 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       if (restored) {
         const editorGroup = api.getPanel('editor')?.group
         if (editorGroup !== undefined) editorGroup.locked = true
+        // The serialized titles are whatever locale saved them; re-apply the current ones.
+        const titles = PANEL_TITLES(stringsOf(store.getState()))
+        for (const id of Object.keys(titles) as PanelId[]) api.getPanel(id)?.setTitle(titles[id])
         const controller = new CollapseController(api, HEADER_HEIGHT, (ids) => {
           setCollapsedIds(ids)
           save()
@@ -89,15 +93,22 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
       } else {
         reset()
       }
-      layoutListenerRef.current = api.onDidLayoutChange(() => save())
+      disposablesRef.current.push(
+        api.onDidLayoutChange(() => save()),
+        // Spec §3.1: the editor cannot be dragged out of its group. `locked` only refuses drops,
+        // so the drag has to be refused at the source.
+        api.onWillDragPanel((event) => {
+          if (event.panel.id === 'editor') event.nativeEvent.preventDefault()
+        }),
+      )
     },
     [store, save, reset],
   )
 
   useEffect(
     () => () => {
-      layoutListenerRef.current?.dispose()
-      layoutListenerRef.current = null
+      for (const disposable of disposablesRef.current) disposable.dispose()
+      disposablesRef.current = []
     },
     [],
   )
@@ -165,6 +176,8 @@ export function DesktopShell({ editorRef }: { editorRef: RefObject<EditorHandle 
         tabComponents={tabComponents}
         rightHeaderActionsComponent={rightHeaderActionsComponent}
         onReady={onReady}
+        // Spec §3.1: no watermark, ever.
+        noPanelsOverlay="emptyGroup"
         // Spec §3.1/§3.6: every panel stays mounted, so CodeMirror keeps its view and the console
         // keeps its scroll position while another tab of the group is in front.
         defaultRenderer="always"

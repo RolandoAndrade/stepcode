@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, expect, it } from 'vitest'
 import type { EditorHandle } from '../src/panels/Editor'
@@ -65,6 +65,30 @@ describe('DesktopShell', () => {
     act(() => store.getState().resetLayout())
     await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
     expect(screen.getByRole('tab', { name: 'Consola', selected: true })).toBeDefined()
+  })
+
+  it('expands the collapsed group when a tab label in its strip is clicked', async () => {
+    const { store } = mount()
+    await panelSection('Problemas')
+    await waitFor(() => expect(store.getState().layout.collapsed).toHaveLength(1))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('tab', { name: 'Problemas' }))
+    })
+    await waitFor(() => expect(store.getState().layout.collapsed).toEqual([]))
+    expect(screen.getByRole('tab', { name: 'Problemas', selected: true })).toBeDefined()
+  })
+
+  it('refuses to drag the editor out of its locked group', async () => {
+    mount()
+    await panelSection('Editor')
+    const tab = screen.getByRole('tab', { name: 'Editor' })
+    const drag = new Event('dragstart', { bubbles: true, cancelable: true })
+    tab.dispatchEvent(drag)
+    expect(drag.defaultPrevented).toBe(true)
+    const other = screen.getByRole('tab', { name: 'Problemas' })
+    const allowed = new Event('dragstart', { bubbles: true, cancelable: true })
+    other.dispatchEvent(allowed)
+    expect(allowed.defaultPrevented).toBe(false)
   })
 
   it('restores a saved layout and discards an invalid one', async () => {

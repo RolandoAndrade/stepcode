@@ -28,6 +28,7 @@ export interface GroupLike {
       width: number
       height: number
     }
+    readonly classList?: { add(token: string): void; remove(token: string): void }
   }
 }
 
@@ -39,6 +40,9 @@ export interface ApiLike {
 }
 
 const MIN_RESTORE_FRACTION = 0.3
+
+/** Spec §3.3: `dock.css` rotates the labels of a group collapsed against a left or right edge. */
+export const COLLAPSED_VERTICAL_CLASS = 'sc-collapsed-vertical'
 
 /** Which container edge the group touches; ties go to bottom (the default layout's group). */
 export function edgeOf(group: GroupLike, container: { width: number; height: number }): Edge {
@@ -72,11 +76,13 @@ export function collapseGroup(
   } else {
     group.api.setConstraints({ maximumWidth: headerSize })
     group.api.setSize({ width: headerSize })
+    group.element?.classList?.add(COLLAPSED_VERTICAL_CLASS)
   }
   return { restore }
 }
 
 export function expandGroup(group: GroupLike, edge: Edge, restore: number): void {
+  group.element?.classList?.remove(COLLAPSED_VERTICAL_CLASS)
   if (vertical(edge)) {
     group.api.setConstraints({ maximumHeight: Number.POSITIVE_INFINITY })
     group.api.setSize({ height: restore })

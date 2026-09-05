@@ -17,4 +17,10 @@ describe('dock theme', () => {
     }
     expect(css).toContain(`--dv-tabs-and-actions-container-height: ${HEADER_HEIGHT}px`)
   })
+
+  it("never compounds our classes onto dockview's tab wrapper", () => {
+    // The React tab is mounted *inside* `.dv-tab`, so `.dv-tab.sc-…` can never match.
+    expect(css).not.toMatch(/\.dv-tab\.sc-/)
+    expect(css).toContain('.sc-dock .sc-tab-active::after')
+  })
 })

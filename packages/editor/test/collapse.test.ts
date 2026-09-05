@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  COLLAPSED_VERTICAL_CLASS,
   CollapseController,
   collapseGroup,
   edgeOf,
@@ -11,10 +12,12 @@ function group(
   id: string,
   box: { x: number; y: number; width: number; height: number },
   location: 'grid' | 'floating' = 'grid',
-): GroupLike & { constraints: unknown[]; sizes: unknown[] } {
+): GroupLike & { constraints: unknown[]; sizes: unknown[]; classes: Set<string> } {
   const constraints: unknown[] = []
   const sizes: unknown[] = []
+  const classes = new Set<string>()
   return {
+    classes,
     id,
     constraints,
     sizes,
@@ -26,6 +29,14 @@ function group(
       setSize: (s) => sizes.push(s),
     },
     element: {
+      classList: {
+        add: (token: string) => {
+          classes.add(token)
+        },
+        remove: (token: string) => {
+          classes.delete(token)
+        },
+      },
       getBoundingClientRect: () => ({
         ...box,
         top: box.y,
@@ -58,9 +69,18 @@ describe('collapseGroup / expandGroup', () => {
     expandGroup(g, 'bottom', restore)
     expect(g.constraints.at(-1)).toEqual({ maximumHeight: Number.POSITIVE_INFINITY })
     expect(g.sizes.at(-1)).toEqual({ height: 180 })
+    expect(g.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(false)
     const side = group('b', { x: 700, y: 0, width: 300, height: 600 })
     collapseGroup(side, 'right', 28)
     expect(side.constraints).toEqual([{ maximumWidth: 28 }])
+  })
+
+  it('marks a side group as a vertical strip and unmarks it on expand', () => {
+    const side = group('b', { x: 700, y: 0, width: 300, height: 600 })
+    collapseGroup(side, 'right', 28)
+    expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(true)
+    expandGroup(side, 'right', 300)
+    expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(false)
   })
 })
 
@@ -87,6 +107,15 @@ describe('CollapseController', () => {
     controller.restoreFrom(['bottom', 'missing'])
     expect(controller.collapsedIds()).toEqual(['bottom'])
     expect(bottom.sizes.at(-1)).toEqual({ height: 28 })
+  })
+
+  it('marks a left or right collapse through the controller too', () => {
+    const side = group('side', { x: 700, y: 0, width: 300, height: 600 })
+    const controller = new CollapseController(api([side]), 28, () => {})
+    controller.toggle('side')
+    expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(true)
+    controller.toggle('side')
+    expect(side.classes.has(COLLAPSED_VERTICAL_CLASS)).toBe(false)
   })
 
   it('refuses floating groups and expands idempotently', () => {
