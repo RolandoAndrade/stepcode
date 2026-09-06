@@ -171,8 +171,8 @@ integration) builds and deploys it; the settings are entered once in the Cloudfl
 |---|---|
 | Root directory | `/` |
 | Build command | `pnpm install --frozen-lockfile && pnpm --filter @stepcode/editor... build` |
-| Deploy command | `npx wrangler deploy --config packages/editor/wrangler.jsonc` |
-| Non-production branch deploy command | `npx wrangler versions upload --config packages/editor/wrangler.jsonc` |
+| Deploy command | `pnpm --filter @stepcode/editor exec wrangler deploy --config wrangler.jsonc` |
+| Non-production branch deploy command | `pnpm --filter @stepcode/editor exec wrangler versions upload --config wrangler.jsonc` |
 | Production branch | `master` |
 | Non-production branch builds | enabled |
 
@@ -183,4 +183,4 @@ configuration fails before Cloudflare sees it.
 
 `redirect/` is a second, hand-deployed Worker (`stepcode-subdomain`) that answers the v1
 hostname `stepcode.rolandoandrade.me` with a permanent redirect to `stepcode.online`, path and
-query preserved: `npx wrangler deploy --config packages/editor/redirect/wrangler.jsonc`.
+query preserved: `pnpm --filter @stepcode/editor exec wrangler deploy --config redirect/wrangler.jsonc`.

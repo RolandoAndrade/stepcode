@@ -25,6 +25,7 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - run: pnpm --filter @stepcode/editor exec wrangler deploy --dry-run --config wrangler.jsonc
+      - run: pnpm --filter @stepcode/editor exec wrangler deploy --dry-run --config redirect/wrangler.jsonc
 
   e2e:
     runs-on: ubuntu-latest
