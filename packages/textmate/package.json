@@ -1,7 +1,7 @@
 {
   "name": "@stepcode/textmate",
   "version": "0.0.0",
-  "description": "Generates TextMate grammars (for Shiki, VS Code) from StepCode profiles",
+  "description": "TextMate grammars for StepCode, generated from keyword profiles (Shiki, VS Code)",
   "license": "MIT",
   "author": "Rolando Andrade",
   "repository": {
@@ -12,14 +12,16 @@
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist"
+    "dist",
+    "grammars"
   ],
   "exports": {
     ".": {
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./grammars/*.json": "./grammars/*.json"
   },
   "publishConfig": {
     "access": "public",
@@ -27,13 +29,15 @@
       ".": {
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
-      }
+      },
+      "./grammars/*.json": "./grammars/*.json"
     }
   },
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate": "vitest run test/grammars.test.ts -u"
   },
   "dependencies": {
     "@stepcode/profiles": "workspace:*"

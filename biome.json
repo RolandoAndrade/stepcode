@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/dist", "!**/node_modules", "!packages/language/test/corpus/v1"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!packages/textmate/grammars",
+      "!**/node_modules",
+      "!packages/language/test/corpus/v1"
+    ]
   },
   "formatter": {
     "enabled": true,
