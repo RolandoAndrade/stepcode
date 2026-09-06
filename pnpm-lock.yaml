@@ -296,7 +296,7 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
       stepcode:
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../language
       tsdown:
         specifier: 'catalog:'

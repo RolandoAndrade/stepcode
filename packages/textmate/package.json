@@ -45,7 +45,7 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "shiki": "^4.4.3",
-    "stepcode": "workspace:*",
+    "stepcode": "workspace:^",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
