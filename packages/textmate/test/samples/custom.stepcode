@@ -1,0 +1,11 @@
+Program Strict
+    Define x As Integer;
+    x <- 1;
+    When x = 1 Then
+        Write "one";
+    EndIf
+    if x = 2 Then
+        Write "never";
+    EndIf
+    Write Ábs(x);
+EndProgram

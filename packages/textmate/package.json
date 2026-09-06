@@ -43,6 +43,8 @@
     "@stepcode/profiles": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
+    "shiki": "^4.4.3",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
