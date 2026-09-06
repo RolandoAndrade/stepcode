@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "even positions upper, odd lower",
+      "inputs": ["algoritmo"],
+      "output": "Introduce texto: \nResultado: aLgOrItMo\n"
+    }
+  ]
+}

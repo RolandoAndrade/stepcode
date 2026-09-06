@@ -1,0 +1,15 @@
+// título: Factorial
+// descripción: Una función que se llama a sí misma
+Funcion Factorial(n Como Entero): Entero
+  Si n <= 1 Entonces
+    Retornar 1;
+  FinSi
+  Retornar n * Factorial(n - 1);
+FinFuncion
+
+Proceso ProbarFactorial
+  Definir x Como Entero;
+  Escribir 'Introduce un número: ';
+  Leer x;
+  Escribir 'El factorial es: ', Factorial(x);
+FinProceso

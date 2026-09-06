@@ -1,0 +1,7 @@
+Funcion prueba(): Entero
+        Escribir 'hola';
+        Retornar 0;
+      FinFuncion
+      Proceso pruebaProceso
+        prueba();
+      FinProceso

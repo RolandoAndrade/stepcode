@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test assignation function with parameters",
+      "inputs": [],
+      "output": "hola\n30\n"
+    }
+  ]
+}

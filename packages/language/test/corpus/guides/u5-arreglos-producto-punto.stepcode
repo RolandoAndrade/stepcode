@@ -1,0 +1,26 @@
+// Guía U5 Arreglos — Pregunta 8: la suma de pesos por entradas de una neurona.
+Funcion ProductoPunto(w Como Real[], x Como Real[], n Como Entero): Real
+    Definir i Como Entero;
+    Definir total Como Real;
+    total <- 0;
+    Para i <- 1 Hasta n Hacer
+        total <- total + w[i] * x[i];
+    FinPara
+    Retornar total;
+FinFuncion
+
+Proceso NeuronaArtificial
+    Definir w, x Como Real[10];
+    Definir n, i Como Entero;
+    Escribir "Introduce n: ";
+    Leer n;
+    Para i <- 1 Hasta n Hacer
+        Escribir "w[", i, "]: ";
+        Leer w[i];
+    FinPara
+    Para i <- 1 Hasta n Hacer
+        Escribir "x[", i, "]: ";
+        Leer x[i];
+    FinPara
+    Escribir "El resultado es ", ProductoPunto(w, x, n);
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic length",
+      "inputs": [],
+      "output": "4\n"
+    }
+  ]
+}

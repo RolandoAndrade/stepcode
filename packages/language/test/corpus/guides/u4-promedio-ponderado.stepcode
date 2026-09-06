@@ -1,0 +1,27 @@
+// Guía Práctica U4 — Pregunta 4: promedio ponderado de tres parciales (30%, 35%, 35%).
+Proceso PromedioPonderado
+    Definir nombre Como Cadena;
+    Definir primero, segundo, tercero Como Real;
+    Definir promedio, calificacion Como Real;
+    Definir redondeada Como Entero;
+    Escribir "Nombre: ";
+    Leer nombre;
+    Escribir "Parcial I (30%): ";
+    Leer primero;
+    Escribir "Parcial II (35%): ";
+    Leer segundo;
+    Escribir "Parcial III (35%): ";
+    Leer tercero;
+    promedio <- primero * 0.30 + segundo * 0.35 + tercero * 0.35;
+    calificacion <- promedio;
+    redondeada <- Redon(calificacion);
+    Si redondeada >= 18 Entonces
+        Escribir nombre, " fue Aprobado con excelencia";
+    Sino Si redondeada >= 14 Entonces
+        Escribir nombre, " fue Aprobado";
+    Sino Si redondeada >= 10 Entonces
+        Escribir nombre, " fue Suficiente";
+    Sino
+        Escribir nombre, " fue Reprobado";
+    FinSi
+FinProceso

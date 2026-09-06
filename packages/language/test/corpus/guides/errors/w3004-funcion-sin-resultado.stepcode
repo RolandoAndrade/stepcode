@@ -1,0 +1,11 @@
+// expect: W3004
+// U6 P1: la función nunca le asigna valor a su resultado.
+Funcion suma Como Entero <- Sumar(a Como Entero, b Como Entero)
+    Escribir a + b;
+FinFuncion
+
+Proceso FuncionSinResultado
+    Definir x Como Entero;
+    Leer x;
+    Escribir Sumar(x, 1);
+FinProceso

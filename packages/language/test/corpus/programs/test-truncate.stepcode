@@ -1,0 +1,5 @@
+Proceso prueba
+    Definir a Como Real;
+    Leer a;
+    Escribir truncar(a);
+    FinProceso

@@ -1,0 +1,22 @@
+// Guía Pretaller — Pregunta 1: la bandera de Venezuela por franjas, con doble ciclo.
+Proceso BanderaDeVenezuela
+    Definir alto, ancho, fila, columna Como Entero;
+    Definir color Como Cadena;
+    Escribir "Introduce alto de franja: ";
+    Leer alto;
+    Escribir "Introduce ancho: ";
+    Leer ancho;
+    Para fila <- 1 Hasta 3 * alto Hacer
+        Si fila <= alto Entonces
+            color <- "A";
+        Sino Si fila <= 2 * alto Entonces
+            color <- "Z";
+        Sino
+            color <- "R";
+        FinSi
+        Para columna <- 1 Hasta ancho Hacer
+            Escribir Sin Saltar color;
+        FinPara
+        Escribir "";
+    FinPara
+FinProceso

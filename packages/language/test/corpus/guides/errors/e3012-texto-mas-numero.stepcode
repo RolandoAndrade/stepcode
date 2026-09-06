@@ -1,0 +1,9 @@
+// expect: E3012
+// U1 P3: se suma una cadena con un número sin convertirlo.
+Proceso NombreYEdad
+    Definir nombre Como Cadena;
+    Definir edad Como Entero;
+    Leer nombre;
+    Leer edad;
+    Escribir "Soy " + nombre + " y tengo " + edad;
+FinProceso

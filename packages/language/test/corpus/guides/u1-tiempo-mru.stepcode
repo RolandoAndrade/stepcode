@@ -1,0 +1,14 @@
+// Guía Práctica U1 — Pregunta 6: tiempo de un caracol en movimiento rectilíneo uniforme.
+Proceso CarreraDeCaracoles
+    Definir desplazamiento, velocidad, tiempo Como Real;
+    Escribir Sin Saltar "Introduce el desplazamiento en metros: ";
+    Leer desplazamiento;
+    Escribir Sin Saltar "Introduce la velocidad en metros por segundo: ";
+    Leer velocidad;
+    Si velocidad = 0 Entonces
+        Escribir "El caracol no se mueve, nunca llega a la meta";
+    Sino
+        tiempo <- desplazamiento / velocidad;
+        Escribir "El caracol tarda ", tiempo, " segundos";
+    FinSi
+FinProceso

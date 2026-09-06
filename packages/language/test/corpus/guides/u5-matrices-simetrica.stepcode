@@ -1,0 +1,30 @@
+// Guía U5 Matrices — Pregunta 5: decir si una matriz cuadrada es simétrica.
+Funcion EsSimetrica(m Como Entero[,], lado Como Entero): Logico
+    Definir i, j Como Entero;
+    Para i <- 1 Hasta lado Hacer
+        Para j <- 1 Hasta lado Hacer
+            Si m[i, j] <> m[j, i] Entonces
+                Retornar Falso;
+            FinSi
+        FinPara
+    FinPara
+    Retornar Verdadero;
+FinFuncion
+
+Proceso MatrizSimetrica
+    Definir a Como Entero[10,10];
+    Definir lado, i, j Como Entero;
+    Escribir "Introduce m: ";
+    Leer lado;
+    Para i <- 1 Hasta lado Hacer
+        Para j <- 1 Hasta lado Hacer
+            Escribir "a[", i, ",", j, "]: ";
+            Leer a[i, j];
+        FinPara
+    FinPara
+    Si EsSimetrica(a, lado) Entonces
+        Escribir "A es una matriz simetrica";
+    Sino
+        Escribir "A no es una matriz simetrica";
+    FinSi
+FinProceso

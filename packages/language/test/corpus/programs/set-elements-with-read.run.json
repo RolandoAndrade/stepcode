@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test set elements with read",
+      "inputs": ["1", "2", "3"],
+      "output": "123\n"
+    }
+  ]
+}

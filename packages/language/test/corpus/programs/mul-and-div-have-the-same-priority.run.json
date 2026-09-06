@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "mul and div have the same priority",
+      "inputs": [],
+      "output": "1.2\n3.333333333333333\n"
+    }
+  ]
+}

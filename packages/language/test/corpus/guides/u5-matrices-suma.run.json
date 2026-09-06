@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "two two-by-two matrices added entry by entry",
+      "inputs": ["2", "2", "1", "2", "3", "4", "5", "6", "7", "8"],
+      "output": "Introduce m: \nIntroduce n: \nm[1,1]: \nm[1,2]: \nm[2,1]: \nm[2,2]: \nm[1,1]: \nm[1,2]: \nm[2,1]: \nm[2,2]: \nLa suma es:\n6 8 \n10 12 \n"
+    }
+  ]
+}

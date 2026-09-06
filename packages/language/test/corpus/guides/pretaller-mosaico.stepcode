@@ -1,0 +1,16 @@
+// Guía Pretaller — Pregunta 2: un mosaico de dos colores alternados, con un solo ciclo y MOD.
+Proceso Mosaico
+    Definir lado, celda Como Entero;
+    Escribir "Introduce lado: ";
+    Leer lado;
+    Para celda <- 0 Hasta lado * lado - 1 Hacer
+        Si (celda DIV lado + celda MOD lado) MOD 2 = 0 Entonces
+            Escribir Sin Saltar "A";
+        Sino
+            Escribir Sin Saltar "B";
+        FinSi
+        Si celda MOD lado = lado - 1 Entonces
+            Escribir "";
+        FinSi
+    FinPara
+FinProceso

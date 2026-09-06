@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "the largest of three is the middle argument",
+      "inputs": ["4", "9", "6"],
+      "output": "Introduce A: \nIntroduce B: \nIntroduce C: \nEl mayor es 9\n"
+    }
+  ]
+}

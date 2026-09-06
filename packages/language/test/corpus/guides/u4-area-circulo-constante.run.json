@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a radius of two and a half, both constants",
+      "inputs": ["2.5"],
+      "output": "Introduce radio: \nEl area es: 19.625\nCon PI del lenguaje es: 19.634954084936208\n"
+    }
+  ]
+}

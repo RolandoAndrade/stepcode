@@ -1,0 +1,11 @@
+// expect: E4006
+// U6: la función solo asigna su resultado en una rama.
+Funcion r Como Entero <- Mayor(a Como Entero, b Como Entero)
+    Si a > b Entonces
+        r <- a;
+    FinSi
+FinFuncion
+
+Proceso FuncionSinResultado
+    Escribir Mayor(1, 2);
+FinProceso

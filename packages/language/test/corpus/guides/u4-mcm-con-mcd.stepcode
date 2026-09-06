@@ -1,0 +1,30 @@
+// Guía Práctica U4 — Pregunta 10: el m.c.m. de dos números, apoyado en el M.C.D.
+Funcion Mcd(a Como Entero, b Como Entero): Entero
+    Definir mayor, menor, resto Como Entero;
+    mayor <- a;
+    menor <- b;
+    Mientras menor <> 0 Hacer
+        resto <- mayor MOD menor;
+        mayor <- menor;
+        menor <- resto;
+    FinMientras
+    Retornar mayor;
+FinFuncion
+
+Funcion Mcm(a Como Entero, b Como Entero): Entero
+    Retornar a DIV Mcd(a, b) * b;
+FinFuncion
+
+Proceso MinimoComunMultiplo
+    Definir a, b Como Entero;
+    Definir respuesta Como Caracter;
+    Repetir
+        Escribir "Introduce a: ";
+        Leer a;
+        Escribir "Introduce b: ";
+        Leer b;
+        Escribir "MCM(", a, ",", b, ") = ", Mcm(a, b);
+        Escribir "Continuar? [S/n]: ";
+        Leer respuesta;
+    Hasta Que Mayusculas(respuesta) = 'N';
+FinProceso

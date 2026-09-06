@@ -1,0 +1,30 @@
+// Guía U5 Cadenas — Pregunta 11: mezclar dos cadenas carácter a carácter.
+Funcion Mezclar(a Como Cadena, b Como Cadena): Cadena
+    Definir salida Como Cadena;
+    Definir i, comunes Como Entero;
+    salida <- "";
+    Si Longitud(a) < Longitud(b) Entonces
+        comunes <- Longitud(a);
+    Sino
+        comunes <- Longitud(b);
+    FinSi
+    Para i <- 1 Hasta comunes Hacer
+        salida <- salida + a[i] + b[i];
+    FinPara
+    Si Longitud(a) > comunes Entonces
+        salida <- salida + Subcadena(a, comunes + 1, Longitud(a));
+    FinSi
+    Si Longitud(b) > comunes Entonces
+        salida <- salida + Subcadena(b, comunes + 1, Longitud(b));
+    FinSi
+    Retornar salida;
+FinFuncion
+
+Proceso MezclarCadenas
+    Definir primera, segunda Como Cadena;
+    Escribir "Texto 1: ";
+    Leer primera;
+    Escribir "Texto 2: ";
+    Leer segunda;
+    Escribir "Resultado es ", Mezclar(primera, segunda);
+FinProceso

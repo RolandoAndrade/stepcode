@@ -1,0 +1,7 @@
+// expect: E3037
+// U4 P8: se le pide la longitud a un número en vez de a su texto.
+Proceso LongitudDeNumero
+    Definir n Como Entero;
+    Leer n;
+    Escribir Longitud(n);
+FinProceso

@@ -1,0 +1,19 @@
+{
+  "runs": [
+    {
+      "name": "test equilateral triangle",
+      "inputs": ["3", "3", "3"],
+      "output": "Introduzca a, b y c\nTriangulo equilatero\n3\n"
+    },
+    {
+      "name": "test isosceles triangle",
+      "inputs": ["3", "3", "4"],
+      "output": "Introduzca a, b y c\nTriangulo isosceles\n1\n"
+    },
+    {
+      "name": "test scalene triangle",
+      "inputs": ["3", "4", "5"],
+      "output": "Introduzca a, b y c\nTriangulo escaleno\n0\n"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "procedure test array by parameter",
+      "inputs": [],
+      "output": "10,30,40\n"
+    }
+  ]
+}

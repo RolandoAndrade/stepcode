@@ -1,0 +1,151 @@
+// Consigue el menor de dos numeros
+Funcion Menor(a como Entero, b como Entero): Entero
+    Si a > b Entonces
+        // a es mayor, devuelve b que es menor
+        Retornar b;
+    FinSi
+    // como no devolvio, a es menor
+    Retornar a;
+FinFuncion
+
+// Intercambia las variables a y b
+Procedimiento CambioDeVariables(a como Entero por Referencia, b como Entero por Referencia)
+    // a: variable a
+    // b: variable b
+    Definir aux Como Entero;
+    aux ← a;
+    a ← b;
+    b ← aux;
+FinProcedimiento
+
+// Inserta un elemento en un arreglo en determinada posicion.
+Procedimiento Insertar(arreglo como Entero[], elemento como Entero, posicion como Entero, cantidad como Entero por Referencia)
+    // arreglo: Arreglo en el que se quiere insertar un elemento
+    // elemento: Elemento que se quiere insertar
+    // posicion: Posicion dentro del arreglo donde se quiere insertar el elemento.
+    // cantidad: cantidad del arreglo actual. MAX 10
+    Definir i Como Entero;
+    Para i ← posicion Hasta cantidad Hacer
+        // por cada elemento desde la posicion donde se quiere insertar
+        // hasta la cantidad del arreglo, cambia los valores del elemento y el elemento
+        // en el arreglo
+        CambioDeVariables(elemento, arreglo[i]);
+    FinPara
+    Si cantidad < 10 Entonces
+        // Dijimos que el maximo del arreglo es 10, por lo que no puede crecer mas que eso.
+        // Si es menor a 10, aumenta la cantidad e inserta al final del arreglo
+        cantidad ← cantidad + 1;
+        arreglo[cantidad] ← elemento;
+    FinSi         
+    // De lo contrario, el valor que teniamos se pierde al no caber en el arreglo.
+FinProcedimiento
+
+// Lee un arreglo y devuelve la cantidad
+Funcion LeerArreglo(arreglo como Entero[]): Entero
+    // arreglo: arreglo a leer
+    Definir cantidad, i Como Entero;
+    Escribir "Introduce cantidad del arreglo (max 10):";
+    Leer cantidad;
+    // asegura la cantidad maximo 10
+    cantidad ← Menor(cantidad, 10);
+    Para i ← 1 Hasta cantidad Hacer
+        Leer arreglo[i];
+    FinPara
+    Retornar cantidad;
+FinFuncion
+
+// Recibe un arreglo y lo muestra
+Procedimiento MostrarArreglo(arreglo como Entero[], cantidad como Entero)
+    // arreglo: arreglo a mostrar.
+    // cantidad: cantidad actual del arreglo.
+    Definir i Como Entero;
+    Para i ← 1 Hasta cantidad Hacer
+        Escribir 'arr[', i,']: ', arreglo[i];
+    FinPara
+FinProcedimiento
+
+// Busca un elemento en un arreglo y devuelve la posicion donde se encuentra. -1 si el elemento no esta en el arreglo
+Funcion Buscar(arreglo como Entero[], elemento como Entero, cantidad como Entero): Entero
+    // arreglo: arreglo con los elementos a buscar
+    // elemento: elemento a buscar
+    // cantidad: cantidad actual del arreglo
+    Definir i Como Entero;
+    Para i ← 1 Hasta cantidad Con Paso 1 Hacer
+        Si arreglo[i] = elemento Entonces
+            // Se encontro el elemento, retorna su posicion
+            Retornar i;
+        FinSi
+    FinPara
+    // Al no retornar, no se encontro
+    Retornar -1;
+FinFuncion
+
+
+// Elimina un elemento en determinada posicion
+Procedimiento Eliminar(arreglo como Entero[], posicion como Entero, cantidad como Entero por Referencia)
+    // arreglo: Arreglo en el que se quiere insertar un elemento
+    // posicion: Posicion que se quiere eliminar
+    // cantidad: cantidad del arreglo actual
+    Definir i Como Entero;
+    Para i ← posicion Hasta cantidad - 1 Hacer
+        arreglo[i] ← arreglo[i + 1];
+    FinPara
+    cantidad ← cantidad - 1;
+FinProcedimiento
+
+// Elimina un elemento de un arreglo
+Procedimiento EliminarElemento(arreglo como Entero[], elemento como Entero, cantidad como Entero por Referencia)
+    // arreglo: Arreglo en el que se quiere insertar un elemento
+    // elemento: Elemento a eliminar
+    // cantidad: cantidad del arreglo actual
+    Eliminar(arreglo, Buscar(arreglo, elemento, cantidad), cantidad);
+FinProcedimiento
+
+// Proceso de pruebas
+Proceso Pruebas
+    Definir arreglo, cantidad Como Entero;
+    Definir opcion Como Entero;
+    Dimension arreglo[10];
+    cantidad ← LeerArreglo(arreglo);
+    Repetir
+        Escribir "El arreglo es";
+        MostrarArreglo(arreglo, cantidad);
+        Escribir 'Introduce opcion: ';
+        Escribir '    [1]: Insertar elemento';
+        Escribir '    [2]: Eliminar elemento';
+        Escribir '    [3]: Buscar elemento';
+        Escribir '    [0]: Salir';
+        Leer opcion;
+        Segun opcion Hacer
+            1:
+                ProgramaInsertar(arreglo, cantidad);
+            2:
+                ProgramaEliminar(arreglo, cantidad);
+            3:
+                ProgramaBuscar(arreglo, cantidad);
+        FinSegun
+    Hasta Que opcion = 0;
+FinProceso
+
+Procedimiento ProgramaInsertar(arreglo como Entero[], cantidad como Entero por Referencia)
+    Definir elemento, posicion Como Entero;
+    Escribir "Introduce elemento a insertar: ";
+    Leer elemento;
+    Escribir "Introduce posicion a insertar: ";
+    Leer posicion;
+    Insertar(arreglo, elemento, posicion, cantidad);
+FinProcedimiento
+
+Procedimiento ProgramaEliminar(arreglo como Entero[], cantidad como Entero por Referencia)
+    Definir elemento Como Entero;
+    Escribir "Introduce elemento a eliminar: ";
+    Leer elemento;
+    EliminarElemento(arreglo, elemento, cantidad);
+FinProcedimiento
+
+Procedimiento ProgramaBuscar(arreglo como Entero[], cantidad como Entero por Referencia)
+    Definir elemento Como Entero;
+    Escribir "Introduce elemento a buscar: ";
+    Leer elemento;
+    Escribir "El elemento esta en la posicion: ", Buscar(arreglo, elemento, cantidad);;
+FinProcedimiento

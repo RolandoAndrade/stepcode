@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "six feet, then seven: prime and factorial both in range",
+      "inputs": ["6", "7"],
+      "output": "Introduce una altura en pies: \nSon 1.8288000000000002 metros\nIntroduce un numero: \n7 es primo\nSu factorial es 5040\n"
+    }
+  ]
+}

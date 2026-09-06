@@ -1,0 +1,9 @@
+// expect: E4004
+// input: veinte
+// U2: se pide un Entero y el usuario escribe una palabra.
+Proceso EntradaRechazada
+    Definir edad Como Entero;
+    Escribir "Edad:";
+    Leer edad;
+    Escribir "Tienes ", edad, " años";
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "two passes of the Repetir loop before the user answers n",
+      "inputs": ["12", "18", "s", "4", "6", "n"],
+      "output": "Introduce a: \nIntroduce b: \nMCM(12,18) = 36\nContinuar? [S/n]: \nIntroduce a: \nIntroduce b: \nMCM(4,6) = 12\nContinuar? [S/n]: \n"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "two of the three numbers match",
+      "inputs": ["4", "4", "7"],
+      "output": "Introduce A: \nIntroduce B: \nIntroduce C: \n2 numeros se repiten\n"
+    }
+  ]
+}

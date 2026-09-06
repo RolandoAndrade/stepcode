@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test parseString",
+      "inputs": [],
+      "output": "12\n"
+    }
+  ]
+}

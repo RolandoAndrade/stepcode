@@ -1,0 +1,97 @@
+import { useStore } from 'zustand'
+import { encodeShare } from '../share/link'
+import { RunControls } from '../shell/RunControls'
+import { useEditorStore, useEditorStoreApi } from '../store/context'
+import { nameWithExtension } from '../store/document'
+import { profileNameOf, stringsOf } from '../store/store'
+import { ExternalLink, Lock } from '../ui/icons'
+import { IconButton } from '../ui/Tooltip'
+import type { EmbedOptionsStore } from './options'
+
+/** Spec §3.2: 36 px — title and lock, the run cluster, then profile, problems and the way out. */
+export function TopBar({
+  options,
+  onReveal,
+}: {
+  options: EmbedOptionsStore
+  onReveal: (line: number) => void
+}) {
+  const store = useEditorStoreApi()
+  const strings = useEditorStore(stringsOf)
+  const profileName = useEditorStore((s) => profileNameOf(s, s.profileId))
+  const diagnostics = useEditorStore((s) => s.diagnostics)
+  const readOnly = useStore(options, (s) => s.readOnly)
+  const showProfile = useStore(options, (s) => s.showProfile)
+  const debug = useStore(options, (s) => s.debug)
+  const title = useStore(options, (s) => s.title)
+
+  const errors = diagnostics.filter((diagnostic) => diagnostic.severity === 'error').length
+  const warnings = diagnostics.filter((diagnostic) => diagnostic.severity === 'warning').length
+  const clean = errors === 0 && warnings === 0
+
+  const reveal = (): void => {
+    // The linter reports in no particular order, so the earliest problem in the text is the one
+    // to jump to, not whichever came back first.
+    const earliest = diagnostics.reduce<(typeof diagnostics)[number] | undefined>(
+      (best, diagnostic) => (best === undefined || diagnostic.from < best.from ? diagnostic : best),
+      undefined,
+    )
+    if (earliest === undefined) return
+    const line = store.getState().source.slice(0, earliest.from).split('\n').length
+    onReveal(line)
+  }
+
+  const openInStepCode = (): void => {
+    const s = store.getState()
+    encodeShare(
+      title === null
+        ? { source: s.source, profileId: s.profileId }
+        : { source: s.source, profileId: s.profileId, name: nameWithExtension(title) },
+    )
+      .then((hash) => {
+        // A blocked pop-up answers null; there is nothing to do with the handle either way.
+        window.open(`${location.origin}/${hash}`, '_blank', 'noopener')
+      })
+      .catch((error: unknown) => {
+        // Compression can fail or be torn down mid-flight; an unhandled rejection would take
+        // the frame (or a test run) with it.
+        console.warn('stepcode: could not build the share link', error)
+      })
+  }
+
+  return (
+    <header className="flex h-9 shrink-0 items-center gap-2 border-border border-b bg-surface px-2">
+      {title === null && !readOnly ? null : (
+        <span className="flex min-w-0 items-center gap-1">
+          {title === null ? null : <span className="truncate text-sm">{title}</span>}
+          {readOnly ? (
+            <span role="img" title={strings.embed.readOnly} aria-label={strings.embed.readOnly}>
+              <Lock size={12} />
+            </span>
+          ) : null}
+        </span>
+      )}
+      <RunControls debug={debug} />
+      <span className="ml-auto" />
+      {showProfile ? (
+        <span className="max-[479px]:hidden text-muted text-xs">{profileName}</span>
+      ) : null}
+      <button
+        type="button"
+        aria-label={strings.panels.problems}
+        onClick={reveal}
+        className={`flex h-6 items-center gap-1 rounded px-2 text-xs ${
+          clean ? 'text-muted' : errors > 0 ? 'text-error' : 'text-warning'
+        }`}
+      >
+        <span className="max-[479px]:hidden">
+          {clean ? strings.status.noProblems : strings.status.problems(errors, warnings)}
+        </span>
+        <span className="hidden max-[479px]:inline">{errors + warnings}</span>
+      </button>
+      <IconButton label={strings.embed.openInStepCode} onClick={openInStepCode}>
+        <ExternalLink />
+      </IconButton>
+    </header>
+  )
+}

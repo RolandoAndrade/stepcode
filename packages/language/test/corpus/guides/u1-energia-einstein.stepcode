@@ -1,0 +1,9 @@
+// Guía Práctica U1 — Pregunta 5: energía liberada por un 'Energion' (E = mc^2).
+Proceso EnergiaEinstein
+    Constante VelocidadLuz <- 299792458;
+    Definir masa, energia Como Real;
+    Escribir "Introduce la masa del Energion en kg: ";
+    Leer masa;
+    energia <- masa * VelocidadLuz ^ 2;
+    Escribir "La energia liberada es: ", energia, " joules";
+FinProceso

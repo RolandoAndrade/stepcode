@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "the r of programa is the first letter to repeat",
+      "inputs": ["programa"],
+      "output": "Introduce texto: \nLa letra r es la primera en repetirse.\n"
+    }
+  ]
+}

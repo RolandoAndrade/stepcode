@@ -1,0 +1,26 @@
+// Guía U5 Pretaller — Pregunta 1: adivinar una contraseña con un número limitado de intentos.
+Proceso AdivinarContrasena
+    Definir secreta, intento Como Cadena;
+    Definir intentos Como Entero;
+    Definir acertada Como Logico;
+    Escribir "Introduce contrasena: ";
+    Leer secreta;
+    Escribir "Intentos: ";
+    Leer intentos;
+    acertada <- Falso;
+    Mientras intentos > 0 Y No acertada Hacer
+        Escribir "Contrasena: ";
+        Leer intento;
+        Si intento = secreta Entonces
+            acertada <- Verdadero;
+        Sino
+            intentos <- intentos - 1;
+            Escribir "Incorrecto. ", intentos, " intentos";
+        FinSi
+    FinMientras
+    Si acertada Entonces
+        Escribir "Correcto!";
+    Sino
+        Escribir "Te quedaste sin intentos";
+    FinSi
+FinProceso

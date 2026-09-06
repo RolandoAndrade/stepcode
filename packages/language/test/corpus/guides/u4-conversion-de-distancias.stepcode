@@ -1,0 +1,45 @@
+// Guía Práctica U4 — Pregunta 6: convertir distancias entre m, km, mi y ft.
+Funcion AMetros(distancia Como Real, unidad Como Cadena): Real
+    Segun unidad Hacer
+        "m":
+            Retornar distancia;
+        "km":
+            Retornar distancia * 1000;
+        "mi":
+            Retornar distancia * 5280 * 0.3048;
+        "ft":
+            Retornar distancia * 0.3048;
+        De Otro Modo:
+            Retornar 0;
+    FinSegun
+    Retornar 0;
+FinFuncion
+
+Funcion DesdeMetros(metros Como Real, unidad Como Cadena): Real
+    Segun unidad Hacer
+        "m":
+            Retornar metros;
+        "km":
+            Retornar metros / 1000;
+        "mi":
+            Retornar metros / 1000 * 0.621371;
+        "ft":
+            Retornar metros / 0.3048;
+        De Otro Modo:
+            Retornar 0;
+    FinSegun
+    Retornar 0;
+FinFuncion
+
+Proceso ConversionDeDistancias
+    Definir distancia, resultado Como Real;
+    Definir origen, destino Como Cadena;
+    Escribir "Introduce distancia: ";
+    Leer distancia;
+    Escribir "Introduce unidad de origen: ";
+    Leer origen;
+    Escribir "Introduce unidad de destino: ";
+    Leer destino;
+    resultado <- DesdeMetros(AMetros(distancia, origen), destino);
+    Escribir distancia, origen, " son ", resultado, destino;
+FinProceso

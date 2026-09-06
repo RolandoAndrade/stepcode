@@ -1,0 +1,8 @@
+// expect: E3022
+// U5 Arreglos P1: se dimensiona un arreglo que ya tenía tamaño.
+Proceso DimensionRepetida
+    Definir a Como Entero[10];
+    Dimension a[10];
+    Leer a[1];
+    Escribir a[1];
+FinProceso

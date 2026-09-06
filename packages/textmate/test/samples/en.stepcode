@@ -1,0 +1,25 @@
+// Sum and greeting
+Program Example
+    Define a, b, total As Integer;
+    Define name As String;
+    WriteNoNewline "Name: ";
+    Read name;
+    Write 'Hello ', name;
+    a <- 10;
+    total <- a Mod 3 + Abs(-3) ** 2;
+    If a >= 2 And Not False Then
+        total <- a Div 2;
+    ElseIf a <> 2 Then
+        total <- total & 1;
+    Else
+        Write "equal";
+    EndIf
+    For i <- 1 To 10 Step 2 Do
+        Write i, Square(i);
+    EndFor
+    ClearScreen;
+EndProgram
+
+Function r <- Square(x ByValue As Real)
+    r <- x * x;
+EndFunction

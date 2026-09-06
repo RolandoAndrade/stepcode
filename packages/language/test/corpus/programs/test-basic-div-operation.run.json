@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic div operation",
+      "inputs": [],
+      "output": "2\n"
+    }
+  ]
+}

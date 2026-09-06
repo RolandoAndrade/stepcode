@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test imc calculator",
+      "inputs": ["60", "1.7"],
+      "output": "Introduzca su peso en kg\nIntroduzca su altura en m\nNormal\n20.761245674740486\n"
+    }
+  ]
+}

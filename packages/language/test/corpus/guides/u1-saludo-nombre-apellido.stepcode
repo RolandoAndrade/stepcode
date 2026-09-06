@@ -1,0 +1,10 @@
+// Guía Práctica U1 — Pregunta 2: saludo formado con el nombre y el apellido del usuario.
+Proceso SaludoCompleto
+    Definir nombre, apellido, saludo Como Cadena;
+    Escribir "Introduce nombre: ";
+    Leer nombre;
+    Escribir "Introduce apellido: ";
+    Leer apellido;
+    saludo <- Concatenar("Hola ", Concatenar(nombre, Concatenar(" ", apellido)));
+    Escribir saludo;
+FinProceso

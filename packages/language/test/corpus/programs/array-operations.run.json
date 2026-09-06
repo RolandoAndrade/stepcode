@@ -1,0 +1,19 @@
+{
+  "runs": [
+    {
+      "name": "insert into array",
+      "inputs": ["3", "1", "2", "3", "1", "4", "1", "0"],
+      "output": "Introduce cantidad del arreglo (max 10):\nEl arreglo es\narr[1]: 1\narr[2]: 2\narr[3]: 3\nIntroduce opcion: \n    [1]: Insertar elemento\n    [2]: Eliminar elemento\n    [3]: Buscar elemento\n    [0]: Salir\nIntroduce elemento a insertar: \nIntroduce posicion a insertar: \nEl arreglo es\narr[1]: 4\narr[2]: 1\narr[3]: 2\narr[4]: 3\nIntroduce opcion: \n    [1]: Insertar elemento\n    [2]: Eliminar elemento\n    [3]: Buscar elemento\n    [0]: Salir\n"
+    },
+    {
+      "name": "delete from array",
+      "inputs": ["4", "1", "2", "3", "4", "2", "2", "0"],
+      "output": "Introduce cantidad del arreglo (max 10):\nEl arreglo es\narr[1]: 1\narr[2]: 2\narr[3]: 3\narr[4]: 4\nIntroduce opcion: \n    [1]: Insertar elemento\n    [2]: Eliminar elemento\n    [3]: Buscar elemento\n    [0]: Salir\nIntroduce elemento a eliminar: \nEl arreglo es\narr[1]: 1\narr[2]: 3\narr[3]: 4\nIntroduce opcion: \n    [1]: Insertar elemento\n    [2]: Eliminar elemento\n    [3]: Buscar elemento\n    [0]: Salir\n"
+    },
+    {
+      "name": "search in array",
+      "inputs": ["4", "1", "2", "3", "4", "3", "2", "0"],
+      "output": "Introduce cantidad del arreglo (max 10):\nEl arreglo es\narr[1]: 1\narr[2]: 2\narr[3]: 3\narr[4]: 4\nIntroduce opcion: \n    [1]: Insertar elemento\n    [2]: Eliminar elemento\n    [3]: Buscar elemento\n    [0]: Salir\nIntroduce elemento a buscar: \nEl elemento esta en la posicion: 2\nEl arreglo es\narr[1]: 1\narr[2]: 2\narr[3]: 3\narr[4]: 4\nIntroduce opcion: \n    [1]: Insertar elemento\n    [2]: Eliminar elemento\n    [3]: Buscar elemento\n    [0]: Salir\n"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test true and true",
+      "inputs": [],
+      "output": "Verdadero\n"
+    }
+  ]
+}

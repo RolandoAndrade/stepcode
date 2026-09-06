@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test 10 fibonacci numbers",
+      "inputs": ["10"],
+      "output": "Ingrese el numero de elementos de la serie\n0\n1\n1\n2\n3\n5\n8\n13\n21\n34\n"
+    }
+  ]
+}

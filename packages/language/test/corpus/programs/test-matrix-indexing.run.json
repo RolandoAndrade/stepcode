@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test matrix indexing",
+      "inputs": [],
+      "output": "1\n"
+    }
+  ]
+}

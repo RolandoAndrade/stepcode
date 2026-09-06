@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a snail that does move, so the division branch runs",
+      "inputs": ["12", "0.5"],
+      "output": "Introduce el desplazamiento en metros: Introduce la velocidad en metros por segundo: El caracol tarda 24 segundos\n"
+    }
+  ]
+}

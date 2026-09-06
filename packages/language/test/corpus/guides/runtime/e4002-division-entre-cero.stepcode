@@ -1,0 +1,10 @@
+// expect: E4002
+// input: 0
+// U1 P6: el tiempo de un MRU con velocidad cero.
+Proceso DivisionEntreCero
+    Definir distancia, velocidad Como Real;
+    distancia <- 100;
+    Escribir "Velocidad:";
+    Leer velocidad;
+    Escribir "Tiempo: ", distancia / velocidad;
+FinProceso

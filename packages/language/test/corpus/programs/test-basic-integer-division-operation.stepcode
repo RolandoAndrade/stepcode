@@ -1,0 +1,7 @@
+Proceso prueba
+      Definir a, b, c Como Entero;
+      a <- 10;
+      b <- 4;
+      c <- a DIV b;
+      Escribir c;
+      FinProceso

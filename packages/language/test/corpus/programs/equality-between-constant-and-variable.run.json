@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "equality between constant and variable",
+      "inputs": [],
+      "output": "Verdadero\n"
+    }
+  ]
+}

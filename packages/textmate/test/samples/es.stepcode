@@ -1,0 +1,50 @@
+// Suma y saludo
+Proceso Ejemplo
+    Definir a, b, total Como Entero;
+    Definir nombre Como Cadena;
+    Definir listo Como Logico;
+    Escribir Sin Saltar "Nombre: ";
+    Leer nombre;
+    Escribir 'Hola ', nombre;
+    a <- 10;
+    b ← 2;
+    total <- a MOD b + Abs(-3) ^ 2 * 1.5;
+    Si a >= b Y No Falso Entonces
+        total <- a DIV b;
+    Sino Si a <> b Entonces
+        total <- total % 2;
+    Sino
+        Escribir "iguales";
+    FinSi
+    Sí total = 0 Entonces
+        Escribir "cero";
+    FinSi
+    Mientras Que total > 0 Hacer
+        total <- total - 1;
+    FinMientras
+    Para i <- 1 Hasta 10 Con Paso 2 Hacer
+        Escribir i;
+    FinPara
+    Repetir
+        total <- Aleatorio(1, 6);
+    Hasta Que total = 6
+    Segun total Hacer
+        1: Escribir "uno";
+        De Otro Modo: Escribir "otro";
+    FinSegun
+    listo <- Verdadero;
+    Escribir Cuadrado(3), SiNoValido, listo;
+    Saludar(nombre);
+    Limpiar Pantalla;
+    Esperar Tecla;
+FinProceso
+
+Funcion r <- Cuadrado(x Por Valor Como Real)
+    r <- x * x;
+FinFuncion
+
+SubProceso Saludar(quien Por Referencia Como Cadena)
+    Escribir "Hola ", quien;
+    Dimension marcas[3];
+    marcas[1] <- Longitud(quien);
+FinSubProceso

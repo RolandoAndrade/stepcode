@@ -1,0 +1,28 @@
+// Guía Práctica U4 — Pregunta 17: pasar un entero positivo a hexadecimal con DIV y MOD.
+Funcion AHexadecimal(n Como Entero): Cadena
+    Definir digitos, salida Como Cadena;
+    Definir resto Como Entero;
+    digitos <- "0123456789ABCDEF";
+    Si n = 0 Entonces
+        Retornar "0";
+    FinSi
+    salida <- "";
+    resto <- n;
+    Mientras resto > 0 Hacer
+        salida <- digitos[resto MOD 16 + 1] + salida;
+        resto <- resto DIV 16;
+    FinMientras
+    Retornar salida;
+FinFuncion
+
+Proceso NumeroAHexadecimal
+    Definir n Como Entero;
+    Repetir
+        Escribir "Introduce numero: ";
+        Leer n;
+        Si n > 0 Entonces
+            Escribir AHexadecimal(n);
+        FinSi
+    Hasta Que n <= 0;
+    Escribir "Adios!";
+FinProceso

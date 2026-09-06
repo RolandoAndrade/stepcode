@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test truncate",
+      "inputs": ["1.5"],
+      "output": "1\n"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test simple for statement with break",
+      "inputs": [],
+      "output": "1\n2\n"
+    }
+  ]
+}

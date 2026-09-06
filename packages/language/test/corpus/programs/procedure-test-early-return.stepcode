@@ -1,0 +1,8 @@
+SubProceso prueba
+        Escribir 'hola';
+        Retornar;
+        Escribir 'adios';
+      FinSubProceso
+      Proceso pruebaProceso
+        prueba();
+      FinProceso

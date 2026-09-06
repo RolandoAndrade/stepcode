@@ -1,0 +1,19 @@
+// Guía Práctica U1 — Pregunta 4: suma, resta, producto, división, división entera, módulo y potencia.
+Proceso OperacionesBasicas
+    Definir n1, n2 Como Entero;
+    Escribir "Introduce n1: ";
+    Leer n1;
+    Escribir "Introduce n2: ";
+    Leer n2;
+    Escribir "La suma es: ", n1 + n2;
+    Escribir "La resta es: ", n1 - n2;
+    Escribir "La multiplicacion es: ", n1 * n2;
+    Si n2 = 0 Entonces
+        Escribir "No se puede dividir entre cero";
+    Sino
+        Escribir "La division es: ", n1 / n2;
+        Escribir "La division entera es: ", n1 DIV n2;
+        Escribir "El modulo es: ", n1 MOD n2;
+    FinSi
+    Escribir "La potencia es: ", n1 ^ n2;
+FinProceso

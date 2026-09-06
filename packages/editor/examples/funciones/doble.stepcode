@@ -1,0 +1,12 @@
+// título: Doble
+// descripción: Una función que devuelve un valor
+Funcion Doble(n Como Entero): Entero
+  Retornar n * 2;
+FinFuncion
+
+Proceso ProbarDoble
+  Definir x Como Entero;
+  Escribir 'Introduce un número: ';
+  Leer x;
+  Escribir 'El doble es: ', Doble(x);
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic indexing",
+      "inputs": [],
+      "output": "H\n"
+    }
+  ]
+}

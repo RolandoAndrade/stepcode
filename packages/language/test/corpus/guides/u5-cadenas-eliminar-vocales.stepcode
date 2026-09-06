@@ -1,0 +1,24 @@
+// Guía U5 Cadenas — Pregunta 4: eliminar las vocales de un texto.
+Funcion EsVocal(letra Como Caracter): Logico
+    Segun Minusculas(letra) Hacer
+        'a', 'e', 'i', 'o', 'u':
+            Retornar Verdadero;
+        De Otro Modo:
+            Retornar Falso;
+    FinSegun
+    Retornar Falso;
+FinFuncion
+
+Proceso EliminarVocales
+    Definir frase, salida Como Cadena;
+    Definir i Como Entero;
+    Escribir "Introduce texto: ";
+    Leer frase;
+    salida <- "";
+    Para i <- 1 Hasta Longitud(frase) Hacer
+        Si No EsVocal(frase[i]) Entonces
+            salida <- salida + frase[i];
+        FinSi
+    FinPara
+    Escribir "Resultado: ", salida;
+FinProceso

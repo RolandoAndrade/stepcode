@@ -1,0 +1,221 @@
+{
+  "name": "stepcode-en",
+  "scopeName": "source.stepcode.en",
+  "patterns": [
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#string"
+    },
+    {
+      "include": "#subprogram"
+    },
+    {
+      "include": "#program"
+    },
+    {
+      "include": "#definition"
+    },
+    {
+      "include": "#keyword-control"
+    },
+    {
+      "include": "#keyword-definition"
+    },
+    {
+      "include": "#keyword-modifier"
+    },
+    {
+      "include": "#keyword-io"
+    },
+    {
+      "include": "#keyword-operator"
+    },
+    {
+      "include": "#boolean"
+    },
+    {
+      "include": "#type"
+    },
+    {
+      "include": "#builtin"
+    },
+    {
+      "include": "#number"
+    },
+    {
+      "include": "#call"
+    },
+    {
+      "include": "#operator-assignment"
+    },
+    {
+      "include": "#operator-comparison"
+    },
+    {
+      "include": "#operator-arithmetic"
+    },
+    {
+      "include": "#punctuation"
+    },
+    {
+      "include": "#identifier"
+    }
+  ],
+  "repository": {
+    "keyword-control": {
+      "name": "keyword.control.stepcode",
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(?:[EÈÉÊË]ndSw[iìíîï]t[cç]h|[OÒÓÔÕÖ]th[eèéêë]rw[iìíîï]s[eèéêë]|[CÇ][oòóôõö]nt[iìíîï]n[uùúûü][eèéêë]|[EÈÉÊË]ndWh[iìíîï]l[eèéêë]|[EÈÉÊË]ls[eèéêë][IÌÍÎÏ]f|[EÈÉÊË]ndF[oòóôõö]r|R[eèéêë]p[eèéêë][aàáâãä]t|R[eèéêë]t[uùúûü]rn|Sw[iìíîï]t[cç]h|Br[eèéêë][aàáâãä]k|[EÈÉÊË]nd[IÌÍÎÏ]f|[UÙÚÛÜ]nt[iìíîï]l|Wh[iìíîï]l[eèéêë]|[EÈÉÊË]ls[eèéêë]|St[eèéêë]p|Th[eèéêë]n|F[oòóôõö]r|D[oòóôõö]|[IÌÍÎÏ]f|T[oòóôõö])(?![\\p{L}\\p{N}_])"
+    },
+    "keyword-definition": {
+      "name": "storage.type.stepcode",
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(?:[EÈÉÊË]ndPr[oòóôõö][cç][eèéêë]d[uùúûü]r[eèéêë]|[EÈÉÊË]ndF[uùúûü]n[cç]t[iìíîï][oòóôõö]n|[EÈÉÊË]ndPr[oòóôõö]gr[aàáâãä]m|D[iìíîï]m[eèéêë]ns[iìíîï][oòóôõö]n|Pr[oòóôõö][cç][eèéêë]d[uùúûü]r[eèéêë]|[CÇ][oòóôõö]nst[aàáâãä]nt|F[uùúûü]n[cç]t[iìíîï][oòóôõö]n|Pr[oòóôõö]gr[aàáâãä]m|D[eèéêë]f[iìíîï]n[eèéêë]|[AÀÁÂÃÄ]s)(?![\\p{L}\\p{N}_])"
+    },
+    "keyword-modifier": {
+      "name": "storage.modifier.stepcode",
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(?:B[yýÿ]V[aàáâãä]l[uùúûü][eèéêë]|B[yýÿ]R[eèéêë]f)(?![\\p{L}\\p{N}_])"
+    },
+    "keyword-io": {
+      "name": "keyword.other.io.stepcode",
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(?:Wr[iìíîï]t[eèéêë]N[oòóôõö]N[eèéêë]wl[iìíîï]n[eèéêë]|[CÇ]l[eèéêë][aàáâãä]rS[cç]r[eèéêë][eèéêë]n|W[aàáâãä][iìíîï]tK[eèéêë][yýÿ]|Pr[iìíîï]nt|Wr[iìíîï]t[eèéêë]|R[eèéêë][aàáâãä]d|W[aàáâãä][iìíîï]t)(?![\\p{L}\\p{N}_])"
+    },
+    "keyword-operator": {
+      "name": "keyword.operator.word.stepcode",
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(?:[AÀÁÂÃÄ]nd|D[iìíîï]v|M[oòóôõö]d|N[oòóôõö]t|[OÒÓÔÕÖ]r)(?![\\p{L}\\p{N}_])"
+    },
+    "boolean": {
+      "name": "constant.language.boolean.stepcode",
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(?:F[aàáâãä]ls[eèéêë]|Tr[uùúûü][eèéêë])(?![\\p{L}\\p{N}_])"
+    },
+    "type": {
+      "name": "support.type.primitive.stepcode",
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(?:B[oòóôõö][oòóôõö]l[eèéêë][aàáâãä]n|[IÌÍÎÏ]nt[eèéêë]g[eèéêë]r|Str[iìíîï]ng|[CÇ]h[aàáâãä]r|R[eèéêë][aàáâãä]l|T[eèéêë]xt)(?![\\p{L}\\p{N}_])"
+    },
+    "builtin": {
+      "name": "support.function.builtin.stepcode",
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(?:R[aàáâãä]nd[oòóôõö]mB[eèéêë]tw[eèéêë][eèéêë]n|S[uùúûü]bstr[iìíîï]ng|T[oòóôõö]N[uùúûü]mb[eèéêë]r|[CÇ][oòóôõö]n[cç][aàáâãä]t|L[eèéêë]ngth|R[aàáâãä]nd[oòóôõö]m|T[oòóôõö]T[eèéêë]xt|L[oòóôõö]w[eèéêë]r|R[oòóôõö][uùúûü]nd|Tr[uùúûü]n[cç]|[UÙÚÛÜ]pp[eèéêë]r|[AÀÁÂÃÄ][CÇ][oòóôõö]s|[AÀÁÂÃÄ]S[iìíîï]n|[AÀÁÂÃÄ]T[aàáâãä]n|Sqrt|[AÀÁÂÃÄ]bs|[CÇ][oòóôõö]s|[EÈÉÊË]xp|S[iìíîï]n|T[aàáâãä]n|Ln|P[IÌÍÎÏ])(?![\\p{L}\\p{N}_])"
+    },
+    "comment": {
+      "name": "comment.line.stepcode",
+      "match": "(?:\\/\\/).*$"
+    },
+    "string": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.stepcode",
+          "match": "\"[^\"]*(?:\"|$)"
+        },
+        {
+          "name": "string.quoted.single.stepcode",
+          "match": "'[^']*(?:'|$)"
+        }
+      ]
+    },
+    "number": {
+      "patterns": [
+        {
+          "name": "constant.numeric.real.stepcode",
+          "match": "(?<![\\p{L}\\p{N}_])\\d+\\.\\d+(?![\\p{L}\\p{N}_])"
+        },
+        {
+          "name": "constant.numeric.integer.stepcode",
+          "match": "(?<![\\p{L}\\p{N}_])\\d+(?![\\p{L}\\p{N}_])"
+        }
+      ]
+    },
+    "operator-assignment": {
+      "name": "keyword.operator.assignment.stepcode",
+      "match": "<-|←"
+    },
+    "operator-comparison": {
+      "name": "keyword.operator.comparison.stepcode",
+      "match": "!=|<=|<>|>=|<|=|>|≠|≤|≥"
+    },
+    "operator-arithmetic": {
+      "name": "keyword.operator.arithmetic.stepcode",
+      "match": "\\*\\*|%|&|\\*|\\+|-|\\/|\\^|\\||~"
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.section.parens.stepcode",
+          "match": "[()]"
+        },
+        {
+          "name": "punctuation.section.brackets.stepcode",
+          "match": "[\\[\\]]"
+        },
+        {
+          "name": "punctuation.separator.stepcode",
+          "match": "[,:]"
+        },
+        {
+          "name": "punctuation.terminator.stepcode",
+          "match": ";"
+        }
+      ]
+    },
+    "identifier": {
+      "name": "variable.other.stepcode",
+      "match": "(?<![\\p{L}\\p{N}_])[\\p{L}_][\\p{L}\\p{N}_]*(?![\\p{L}\\p{N}_])"
+    },
+    "subprogram": {
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(Pr[oòóôõö][cç][eèéêë]d[uùúûü]r[eèéêë]|F[uùúûü]n[cç]t[iìíîï][oòóôõö]n)(?![\\p{L}\\p{N}_])[ \\t]+(?:([\\p{L}_][\\p{L}\\p{N}_]*)[ \\t]*(<-|←)[ \\t]*)?([\\p{L}_][\\p{L}\\p{N}_]*)(?![\\p{L}\\p{N}_])",
+      "captures": {
+        "1": {
+          "name": "storage.type.stepcode"
+        },
+        "2": {
+          "name": "variable.other.definition.stepcode"
+        },
+        "3": {
+          "name": "keyword.operator.assignment.stepcode"
+        },
+        "4": {
+          "name": "entity.name.function.stepcode"
+        }
+      }
+    },
+    "program": {
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(Pr[oòóôõö]gr[aàáâãä]m)(?![\\p{L}\\p{N}_])[ \\t]+([\\p{L}_][\\p{L}\\p{N}_]*)(?![\\p{L}\\p{N}_])",
+      "captures": {
+        "1": {
+          "name": "storage.type.stepcode"
+        },
+        "2": {
+          "name": "entity.name.function.stepcode"
+        }
+      }
+    },
+    "definition": {
+      "match": "(?i)(?<![\\p{L}\\p{N}_])(D[eèéêë]f[iìíîï]n[eèéêë])(?![\\p{L}\\p{N}_])[ \\t]+((?:[\\p{L}_][\\p{L}\\p{N}_]*[ \\t]*,[ \\t]*)*[\\p{L}_][\\p{L}\\p{N}_]*)(?![\\p{L}\\p{N}_])",
+      "captures": {
+        "1": {
+          "name": "storage.type.stepcode"
+        },
+        "2": {
+          "patterns": [
+            {
+              "name": "variable.other.definition.stepcode",
+              "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+            },
+            {
+              "name": "punctuation.separator.stepcode",
+              "match": ","
+            }
+          ]
+        }
+      }
+    },
+    "call": {
+      "match": "(?<![\\p{L}\\p{N}_])([\\p{L}_][\\p{L}\\p{N}_]*)(?=[ \\t]*\\()",
+      "captures": {
+        "1": {
+          "name": "entity.name.function.call.stepcode"
+        }
+      }
+    }
+  },
+  "displayName": "StepCode (English)"
+}

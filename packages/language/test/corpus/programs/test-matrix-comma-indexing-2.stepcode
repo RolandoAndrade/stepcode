@@ -1,0 +1,9 @@
+Proceso prueba
+      Definir a, b Como Entero;
+      Dimension a[3,3];
+      a[1,1] <- 1;
+      a[2,2] <- 2;
+      a[3,3] <- 3;
+      b <- a[2,2];
+      Escribir b;
+      FinProceso

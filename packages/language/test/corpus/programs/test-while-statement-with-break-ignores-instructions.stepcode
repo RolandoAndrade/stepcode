@@ -1,0 +1,12 @@
+Proceso prueba
+        Definir a Como Entero;
+        a <- 1;
+        Mientras a < 10 Hacer
+          Escribir a;
+          Si a = 3 Entonces
+            Romper;
+          FinSi
+          a <- a + 1;
+        FinMientras
+        Escribir 'a=', a;
+      FinProceso

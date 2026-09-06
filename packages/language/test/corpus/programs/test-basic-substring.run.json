@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic substring",
+      "inputs": [],
+      "output": "Ho\n"
+    }
+  ]
+}

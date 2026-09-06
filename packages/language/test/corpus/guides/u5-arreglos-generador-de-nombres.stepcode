@@ -1,0 +1,22 @@
+// Guía U5 Arreglos — Pregunta 7: generar nombres combinando al azar un nombre y un apellido.
+Proceso GeneradorDeNombres
+    Definir nombres, apellidos Como Cadena[10];
+    Definir cantidadNombres, cantidadApellidos, aGenerar, i Como Entero;
+    Escribir "Introduce n de nombres: ";
+    Leer cantidadNombres;
+    Escribir "Introduce n de apellidos: ";
+    Leer cantidadApellidos;
+    Para i <- 1 Hasta cantidadNombres Hacer
+        Escribir "nombre[", i, "]: ";
+        Leer nombres[i];
+    FinPara
+    Para i <- 1 Hasta cantidadApellidos Hacer
+        Escribir "apellido[", i, "]: ";
+        Leer apellidos[i];
+    FinPara
+    Escribir "Nombres a generar: ";
+    Leer aGenerar;
+    Para i <- 1 Hasta aGenerar Hacer
+        Escribir nombres[Aleatorio(1, cantidadNombres)], " ", apellidos[Aleatorio(1, cantidadApellidos)];
+    FinPara
+FinProceso

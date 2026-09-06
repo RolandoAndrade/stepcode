@@ -1,0 +1,11 @@
+// Guía Práctica U4 — Pregunta 2: área de un círculo, con la constante definida y con PI.
+Proceso AreaDelCirculo
+    Constante PiAproximado <- 3.14;
+    Definir radio, areaAproximada, areaExacta Como Real;
+    Escribir "Introduce radio: ";
+    Leer radio;
+    areaAproximada <- PiAproximado * radio ^ 2;
+    areaExacta <- PI * radio ^ 2;
+    Escribir "El area es: ", areaAproximada;
+    Escribir "Con PI del lenguaje es: ", areaExacta;
+FinProceso

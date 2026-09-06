@@ -1,0 +1,20 @@
+// Power demo using a letter-spelled operator
+Program PowerDemo
+    Define elevadoraBase, exponent, result As Integer;
+    Define elevadora As Integer;
+    elevadoraBase <- 2;
+    exponent <- 10;
+    elevadora <- elevadoraBase elevado exponent;
+    result <- elevadoraBase ** exponent;
+    Write elevadora, result;
+    If elevadora = result Then
+        Write "same";
+    Else
+        Write "different";
+    EndIf
+    For i <- 1 To exponent Step 1 Do
+        result <- result elevado 1;
+    EndFor
+    WriteNoNewline "done: ";
+    Write result;
+EndProgram

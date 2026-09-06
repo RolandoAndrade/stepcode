@@ -1,0 +1,11 @@
+// expect: E3026
+// U4 P7: el contador del Para se declaró Real.
+Proceso ContadorReal
+    Definir i Como Real;
+    Definir total Como Real;
+    total <- 0;
+    Para i <- 1 Hasta 10 Hacer
+        total <- total + i;
+    FinPara
+    Escribir total;
+FinProceso

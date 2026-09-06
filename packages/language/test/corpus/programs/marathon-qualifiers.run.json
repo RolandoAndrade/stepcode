@@ -1,0 +1,34 @@
+{
+  "runs": [
+    {
+      "name": "test <40 year old male",
+      "inputs": ["39", "m", "149.9"],
+      "output": "Ingrese la edad de la persona: \nIngrese el sexo de la persona (M/F): \nIngrese el tiempo de calificacion en minutos: \nEl corredor clasifica\n"
+    },
+    {
+      "name": "test <40 year old male slow",
+      "inputs": ["39", "m", "150"],
+      "output": "Ingrese la edad de la persona: \nIngrese el sexo de la persona (M/F): \nIngrese el tiempo de calificacion en minutos: \nEl corredor no clasifica\n"
+    },
+    {
+      "name": "test >= 40 year old male",
+      "inputs": ["40", "m", "174.9"],
+      "output": "Ingrese la edad de la persona: \nIngrese el sexo de la persona (M/F): \nIngrese el tiempo de calificacion en minutos: \nEl corredor clasifica\n"
+    },
+    {
+      "name": "test >= 40 year old male slow",
+      "inputs": ["40", "m", "175"],
+      "output": "Ingrese la edad de la persona: \nIngrese el sexo de la persona (M/F): \nIngrese el tiempo de calificacion en minutos: \nEl corredor no clasifica\n"
+    },
+    {
+      "name": "test females",
+      "inputs": ["40", "f", "179.9"],
+      "output": "Ingrese la edad de la persona: \nIngrese el sexo de la persona (M/F): \nIngrese el tiempo de calificacion en minutos: \nEl corredor clasifica\n"
+    },
+    {
+      "name": "test females slow",
+      "inputs": ["40", "f", "180"],
+      "output": "Ingrese la edad de la persona: \nIngrese el sexo de la persona (M/F): \nIngrese el tiempo de calificacion en minutos: \nEl corredor no clasifica\n"
+    }
+  ]
+}

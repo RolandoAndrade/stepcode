@@ -1,0 +1,10 @@
+{
+  "runs": [
+    {
+      "name": "test random",
+      "inputs": [],
+      "output": "0.6270739405881613\n",
+      "seed": 1
+    }
+  ]
+}

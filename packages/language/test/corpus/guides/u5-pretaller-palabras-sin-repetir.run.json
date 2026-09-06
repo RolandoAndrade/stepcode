@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a repeated word is refused before the empty line ends it",
+      "inputs": ["sol", "luna", "sol", ""],
+      "output": "Introduce palabra: \nPalabras: sol\nIntroduce palabra: \nPalabras: sol, luna\nIntroduce palabra: \nPalabra ya usada.\nPalabras: sol, luna\nIntroduce palabra: \n"
+    }
+  ]
+}

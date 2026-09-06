@@ -1,0 +1,9 @@
+// expect: E4005
+// U6: una función recursiva sin caso base.
+Funcion r Como Entero <- Cuenta(n Como Entero)
+    r <- Cuenta(n + 1);
+FinFuncion
+
+Proceso RecursionSinFin
+    Escribir Cuenta(1);
+FinProceso

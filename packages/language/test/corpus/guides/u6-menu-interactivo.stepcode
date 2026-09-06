@@ -1,0 +1,38 @@
+// Guía U6 Procedimientos y funciones — Pregunta 4: un menú que reúne las utilidades de las guías.
+Funcion MetrosAKilometros(metros Como Real): Real
+    Retornar metros * 0.001;
+FinFuncion
+
+Funcion LibrasAKilogramos(libras Como Real): Real
+    Retornar libras * 0.45359237;
+FinFuncion
+
+Proceso MenuInteractivo
+    Definir opcion Como Entero;
+    Definir valor Como Real;
+    Repetir
+        Limpiar Pantalla;
+        Escribir "[1] Metros a kilometros";
+        Escribir "[2] Libras a kilogramos";
+        Escribir "[0] Salir";
+        Escribir "Introduce opcion: ";
+        Leer opcion;
+        Si opcion = 0 Entonces
+            Romper;
+        FinSi
+        Escribir "Introduce el valor: ";
+        Leer valor;
+        Segun opcion Hacer
+            1:
+                Escribir "Son ", MetrosAKilometros(valor), " km";
+            2:
+                Escribir "Son ", LibrasAKilogramos(valor), " kg";
+            De Otro Modo:
+                Escribir "Opcion invalida";
+        FinSegun
+        Esperar 500;
+        Escribir "Pulsa una tecla para continuar";
+        Esperar Tecla;
+    Hasta Que opcion = 0;
+    Escribir "Hasta pronto";
+FinProceso

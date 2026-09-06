@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "seventeen and five, so every operator shows a distinct value",
+      "inputs": ["17", "5"],
+      "output": "Introduce n1: \nIntroduce n2: \nLa suma es: 22\nLa resta es: 12\nLa multiplicacion es: 85\nLa division es: 3.4\nLa division entera es: 3\nEl modulo es: 2\nLa potencia es: 1419857\n"
+    }
+  ]
+}

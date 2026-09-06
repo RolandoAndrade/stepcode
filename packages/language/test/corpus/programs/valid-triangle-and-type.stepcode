@@ -1,0 +1,31 @@
+Proceso Triangulo
+    Definir a, b, c Como Real;
+    Definir iguales Como Entero;
+
+    Escribir "Introduzca a, b y c";
+    Leer a, b, c;
+
+    Si (a ≥ b + c ) O (b ≥ a + c) O (c ≥ a + b) Entonces
+        Escribir "Triangulo no valido";
+    Sino
+        iguales ← 0;
+        Si a = b Entonces
+            iguales ← iguales + 1;
+        FinSi
+        Si a = c Entonces
+            iguales ← iguales + 1;
+        FinSi
+        Si b = c Entonces
+            iguales ← iguales + 1;
+        FinSi
+        Segun iguales Hacer
+            0:
+                Escribir "Triangulo escaleno";
+            1:
+                Escribir "Triangulo isosceles";
+            De otro modo:
+                Escribir "Triangulo equilatero";
+        FinSegun
+    FinSi
+    Escribir iguales;
+    FinProceso

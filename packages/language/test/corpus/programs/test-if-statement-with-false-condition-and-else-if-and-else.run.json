@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test if statement with false condition and else if and else",
+      "inputs": [],
+      "output": "a=2\n"
+    }
+  ]
+}

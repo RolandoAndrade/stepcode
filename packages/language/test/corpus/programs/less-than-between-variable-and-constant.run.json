@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "less than between variable and constant",
+      "inputs": [],
+      "output": "Falso\n"
+    }
+  ]
+}

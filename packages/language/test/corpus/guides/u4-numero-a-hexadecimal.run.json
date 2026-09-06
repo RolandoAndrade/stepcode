@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "two conversions, then zero ends the loop",
+      "inputs": ["255", "4095", "0"],
+      "output": "Introduce numero: \nFF\nIntroduce numero: \nFFF\nIntroduce numero: \nAdios!\n"
+    }
+  ]
+}

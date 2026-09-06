@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "option two sorts the five numbers descending",
+      "inputs": ["5", "2", "4", "1", "5", "3", "2"],
+      "output": "Introduce n: \nOrden [1] ascendente [2] descendente: \na[1]: \na[2]: \na[3]: \na[4]: \na[5]: \nOrdenado es: 5 4 3 2 1 \n"
+    }
+  ]
+}

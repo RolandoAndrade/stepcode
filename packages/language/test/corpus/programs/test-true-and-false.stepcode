@@ -1,0 +1,7 @@
+Proceso prueba
+      Definir a, b, c Como Logico;
+      a <- Verdadero;
+      b <- Falso;
+      c <- a Y b;
+      Escribir c;
+      FinProceso

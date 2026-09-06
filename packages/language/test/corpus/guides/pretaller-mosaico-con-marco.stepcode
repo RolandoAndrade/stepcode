@@ -1,0 +1,27 @@
+// Guía Pretaller — Pregunta 3: el mosaico anterior encerrado en un marco.
+SubProceso EscribirMarco(ancho Como Entero)
+    Definir columna Como Entero;
+    Para columna <- 1 Hasta ancho Hacer
+        Escribir Sin Saltar "M";
+    FinPara
+    Escribir "";
+FinSubProceso
+
+Proceso MosaicoConMarco
+    Definir lado, fila, columna Como Entero;
+    Escribir "Introduce lado: ";
+    Leer lado;
+    EscribirMarco(lado + 2);
+    Para fila <- 1 Hasta lado Hacer
+        Escribir Sin Saltar "M";
+        Para columna <- 1 Hasta lado Hacer
+            Si (fila + columna) MOD 2 = 0 Entonces
+                Escribir Sin Saltar "A";
+            Sino
+                Escribir Sin Saltar "B";
+            FinSi
+        FinPara
+        Escribir "M";
+    FinPara
+    EscribirMarco(lado + 2);
+FinProceso

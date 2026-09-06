@@ -1,0 +1,11 @@
+
+      Proceso prueba
+        Definir a, b Como Entero;
+        a <- 2;
+        Segun a Hacer
+          1, 2: Escribir '1<=a<=2';
+          3: Escribir 'a=3';
+          De Otro Modo: Escribir 'a!=1,2,3';
+        FinSegun
+      FinProceso
+      

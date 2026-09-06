@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "three of six numbers survive the compaction",
+      "inputs": ["6", "3", "8", "5", "4", "7", "10"],
+      "output": "Introduce n: \na[1]: \na[2]: \na[3]: \na[4]: \na[5]: \na[6]: \nSin pares es: 3 5 7 \n"
+    }
+  ]
+}

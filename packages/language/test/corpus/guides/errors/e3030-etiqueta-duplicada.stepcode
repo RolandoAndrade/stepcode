@@ -1,0 +1,12 @@
+// expect: E3030
+// U5 Arreglos P2: el menú repite la opción 1.
+Proceso MenuDuplicado
+    Definir opcion Como Entero;
+    Leer opcion;
+    Segun opcion Hacer
+        1:
+            Escribir "ascendente";
+        1:
+            Escribir "descendente";
+    FinSegun
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic mul operation",
+      "inputs": [],
+      "output": "200\n"
+    }
+  ]
+}

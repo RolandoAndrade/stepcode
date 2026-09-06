@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "eighteen sweets leave one over",
+      "inputs": ["18"],
+      "output": "Introduce un numero: \nNecesitas 3 paquetes de 5 caramelos.\nNecesitas 1 paquetes de 2 caramelos.\nSobran 1 caramelos.\n"
+    }
+  ]
+}

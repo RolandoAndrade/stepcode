@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "five numbers through all eight subprograms",
+      "inputs": ["5", "4", "9", "1", "7", "3", "7"],
+      "output": "Dame un arreglo de enteros de longitud: \nEl array es: 4 9 1 7 3 \nLa suma es: 24\nEl maximo es: 9\nEl minimo es: 1\nVolteado es: 3 7 1 9 4 \nOrdenado ascendente es: 1 3 4 7 9 \nNumero a buscar: \nSu posicion es: 4\n"
+    }
+  ]
+}

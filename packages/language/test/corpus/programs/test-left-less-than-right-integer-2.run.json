@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test left less than right integer",
+      "inputs": [],
+      "output": "Verdadero\n"
+    }
+  ]
+}

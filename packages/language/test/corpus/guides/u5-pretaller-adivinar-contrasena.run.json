@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "one wrong guess, then the right one",
+      "inputs": ["clave", "3", "abc", "clave"],
+      "output": "Introduce contrasena: \nIntentos: \nContrasena: \nIncorrecto. 2 intentos\nContrasena: \nCorrecto!\n"
+    }
+  ]
+}

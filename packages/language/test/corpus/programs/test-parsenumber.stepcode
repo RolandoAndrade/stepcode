@@ -1,0 +1,6 @@
+Proceso prueba
+    Definir a, b Como Cadena;
+    a <- "1.5";
+    b <- "1";
+    Escribir ConvertirANumero(a) + ConvertirANumero(b);
+    FinProceso

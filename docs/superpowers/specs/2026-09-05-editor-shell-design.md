@@ -1,0 +1,715 @@
+# Editor shell (sub-project 4b) design
+
+Date: 2026-09-05. Branch `RolandoAndrade/v2`. Builds on the editor core spec
+(`2026-09-05-editor-core-design.md`) and the umbrella spec (`2026-09-03-stepcode-v2-design.md`,
+§4). The core spec's protocol, driver, host, store slices, panels and theme tokens stay as they
+are; this spec adds everything a person sees around them.
+
+## 1. Goal and scope
+
+4a proved the runtime and rendered four panels in a fixed grid. The result works and looks like an
+unstyled prototype: icons without hierarchy, no status bar, no menu, no persistence, a phone
+layout that does not exist. 4b turns it into the product: an editor that a person who has never
+seen code can open, run an example in, and read the result of, without feeling they are inside an
+IDE; and that a teacher can rearrange, float and project.
+
+Design intent, in priority order:
+
+1. **Calm by default.** The first screen is the editor and a run button. Everything else is
+   present but collapsed, and unfolds when an event needs it.
+2. **Words where it matters, icons where they are expected.** Toolbar actions are icons with
+   tooltips (label plus shortcut). State, profile and problems are text in the status bar, where
+   every editor puts them.
+3. **Nothing gets lost.** Panels collapse, they never close. The document autosaves. A refresh
+   restores text, name, profile, layout and settings.
+4. **One design, three hosts.** The same panels mount inside dockview on a desktop, inside a fixed
+   column with a bottom sheet on a phone, and (in 4c) inside the compact embed.
+5. **Proven palette.** One Light and One Dark stay canonical; the accent is the blue those themes
+   already define. The hexagon logo is the application icon and nothing else.
+
+### 1.1 Split with 4c
+
+| In 4b | In 4c |
+|---|---|
+| dockview layout, collapse, float, pop-out, persistence, reset | `?example=`, `?src=` loading, allowlist |
+| toolbar, menu, filename, file actions | `readonly`, `autorun`, `hideProfile` flags |
+| status bar | `/embed` route, `postMessage` API |
+| settings dialog, custom profile builder | Playwright smoke tests (desktop, phone, embed) |
+| open, save, save as, autosave, new | |
+| examples gallery, example transposition | |
+| share dialog, `#code=` encode **and decode** | |
+| UI language separate from profile | |
+| phone layout: top bar, symbol bar, bottom sheet | |
+| PWA (manifest, service worker, update toast), About | |
+
+Decoding `#code=` moves from 4c to 4b because a share link that nobody can open is not a
+feature. The umbrella spec listed it under URLs; the split above supersedes that line.
+
+### 1.2 Deviations from the umbrella spec
+
+- The default layout contains only the editor plus one collapsed bottom group. The umbrella's
+  "Editor, Console, Variables, Problems" all-visible default is replaced by progressive
+  disclosure (§3.2).
+- Panels cannot be closed, only collapsed (§3.3). The Vista menu therefore has no checkmarks; its
+  items focus and expand.
+- File actions are also toolbar icons, not menu-only (§4.2).
+- The phone layout ships in 4b, not 4c.
+
+## 2. Visual language
+
+### 2.1 Bands
+
+Four horizontal bands on a desktop:
+
+| Band | Height | Content |
+|---|---|---|
+| Toolbar | 40 px | menu, filename, file actions · run cluster |
+| Layout area | remaining | dockview (§3) |
+| Status bar | 24 px | problems · run state · cursor · profile |
+
+The toolbar and status bar use `--sc-surface`; the layout area uses `--sc-bg`; groups inside
+dockview use `--sc-surface` for headers and `--sc-bg` for bodies. A 1 px hairline in
+`--sc-border` separates bands. No other borders; shadows only on floating groups and dialogs.
+
+**Filled bands.** A solid fill under 10–12 px text has to clear 4.5:1, and `--sc-accent` behind
+`--sc-bg` reaches only 3.9:1 in the light theme. Three pairs exist for this and nothing else:
+`--sc-accent-strong` / `--sc-on-accent` (the running status bar), `--sc-warning-strong` /
+`--sc-on-warning` (paused), `--sc-error-strong` / `--sc-on-error` (the sidebar's error badge).
+Light darkens the hue and puts white on it; dark keeps the hue and puts `--sc-surface` on it. A
+contrast test asserts every pair.
+
+**Stacking.** Dockview's stylesheet uses z-index up to 9999 for sashes and drop overlays, so a
+Tailwind `z-50` overlay of ours paints *under* a resize sash. One token settles it:
+`--sc-z-modal: 10000` in tokens.css, mapped in `@theme inline` as `--z-index-modal`, and used as
+`z-modal` by every overlay that must cover the layout — dialog overlays and contents, dropdown
+and popover contents, tooltips, and the toast viewport. Overlay and content share the token; the
+content wins because it comes later in the DOM.
+
+### 2.2 Type, spacing, icons, motion
+
+- **UI font:** the system stack (`system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`).
+  Sizes: 14 px toolbar and dialogs, 13 px panel bodies, 12 px group headers, tabs and status bar.
+- **Code font:** JetBrains Mono, self-hosted from `packages/editor/public/fonts` (woff2, Regular
+  and Bold), `font-variant-ligatures: none`. 14 px desktop, 15 px phone; the size is a setting.
+- **Spacing:** 4 px grid. Horizontal padding 8 px in bars, 12 px in dialogs.
+- **Icons:** `lucide-react`, 16 px, stroke 1.75, `currentColor`. Every icon button has an
+  accessible name and, on pointer devices, a tooltip "Label · Shortcut". The shortcut renders
+  `⌘` on macOS and `Ctrl` elsewhere (`navigator.platform` check in one helper).
+- **Focus:** 2 px ring in `--sc-accent`, offset 1 px, visible only for keyboard focus.
+- **Motion:** 150 ms ease-out on opacity and transform for menus, popovers, dialogs, the bottom
+  sheet and collapse; `prefers-reduced-motion` disables transforms.
+- **Density:** buttons are 28 px tall in the toolbar and 32 px in dialogs; touch targets on the
+  phone are at least 44 px, except the keys inside the 40 px symbol bar and the 36 px sheet
+  handle, which fill their bar's height.
+
+### 2.3 Tokens
+
+The 24 tokens from 4a stay. 4b adds, in the same file and both themes:
+
+| Token | Use |
+|---|---|
+| `--sc-accent-soft` | drop targets, active tab background, selected rows (accent at ~15 %) |
+| `--sc-overlay` | dialog backdrop |
+| `--sc-shadow` | floating groups and dialogs |
+| `--sc-changed` | Variables value flash (a soft yellow from the palette) |
+
+Tailwind exposes them through the existing `@theme inline` block. The tokens-only test extends to
+the new dockview and Radix styles: no literal colors outside `tokens.css`.
+
+### 2.4 Theme preference
+
+The stored preference is `'light' | 'dark' | 'system'`. `system` follows
+`prefers-color-scheme` through a media listener and re-applies on change. The store's `theme`
+field becomes `themePreference`; the resolved theme is derived. `applyTheme` and
+`resolveInitialTheme` from 4a stay; the latter is called with the stored preference.
+
+## 3. Layout area
+
+### 3.1 Engine
+
+`dockview-react` (latest 4.x at plan time, pinned). One `DockviewReact` at the root of the layout
+area. Four panels are registered: `editor`, `console`, `problems`, `variables`. The panel
+components are the 4a components unchanged; a thin wrapper per panel adapts the dockview props.
+
+All dockview chrome is replaced by custom components:
+
+- **Tab:** the panel's icon (14 px, `PANEL_ICONS`) then its label, 12 px, muted; the active tab of
+  a multi-tab group has `--sc-fg` and a 2 px accent underline. No close button.
+- **Group header:** the tabs on the left; on the right a collapse chevron and, for the console, its
+  panel-owned clear action. A single-panel group renders its label like a heading
+  rather than a tab. Height 28 px. **The editor group has no header at all**
+  (`group.header.hidden = true`, applied after the default layout and after `fromJSON`, followed by
+  `group.relayout()` so the editor claims the freed 28 px): it holds one panel that can never leave
+  it, so its tab says nothing the filename in the toolbar does not.
+- **Drop overlay:** `--sc-accent-soft` fill with a 1 px accent border.
+- **Floating group:** hairline border, `--sc-shadow`, 8 px radius, draggable by its header,
+  resizable by its edges. Minimum size 240 × 160.
+- **Watermark:** none.
+
+The editor panel is locked: it cannot be floated, popped out, or moved into a tab group with
+other panels; it accepts panels docked beside it. Dragging the editor tab does nothing.
+
+### 3.2 Default layout
+
+```
+┌──┬────────────────────────────────────┐
+│  │ editor (no tab strip)              │
+│  │                                    │
+│  │                                    │
+│  ├────────────────────────────────────┤
+│▌▪│ Consola │ Problemas │ Variables ⌄  │  ← bottom group, hidden when collapsed
+└──┴────────────────────────────────────┘
+   ↑ sidebar, 40 px (a right strip appears when a panel is docked there)
+```
+
+One bottom group with the three panels as tabs, collapsed. Its expanded height is 30 % of the
+area (minimum 120 px). "Restablecer diseño" returns to exactly this.
+
+### 3.3 Collapse
+
+Collapse is a shell feature layered over dockview; dockview has no primitive for it, but it does
+hide a grid view, and that is what a collapsed group is: **gone from the grid, not shrunk to a
+strip**.
+
+- Every docked group has a chevron. Collapsing is `group.api.setVisible(false)`, expanding is
+  `setVisible(true)`. Dockview caches the hidden view's size and gives it back on show, so the
+  shell remembers no sizes; its JSON carries the hidden state (`visible: false`) across a reload.
+- Floating and popped-out groups do not collapse; their chevron is absent. (Dockview would hide a
+  floating group's overlay and only warn for a popped-out one — the shell refuses both.)
+- A hidden group is a zero-sized box, not a removed one, so it is also made `inert`: its tabs,
+  chevron and panel actions leave the tab order and the accessibility tree with it.
+- A group slides toward the edge it is docked against: dockview parks a hidden view at the grid's
+  origin, so an unprepared show would drop the bottom group out of the toolbar instead of raising
+  it from the bottom. The shell writes the view's edge geometry (`top`/`height` for a top or
+  bottom group, `left`/`width` for a side one) before the mark goes on, and writes the box back
+  after; a hide re-applies its target after every forced relayout, which would otherwise undo it.
+- Hiding and showing are animated: the shell marks the dock root `.sc-animating` just before the
+  call, and `dock.css` transitions the inline `top`/`left`/`width`/`height` dockview writes on
+  `.dv-view` and `.dv-sash` for 180 ms. The mark is cleared by the first `transitionend` *of a
+  grid view* on the root or by a 250 ms fallback, so it is never on while the user drags a sash,
+  and `prefers-reduced-motion: reduce` turns it off. Building, resetting or restoring a layout is
+  not animated: it lands on its geometry in one pass, and neither is a re-dock — the zones are
+  read from the boxes, which have to be final. `prefers-reduced-motion` skips the frames too, not
+  just the transition.
+- While the mark is on, the shell forces a dockview relayout every frame, and once more after it
+  comes off. `defaultRenderer="always"` positions each panel's content in an overlay measured
+  from its group's rect one frame after a size change; mid-transition that rect is the old one,
+  so without the per-frame pass the panels keep their old size and an expanded group renders
+  blank behind the editor's overlay.
+
+The set of collapsed group ids is stored next to dockview's JSON (§7). It stays the shell's own
+truth rather than being read back from `api.isVisible`, because `fromJSON` restores a hidden view
+without firing the visibility event that field is fed from.
+
+**Sidebar.** 40 px strips down the sides of the layout area, full height between toolbar and
+status bar, `--sc-surface` with a `--sc-border` edge against the dock. One icon button per panel —
+Editor first, then Consola, Problemas, Variables — with the panel name as tooltip and accessible
+name. The editor's button only focuses the editor: it never collapses (§3.1), and it is never
+drawn pressed, because the editor is always open and always its group's only tab. For the others,
+given the panel's group, a click:
+
+| Group | Panel | Click does |
+|---|---|---|
+| hidden | any | show the group and activate that panel |
+| visible | the tab in front | hide the group (counts as a manual collapse, §3.4) |
+| visible | another tab | activate that panel |
+
+A floating or popped-out group never collapses, so for one of those the click only brings the
+panel forward.
+
+The button of a panel that is visible *and* in front of its group is accented (`--sc-accent`, a
+2 px accent bar on its left edge, `aria-pressed="true"`); every other button is muted. The
+Problemas button carries a small `--sc-error` badge with the error count while `diagnostics` holds
+errors, and nothing when it holds none.
+
+**Zones.** Each strip has a top and a bottom cluster, so the four zones are `left-top`,
+`left-bottom`, `right-top` and `right-bottom`. A button's zone comes from its group's box against
+the editor group's (4 px of sash tolerance): entirely to the right of the editor is a `right-*`
+zone, entirely to its left a `left-*` one, and a group above or below the editor is `left-top` or
+`left-bottom` respectively. For a group beside the editor the half comes from its own centre
+against the dock's midpoint — a right column split in two therefore puts one icon in the right
+strip's top cluster and the other in its bottom cluster. The editor is the reference for the
+others, so it is placed against the dock itself: docked in the dock's right half it leads
+`right-top`, otherwise `left-top`. The right strip only exists while something is in it. A group with no box — collapsed, not laid out yet, floating or popped out — keeps the zone its
+panel last had, so hiding a panel never moves its icon. The zones are re-read on every layout
+change *and* on the frame after it, because dockview reports a restored layout and a tab dropped
+on a new edge before it has written the geometry they are measured from.
+
+**Drag to move.** The icons are draggable (`application/x-stepcode-panel`); while a drag is in
+flight every zone offers itself, the hovered one in `--sc-accent-soft` and the rest fainter, the
+right strip appearing for the duration. A `left-top` drop docks against the top edge of the grid
+and `left-bottom` against its bottom edge; a right drop splits the column already docked there —
+above its topmost group for `right-top`, below its bottommost for `right-bottom` — and falls back
+to the grid's right edge while no such column exists. The whole group travels when the panel is
+alone in it (`group.api.moveTo({ position })`, or `moveTo({ group, position })` to split), and
+otherwise only the panel does (`panel.api.moveTo({ group, position })`, or into a group created at
+that edge with `api.addGroup({ direction })`). A hidden group is
+shown first — there is nothing to dock otherwise — and the zone then follows from the new
+geometry, so the icon lands on its new strip by itself. Dropping an icon on the cluster it already
+lives in changes nothing. Moving the editor's group re-applies its rules (§3.1): the group
+dockview creates for it is locked again and its header hidden again.
+
+### 3.4 Auto-expand
+
+Events that expand a collapsed group and activate a tab, unless the user collapsed that group
+since the current run started:
+
+| Event | Activates |
+|---|---|
+| a run starts (`ready → running` or `→ paused` through Depurar) | Consola |
+| the run pauses for the first time in this run (Depurar, breakpoint, F6) | Variables |
+| the program asks for input | Consola, and focuses the input field |
+| the status bar problems item is clicked | Problemas |
+| a Vista menu item is chosen | that panel, always |
+
+"Since the current run started" is a flag per group set by a manual collapse and cleared when the
+next run starts. The first row is unconditional: there is no setting to turn it off (§6).
+
+An input request always expands the target group even if the user collapsed it manually during
+this run (a program blocked on a prompt nobody can see is unusable); the manual-collapse rule
+applies to run and pause only.
+
+### 3.5 Pop-out
+
+Dockview's popout groups open a browser window that clones the stylesheets of the opener.
+CodeMirror in a popout works because its styles are injected into the document that hosts the
+view; the console, problems and variables panels use Tailwind classes that arrive with the cloned
+sheets. Popped-out groups are not persisted: on reload they return to their last docked position
+(dockview's own behavior). 4b ships no popout test: both the smoke test and real popout behavior
+are deferred to 4c's Playwright pass.
+
+### 3.6 Panel refinements
+
+Changes to the 4a panels, all inside the panel files:
+
+- **Consola.** Header action: Limpiar (trash icon). Output sticks to the bottom on new lines
+  unless the reader has scrolled up. A finished run appends a muted line
+  "— Programa terminado —"; an error run appends the formatted
+  diagnostic in `--sc-error` with a "ver línea N" button that reveals the span. The input field
+  shows a `↵` hint on the right. Output text uses the code font.
+- **Problemas.** Rows are focusable (`role="row"`, arrow keys move, Enter reveals). Empty state:
+  a check icon and "Sin problemas". Header shows the counts.
+- **Variables.** Each frame is a collapsible section (open by default). A value whose rendered
+  text differs from the previous paused snapshot gets a 600 ms `--sc-changed` background flash.
+  Empty state while not paused: "Pausa el programa para ver las variables".
+- **Editor.** Options from settings (§6.2) applied through compartments: font size, line numbers,
+  word wrap, autocomplete, tab size. The current-line band and breakpoint dot use the tokens
+  already defined.
+
+## 4. Toolbar
+
+### 4.1 Layout
+
+```
+[≡] [hola]  [Nuevo] [Abrir] [Guardar•]        [Ejecutar] [Depurar] … [Pausar] [Detener]
+```
+
+Left to right: menu button (hexagon icon 20 px, tooltip "Menú"), filename, file actions. The run
+cluster is right-aligned. Nothing in the center.
+
+While a program is `running`, the toolbar's bottom edge becomes a 2 px accent progress bar with a
+lighter segment sliding along it (`role="progressbar"`, no value: a program's remaining work is
+unknowable). It is not rendered in any other state, and the global reduced-motion rule leaves it
+solid instead of sliding.
+
+### 4.2 Filename
+
+An inline text input styled as plain text (no border until hover or focus), 14 px, width fits
+content with a 32 ch maximum. Enter or blur commits; Escape reverts; an empty name reverts. The
+field shows and edits the document name (§8) without its extension — the stored name keeps its
+extension because files are saved with it. Committing re-applies the extension to the edited
+stem: an explicit accepted extension typed in the field is honored, otherwise the document's
+current extension is preserved (a new document defaults to `.stepcode`). Nothing marks the name
+itself: a document whose text differs from the last file save (or from the starter program, for
+a document never saved) shows an accent dot on the corner of the Save button, and that button's
+tooltip reads "Guardar · cambios sin guardar". The browser title still is `● stem · StepCode`,
+also without the extension, since a tab strip has no Save button to carry the mark.
+
+### 4.3 Run cluster
+
+Icon buttons, visibility by run state (states from the core spec):
+
+| State | Visible |
+|---|---|
+| `ready`, `done`, `error` | Ejecutar (F5), Depurar |
+| `running` | Pausar (F6), Detener (Shift+F5) |
+| `paused` | Continuar (F5), Paso (F10), Entrar (F11), Salir (Shift+F11), Detener (Shift+F5) |
+| `input`, `waiting` | Detener (Shift+F5) |
+
+Depurar sends `start` with `mode: 'step'`, which pauses on the first statement. The stepping
+buttons appear whenever the state is `paused`, whatever caused the pause. Hidden buttons keep a
+zero-width placeholder with a 150 ms width transition so visible buttons slide rather than jump.
+
+### 4.4 Menu
+
+Opened from the hexagon (Radix DropdownMenu on a desktop, a full-height left sheet on a phone):
+
+```
+Nuevo                    Ctrl+N
+Abrir…                   Ctrl+O
+Guardar                  Ctrl+S
+Guardar como…            Ctrl+Shift+S
+──────────
+Ejemplos…
+Compartir…
+──────────
+Perfil            ▸  Español · English · PSeInt · [custom…] · ── · Personalizar…
+Vista             ▸  Consola · Problemas · Variables · ── · Restablecer diseño
+──────────
+Ajustes…                 Ctrl+,
+Acerca de
+```
+
+Every entry carries an icon in a fixed 16 px slot at its left, so labels line up whether or not
+an entry has one: FilePlus, FolderOpen, Save, FilePen, BookOpen, Share2, Languages (Perfil),
+PanelBottom (Vista), Settings, Info; Vista's panel items use `PANEL_ICONS`, and Restablecer
+diseño uses RotateCcw. Perfil items show a check on the active one in that same slot and carry no
+icon of their own. The phone sheet renders the same model, icons included. Vista items focus and
+expand (§3.4). Ctrl+N is intercepted only while the editor has focus; browsers reserve it
+otherwise.
+
+### 4.5 Shortcuts
+
+4a's F5, Shift+F5, F6, F10, F11, Shift+F11 stay, with the same swallow rule. Added: Ctrl+N (see
+above), Ctrl+O, Ctrl+S, Ctrl+Shift+S, Ctrl+, and Escape (closes the topmost dialog, popover or
+menu; Radix handles its own). `⌘` replaces Ctrl on macOS.
+
+## 5. Status bar
+
+24 px, 12 px text in `--sc-fg-muted`, items are 20 px buttons with a hover background — 20 and not
+24, because the bar's 1 px top border leaves 23 px of content and a full-height item would push the
+document past the viewport. (`body` is `overflow: hidden` for the same reason: every band is sized
+to the viewport, dialogs are `fixed`, and the phone sheet scrolls itself.)
+
+| Position | Item | Click |
+|---|---|---|
+| left | `✓ Sin problemas` or the Problemas icon plus `✖ 2  ▲ 1` | expands Problemas |
+| left | run state | focuses the console |
+| right | `Ln 12, Col 4` | focuses the editor |
+| right | profile name with a chevron | profile popover: the same list as Perfil ▸ |
+
+The bar itself reports the run state: `running`, `input` and `waiting` tint it
+`--sc-accent-strong` with `--sc-on-accent` text, `paused` tints it `--sc-warning-strong` with
+`--sc-on-warning` (the debugger colour), and every other state
+leaves it on `--sc-surface`, with a 150 ms colour transition; on a tinted band the problem counts
+drop their error/warning colours, which the band already carries. The run cluster colours its
+actions too: Ejecutar, Depurar and Continuar in `--sc-success`, Detener in `--sc-error`.
+
+What the program is doing is grouped with what is wrong with it, on the left; where the cursor is
+and which profile reads the text sit on the right. Run state text by state: `Listo`, `Ejecutando…`
+with a 12 px spinner, `En pausa en la línea N`, `Esperando entrada`, `Esperando…` (wait),
+`Terminado`, `Error en la línea N`. The bar is hidden in the embed route (4c); the phone keeps
+problems on the left and the profile on the right (§9).
+
+## 6. Settings
+
+Ctrl+, or the menu opens a Radix Dialog, 720 × 520 max, with a left rail of sections and one
+scrolling body. On a phone the dialog is full screen and the rail becomes a top tab strip. Every
+control writes to the store immediately; there is no Save button. "Restablecer" per section
+resets that section's defaults.
+
+### 6.1 Lenguaje
+
+- Profile picker: radio cards for Español, English, PSeInt and each custom profile, each with a
+  four-line sample program in that spelling.
+- "Personalizar…" opens the builder inline below: choose a base (`extends`), a name (becomes
+  `id` after slugging, must be unique), then a table of keyword, type, operator and builtin keys
+  with editable spellings (comma-separated alternatives, first is primary), and the seven option
+  toggles (`indexBase`, `caseSensitive`, `foldAccents`, `implicitDeclarations`,
+  `requireSemicolons`, `typedParameters`, `assignWithEquals`). The builder validates through
+  `resolveProfile` on every change and shows its errors; a live preview re-renders the sample
+  through the transposer (§8.4). Guardar stores the `ProfileInput`; Eliminar removes a custom
+  profile (falling back to its base if active).
+
+### 6.2 Editor
+
+Font size (12–20), line numbers, word wrap, autocomplete, tab size (2 or 4), highlight the
+current line.
+
+### 6.3 Ejecución
+
+- Avisar antes de ejecutar con advertencias (default on): a confirm dialog listing the warnings
+  with Ejecutar igualmente / Cancelar. Errors never run; the run button is enabled but shows the
+  Problemas panel instead.
+- Limpiar la consola al ejecutar (default on).
+
+### 6.4 Apariencia
+
+Theme: Sistema / Claro / Oscuro. Interface language: Automático / Español / English. Automático
+follows the active profile's locale. `stringsFor` receives the resolved UI locale; the profile's
+locale keeps driving diagnostic text and runtime rendering.
+
+There is no Diseño section: the console always opens on a run — a setting nobody found before
+the first run is not a setting — and "Restablecer diseño" lives in the Vista menu alone.
+
+## 7. Persistence
+
+### 7.1 Settings and layout: `localStorage`
+
+One key `stepcode.editor`, one JSON document:
+
+```ts
+interface PersistedV2 {
+  version: 2
+  settings: {
+    profileId: string
+    customProfiles: ProfileInput[]
+    editor: { fontSize: number; lineNumbers: boolean; wordWrap: boolean; autocomplete: boolean; tabSize: 2 | 4; highlightLine: boolean }
+    execution: { warnOnWarnings: boolean; clearConsoleOnRun: boolean }
+    appearance: { theme: 'light' | 'dark' | 'system'; uiLocale: 'auto' | 'es' | 'en' }
+  }
+  layout: { dockview: SerializedDockview | null; collapsed: string[]; sheet: 'collapsed' | 'half' | 'full' }
+}
+```
+
+Loading validates with zod. Unknown version, parse failure or validation failure → defaults, and
+a console warning; nothing throws. `version` increments with a migration function list
+(`migrations[n]: (prev) => next`, slot 0 empty because no version-0 document was ever written).
+Version 2 drops `settings.layout`, the retired auto-expand preference. Writes are
+debounced 250 ms and coalesced; the `storage` event does not sync tabs (last writer wins).
+
+Dockview JSON is validated shallowly (it is dockview's format); if `fromJSON` throws, the shell
+logs, discards it and applies the default layout.
+
+### 7.2 Document: IndexedDB
+
+Database `stepcode`, store `documents`, one record `current`:
+
+```ts
+interface StoredDocument {
+  id: 'current'
+  name: string
+  source: string
+  profileId: string
+  savedSource: string | null   // text at the last file save, for the unsaved dot
+  updatedAt: number
+}
+```
+
+Written 500 ms after the last change through `idb-keyval` (small, proven). On load the record is
+restored before the editor mounts; missing record → starter program. File handles are not stored
+(they do not survive a reload reliably); after a reload Guardar behaves as Guardar como.
+
+## 8. Files, examples, share
+
+### 8.1 Document model
+
+The shell has one document: `name`, `source`, `profileId`, `savedSource`, and a transient
+`handle: FileSystemFileHandle | null`. `dirty = source !== savedSource` where `savedSource` is
+the starter program for a new document. Every action that replaces the document (Nuevo, Abrir, an
+example, a share link) first asks when `dirty` and `source.trim() !== ''`: a dialog "¿Guardar los
+cambios de *name*?" with Guardar / No guardar / Cancelar. Replacing the document resets
+CodeMirror's history.
+
+### 8.2 Actions
+
+- **Nuevo:** starter program named `sin título.stepcode`. The starter is a four-line program in
+  the active profile's spelling with a comment "Escribe tu programa aquí".
+- **Abrir:** `showOpenFilePicker` when present (`.stepcode`, `.psc`, `.txt`, `.sc`), otherwise an
+  `<input type="file">`. The file name becomes the name; the handle is kept.
+- **Guardar:** writes to the handle; without one, Guardar como. Fallback browsers: a download
+  through an object URL, and `savedSource` updates as if saved.
+- **Guardar como:** `showSaveFilePicker` with `.stepcode` suggested; fallback download.
+- All failures (permission denied, abort) show a toast; abort is silent.
+
+### 8.3 Examples
+
+Files under `packages/editor/examples/<topic>/<slug>.stepcode`, written in the `es` profile, with a
+header comment block:
+
+```
+// título: Hola mundo
+// descripción: Escribe un saludo en la consola
+```
+
+A Vite plugin (or a build-time script) turns the folder into an `examples.ts` index: topic order
+from a `topics.json` (Primeros pasos, Condicionales, Ciclos, Arreglos, Funciones, Un poco más),
+then title, description, source. A per-profile override `<slug>.<profileId>.stepcode` replaces the
+transposed source for that profile when options make the transposition invalid.
+
+The Ejemplos dialog is a grid of cards (title, description, three-line preview in the active
+profile's spelling) grouped by topic, searchable by title. Choosing one follows §8.1, names the
+document after the file, and keeps the active profile.
+
+Test: every example, transposed to every built-in profile (or its override), compiles with zero
+diagnostics.
+
+### 8.4 Transposer
+
+`transpose(source, from: ResolvedProfile, to: ResolvedProfile): string` in
+`packages/editor/src/profiles/transpose.ts`: tokenize with `from`; for every token of kind
+`keyword`, `type`, `builtin` or `operator` replace `text` with the primary spelling of the same
+key in `to`, preserving the original casing pattern (all-caps, capitalized, lower); every other
+token keeps its text. Comments are untouched. Options are not translated; that is what overrides
+are for. Used by examples, the starter program and the profile builder preview.
+
+### 8.5 Share
+
+`packages/editor/src/share/link.ts`: `encodeShare({ source, profileId }) → string` producing
+`#code=<base64url(deflate-raw(utf8))>&profile=<id>` with `CompressionStream('deflate-raw')`, and
+`decodeShare(hash) → { source, profileId } | null`. On load, a `#code=` hash wins over the stored
+document (after the §8.1 prompt if dirty), the hash is removed with `history.replaceState`, and
+the document is named `compartido.stepcode`. A custom profile id that does not exist locally falls
+back to `es` with a toast.
+
+The Compartir dialog shows the link in a read-only field, Copiar (toast "Enlace copiado"), and a
+note that the program travels inside the link. Links longer than 8 000 characters show a warning
+that some apps truncate them.
+
+## 9. Phone layout
+
+Below 768 px (`matchMedia`, re-evaluated on resize) the shell renders `MobileShell` instead of
+`DesktopShell`. Both mount the same panel components; dockview is not imported on the phone path
+(dynamic import in the desktop shell keeps it out of the phone bundle).
+
+```
+┌──────────────────────────────┐
+│ ≡  hola.stepcode ●   ▶ ■ ⋯   │  44 px
+├──────────────────────────────┤
+│ editor                       │
+│                              │
+├──────────────────────────────┤
+│ <- ( ) [ ] , " : Si Entonces │  symbol bar, 40 px, only while editing
+├──────────────────────────────┤
+│ ═══ Consola Problemas Vars   │  sheet handle, 36 px
+│ (sheet body: half / full)    │
+├──────────────────────────────┤
+│ Español          ✓ Sin probl.│  status, 24 px
+└──────────────────────────────┘
+```
+
+- **Top bar:** menu, filename, Ejecutar/Detener by state, and `⋯` opening a popover with
+  Depurar and, while paused, the stepping actions. File actions live in the menu sheet.
+- **Symbol bar:** shown while the editor has focus and the visual viewport is shorter than the
+  layout viewport by more than 100 px (VisualViewport API); on coarse-pointer devices without the
+  API, shown while the editor has focus. Keys: `<-` (the profile's assign spelling), `(`, `)`,
+  `[`, `]`, `,`, `"`, `:`, `;`, then the profile's primary spellings for `if`, `then`, `else`,
+  `endIf`, `while`, `do`, `endWhile`, `for`, `to`, `endFor`, `write`, `read`, `define`, `as`,
+  and the type keys. Tap inserts at the cursor with a trailing space for keywords and refocuses
+  the editor. Horizontal scroll, no wrap.
+- **Bottom sheet:** three positions, `collapsed` (handle only), `half` (45 % of height), `full`
+  (top bar remains). Drag the handle or tap it to cycle; swipe down from `half` collapses. Tabs
+  in the handle carry the panel icon (14 px) before the label and switch pages; pages are the panel
+  components. Auto-expand events (§3.4) move it
+  to `half`; an input request moves it to `full` and focuses the field. An input request opens the
+sheet even if the user collapsed it manually during this run (§3.4); the manual-collapse rule
+applies to run and pause only. Touch targets are at least 44 px, except the keys inside the 40 px
+symbol bar and the 36 px sheet handle, which fill their bar's height. Position persists (§7.1).
+- **Status bar:** profile (opens the picker as a bottom popover) and problems only.
+- Dialogs are full screen; the menu is a left sheet; tooltips are disabled on touch.
+
+## 10. PWA and About
+
+- `vite-plugin-pwa` with `registerType: 'prompt'`, the v1 icon set copied into
+  `packages/editor/public`, manifest name "StepCode", `display: standalone`,
+  `theme_color`/`background_color` from the light tokens. A toast "Hay una versión nueva ·
+  Recargar" when a waiting worker exists.
+- Acerca de: a small dialog with the hexagon, "StepCode editor", the version from `package.json`
+  (injected by Vite `define`), links to the repository and the academy, licence line.
+
+## 11. Strings
+
+`strings.ts` grows by feature; `stringsFor(locale)` stays the only entry. The UI locale is
+`settings.appearance.uiLocale` resolved against the profile locale. Every new string exists in
+`es` and `en`; a test compares key sets. The host's `'worker error'` literal moves into
+`strings.ts` (closing the handoff item).
+
+## 12. Package changes
+
+Dependencies: `dockview-react`, `@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`,
+`@radix-ui/react-popover`, `@radix-ui/react-tooltip`, `@radix-ui/react-tabs`,
+`@radix-ui/react-toast`, `lucide-react`, `idb-keyval`, `zod` (already in the workspace catalog),
+`vite-plugin-pwa` (dev), `workbox-window` (dev, the peer its register module imports),
+JetBrains Mono woff2 files (public). All pinned through the catalog.
+
+New source layout under `packages/editor/src`:
+
+```
+shell/
+  DesktopShell.tsx      dockview host, collapse, auto-expand, layout persistence
+  MobileShell.tsx       column layout, sheet, symbol bar host
+  dock/                 tab, header, floating frame, collapse helpers, default layout
+  sheet/                BottomSheet, gestures
+  SymbolBar.tsx
+  Toolbar.tsx           (replaces components/Toolbar.tsx)
+  Filename.tsx
+  Menu.tsx
+  StatusBar.tsx
+  shortcuts.ts          (moved from components/)
+dialogs/
+  Settings/…            rail, sections, ProfileBuilder
+  Examples.tsx
+  Share.tsx
+  About.tsx
+  ConfirmSave.tsx
+store/
+  settings.ts           settings slice, defaults, zod schema, migrations
+  document.ts           document slice (name, savedSource, handle), dirty
+  persist.ts            localStorage + IndexedDB adapters
+files/                  open/save with FSA and fallbacks
+examples/               index plugin output, loader
+profiles/transpose.ts
+share/link.ts
+pwa/                    registration, update toast hook
+```
+
+`App.tsx` chooses the shell by viewport; `main.tsx` loads persistence before rendering.
+
+## 13. Testing
+
+Vitest with happy-dom, per file opt-in as in 4a. Coverage by area:
+
+- store: settings defaults, every setter, zod rejection → defaults, migration list runner,
+  document dirty rules, theme preference resolution with a mocked media query.
+- persist: round trip through fake `localStorage` and a fake IndexedDB (`fake-indexeddb`),
+  debounce, corrupted payloads.
+- transpose: keyword, type, builtin, operator replacement; casing preservation; comments and
+  strings untouched; every example × every built-in profile compiles clean.
+- share: encode/decode round trip, empty, oversize warning threshold, unknown profile fallback.
+- files: FSA path with a fake `showOpenFilePicker`, fallback path with a fake input, error toasts.
+- shell: default layout serialization, collapse as group visibility (hide, show, restore from the
+  saved id list, the animation mark and its fallback timer), the sidebar's three click outcomes
+  and its pressed/badge states, auto-expand rules with the manual-collapse flag, Vista actions,
+  reset; dockview mocked at its React API for unit tests and mounted for real in one smoke test —
+  the mounted one also proves the editor group's header is hidden and that a collapsed group's
+  grid view loses dockview's `visible` class. Popout is not tested in 4b: it is deferred to 4c's
+  Playwright pass.
+- toolbar, filename, menu, status bar, dialogs: rendering per state, shortcuts, `⌘`/Ctrl
+  labels, keyboard navigation in Problems, settings rail, profile builder validation.
+- mobile: shell selection by `matchMedia`, sheet positions and auto-expand, symbol bar derivation
+  per profile and insertion, viewport rule with a fake VisualViewport.
+- strings: key parity `es`/`en`.
+- tokens-only and contrast tests extended to the new components.
+
+Real gestures, drag-and-drop, floating and popout behavior are 4c's Playwright pass and are listed
+there as deferred, not skipped.
+
+## 14. Decisions
+
+- Dockview kept (the umbrella's choice) because the user wants floating and rearranging; noise is
+  controlled by the default layout and by collapse, not by removing the engine.
+- No closing of panels: nothing can be lost, and the Vista menu stays a list of places to go.
+- Editor panel locked in place; a floating editor has no use here and breaks the mental model.
+- Icons with tooltips for actions, text for state (status bar), per the user's preference.
+- Palette unchanged; accent is the existing blue; logo is only the icon.
+- Radix primitives and JetBrains Mono chosen because both are proven and accessible; no custom
+  dialog or menu code.
+- Share decode moves to 4b (§1.1).
+- Examples authored once in `es` and transposed, with overrides; a test guards every profile.
+- File handles are not persisted; a reload turns Guardar into Guardar como.
+- Phone layout is a separate shell over the same panels; dockview is not loaded on phones.
+- dockview 8.2.0 ships native collapsible edge groups. 4b keeps its own collapse controller
+  (the native API changes group identity and persistence), but the controller now collapses the
+  way dockview itself hides a view — `group.api.setVisible(false)` — instead of freezing a
+  constraint pair at the header size. A hidden group is honest about being gone, it costs no
+  size bookkeeping (dockview caches and clamps the size back), and it survives serialization on
+  its own; migrating to the native edge groups is still a follow-up, not part of 4b.
+- With no collapsed strip left to click, the way back to a hidden panel is the sidebar (§3.3): a
+  JetBrains-style tool-window bar down the left of the layout area. It doubles as the place where
+  the problems count is visible while the panel is away.
+- The editor group's header is hidden rather than styled: its one panel can never leave it, so the
+  tab only spent 28 px repeating the filename the toolbar already shows.
+- Hiding and showing a group is animated by transitioning the geometry dockview writes inline,
+  under a class the shell only turns on around its own calls — never during a sash drag, and never
+  while a layout is being built or restored.
+- `#code=` beats the stored document on load, so a shared link always shows what was shared.

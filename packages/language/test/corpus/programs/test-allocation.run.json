@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test allocation",
+      "inputs": [],
+      "output": "123\n"
+    }
+  ]
+}

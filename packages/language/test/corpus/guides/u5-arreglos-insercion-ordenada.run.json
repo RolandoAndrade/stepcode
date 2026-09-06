@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "ten numbers inserted, the array sorted after each one",
+      "inputs": ["5", "3", "9", "1", "7", "2", "8", "6", "4", "10"],
+      "output": "Introduce numero: \nEl arreglo es: 5 \nIntroduce numero: \nEl arreglo es: 3 5 \nIntroduce numero: \nEl arreglo es: 3 5 9 \nIntroduce numero: \nEl arreglo es: 1 3 5 9 \nIntroduce numero: \nEl arreglo es: 1 3 5 7 9 \nIntroduce numero: \nEl arreglo es: 1 2 3 5 7 9 \nIntroduce numero: \nEl arreglo es: 1 2 3 5 7 8 9 \nIntroduce numero: \nEl arreglo es: 1 2 3 5 6 7 8 9 \nIntroduce numero: \nEl arreglo es: 1 2 3 4 5 6 7 8 9 \nIntroduce numero: \nEl arreglo es: 1 2 3 4 5 6 7 8 9 10 \n"
+    }
+  ]
+}

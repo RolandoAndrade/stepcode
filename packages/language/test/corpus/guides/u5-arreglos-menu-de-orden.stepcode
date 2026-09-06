@@ -1,0 +1,46 @@
+// Guía U5 Arreglos — Pregunta 2: menú para ordenar ascendente o descendentemente.
+SubProceso Ordenar(a Como Entero[], n Como Entero, ascendente Como Logico)
+    Definir i, j, aux Como Entero;
+    Definir fuera Como Logico;
+    Para i <- 1 Hasta n - 1 Hacer
+        Para j <- 1 Hasta n - i Hacer
+            Si ascendente Entonces
+                fuera <- a[j] > a[j + 1];
+            Sino
+                fuera <- a[j] < a[j + 1];
+            FinSi
+            Si fuera Entonces
+                aux <- a[j];
+                a[j] <- a[j + 1];
+                a[j + 1] <- aux;
+            FinSi
+        FinPara
+    FinPara
+FinSubProceso
+
+Proceso MenuDeOrden
+    Definir a Como Entero[10];
+    Definir n, i, opcion Como Entero;
+    Escribir "Introduce n: ";
+    Leer n;
+    Escribir "Orden [1] ascendente [2] descendente: ";
+    Leer opcion;
+    Para i <- 1 Hasta n Hacer
+        Escribir "a[", i, "]: ";
+        Leer a[i];
+    FinPara
+    Segun opcion Hacer
+        1:
+            Ordenar(a, n, Verdadero);
+        2:
+            Ordenar(a, n, Falso);
+        De Otro Modo:
+            Escribir "Opcion invalida, se deja como esta";
+    FinSegun
+    Escribir Sin Saltar "Ordenado es: ";
+    Para i <- 1 Hasta n Hacer
+        Escribir Sin Saltar a[i];
+        Escribir Sin Saltar " ";
+    FinPara
+    Escribir "";
+FinProceso

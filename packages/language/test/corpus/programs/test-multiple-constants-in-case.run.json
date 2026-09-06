@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test multiple constants in case",
+      "inputs": [],
+      "output": "1<=a<=2\n"
+    }
+  ]
+}

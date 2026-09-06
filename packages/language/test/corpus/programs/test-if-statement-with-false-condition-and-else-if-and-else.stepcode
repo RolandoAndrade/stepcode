@@ -1,0 +1,13 @@
+
+      Proceso prueba
+        Definir a Como Entero;
+        a <- 2;
+        Si a = 1 Entonces
+          Escribir 'a=1';
+        Sino Si a = 2 Entonces
+          Escribir 'a=2';
+        Sino
+          Escribir 'a!=1';
+        FinSi
+      FinProceso
+      

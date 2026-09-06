@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test basic assignation function",
+      "inputs": [],
+      "output": "hola\n0\n"
+    }
+  ]
+}

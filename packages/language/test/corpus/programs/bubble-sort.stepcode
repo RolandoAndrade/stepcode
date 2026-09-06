@@ -1,0 +1,24 @@
+Proceso prueba
+    Definir a, aux Como Entero;
+    Definir i, j Como Entero;
+    Dimension a[5];
+    Para i ← 1 Hasta 5 Con Paso 1 Hacer
+        Leer a[i];
+    FinPara
+    Para i ← 1 Hasta 5 Con Paso 1 Hacer
+        Para j ← 1 Hasta 5 - i Con Paso 1 Hacer
+            Si a[j] > a[j + 1] Entonces
+                aux ← a[j];
+                a[j] ← a[j + 1];
+                a[j + 1] ← aux;
+            FinSi
+        FinPara
+    FinPara
+    Para i ← 1 Hasta 5 Con Paso 1 Hacer
+        Si i > 1 Entonces
+            Escribir Sin Saltar ',';
+        FinSi
+        Escribir Sin Saltar a[i];
+    FinPara
+    Escribir '';
+    FinProceso

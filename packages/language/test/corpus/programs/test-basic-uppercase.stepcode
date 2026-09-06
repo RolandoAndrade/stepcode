@@ -1,0 +1,6 @@
+Proceso prueba
+      Definir a, b Como Cadena;
+      a <- "Hola";
+      b <- Mayusculas(a);
+      Escribir b;
+      FinProceso

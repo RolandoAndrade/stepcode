@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test arrays@stepcode directive",
+      "inputs": ["1", "2", "3"],
+      "output": "123\n"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+Proceso prueba
+      Definir a, b, c Como Real;
+      a <- 10.5;
+      b <- 20.5;
+      c <- a * b;
+      Escribir c;
+      FinProceso

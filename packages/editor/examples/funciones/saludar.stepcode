@@ -1,0 +1,12 @@
+// título: Saludar
+// descripción: Un subproceso con parámetro
+SubProceso Saludar(nombre Como Cadena)
+  Escribir 'Hola, ', nombre, '!';
+FinSubProceso
+
+Proceso ProbarSaludar
+  Definir nombre Como Cadena;
+  Escribir '¿Cómo te llamas?';
+  Leer nombre;
+  Saludar(nombre);
+FinProceso

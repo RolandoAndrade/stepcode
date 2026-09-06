@@ -1,0 +1,8 @@
+// expect: W3002
+// U1 P4: se declara una variable para el resultado y nunca se usa.
+Proceso VariableNoUsada
+    Definir n1, n2, resultado Como Entero;
+    Leer n1;
+    Leer n2;
+    Escribir n1 + n2;
+FinProceso

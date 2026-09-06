@@ -1,0 +1,16 @@
+// Guía Práctica U4 — Pregunta 11: el M.C.D. por el algoritmo de Euclides, en forma recursiva.
+Funcion Mcd(a Como Entero, b Como Entero): Entero
+    Si b = 0 Entonces
+        Retornar a;
+    FinSi
+    Retornar Mcd(b, a MOD b);
+FinFuncion
+
+Proceso MaximoComunDivisor
+    Definir a, b Como Entero;
+    Escribir "Introduce a: ";
+    Leer a;
+    Escribir "Introduce b: ";
+    Leer b;
+    Escribir "MCD(", a, ",", b, ") = ", Mcd(a, b);
+FinProceso

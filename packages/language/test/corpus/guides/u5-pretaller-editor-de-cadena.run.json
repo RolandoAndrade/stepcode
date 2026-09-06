@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "two characters written into a blank of five, then position zero",
+      "inputs": ["5", "H", "1", "o", "2", "x", "0"],
+      "output": "Introduce largo: \n_____\nIntroduce caracter: \nIntroduce posicion: \nH____\nIntroduce caracter: \nIntroduce posicion: \nHo___\nIntroduce caracter: \nIntroduce posicion: \nHo___\n"
+    }
+  ]
+}

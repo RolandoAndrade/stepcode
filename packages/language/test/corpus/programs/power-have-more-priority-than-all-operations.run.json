@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "power have more priority than all operations",
+      "inputs": [],
+      "output": "245\n13\n"
+    }
+  ]
+}

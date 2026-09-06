@@ -1,0 +1,33 @@
+// Guía U5 Matrices — Pregunta 4: la transpuesta de una matriz mxn.
+SubProceso Transponer(origen Como Real[,], destino Como Real[,], filas Como Entero, columnas Como Entero)
+    Definir i, j Como Entero;
+    Para i <- 1 Hasta filas Hacer
+        Para j <- 1 Hasta columnas Hacer
+            destino[j, i] <- origen[i, j];
+        FinPara
+    FinPara
+FinSubProceso
+
+Proceso MatrizTranspuesta
+    Definir a, t Como Real[10,10];
+    Definir filas, columnas, i, j Como Entero;
+    Escribir "Introduce m: ";
+    Leer filas;
+    Escribir "Introduce n: ";
+    Leer columnas;
+    Para i <- 1 Hasta filas Hacer
+        Para j <- 1 Hasta columnas Hacer
+            Escribir "a[", i, ",", j, "]: ";
+            Leer a[i, j];
+        FinPara
+    FinPara
+    Transponer(a, t, filas, columnas);
+    Escribir "AT:";
+    Para i <- 1 Hasta columnas Hacer
+        Para j <- 1 Hasta filas Hacer
+            Escribir Sin Saltar t[i, j];
+            Escribir Sin Saltar " ";
+        FinPara
+        Escribir "";
+    FinPara
+FinProceso

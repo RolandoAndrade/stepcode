@@ -1,0 +1,22 @@
+// Guía de Repaso — Pregunta 7: decir cuántos de tres números se repiten.
+Proceso NumerosRepetidos
+    Definir a, b, c, repetidos Como Entero;
+    Escribir "Introduce A: ";
+    Leer a;
+    Escribir "Introduce B: ";
+    Leer b;
+    Escribir "Introduce C: ";
+    Leer c;
+    Si a = b Y b = c Entonces
+        repetidos <- 3;
+    Sino Si a = b O a = c O b = c Entonces
+        repetidos <- 2;
+    Sino
+        repetidos <- 0;
+    FinSi
+    Si repetidos = 0 Entonces
+        Escribir "Ningun numero se repite";
+    Sino
+        Escribir repetidos, " numeros se repiten";
+    FinSi
+FinProceso

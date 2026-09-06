@@ -1,0 +1,8 @@
+Proceso prueba
+      Definir a, b Como Entero;
+      Definir c Como Real;
+      a <- 20;
+      b <- 10;
+      c <- a / b;
+      Escribir c;
+      FinProceso

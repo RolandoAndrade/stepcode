@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a word reversed character by character",
+      "inputs": ["algoritmo"],
+      "output": "Introduce texto: \nEl resultado es: omtirogla\n"
+    }
+  ]
+}

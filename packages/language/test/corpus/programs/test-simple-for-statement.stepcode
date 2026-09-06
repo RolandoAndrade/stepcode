@@ -1,0 +1,6 @@
+Proceso prueba
+        Definir a Como Entero;
+        Para a <- 1 Hasta 5 Hacer
+          Escribir a;
+        FinPara
+      FinProceso

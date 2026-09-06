@@ -1,0 +1,11 @@
+// expect: E3035
+// U6 P4: a esPrimo se le pasa el nombre en vez del número.
+Funcion EsPrimo(numero Como Entero): Logico
+    Retornar numero MOD 2 <> 0;
+FinFuncion
+
+Proceso ArgumentoIncorrecto
+    Definir nombre Como Cadena;
+    Leer nombre;
+    Escribir EsPrimo(nombre);
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "three weights against three inputs",
+      "inputs": ["3", "0.5", "1.5", "-2", "4", "2", "3"],
+      "output": "Introduce n: \nw[1]: \nw[2]: \nw[3]: \nx[1]: \nx[2]: \nx[3]: \nEl resultado es -1\n"
+    }
+  ]
+}

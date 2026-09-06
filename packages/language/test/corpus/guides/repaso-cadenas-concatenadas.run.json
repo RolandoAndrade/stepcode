@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "the reassignment chain of the guide's own program",
+      "inputs": [],
+      "output": "Hombre es mujerymujer\nMujer es mujermujer\nRojo es azul\nAzul es rojo\nVerde es amarillo yrojo\n"
+    }
+  ]
+}

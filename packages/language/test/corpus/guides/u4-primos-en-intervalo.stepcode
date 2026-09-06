@@ -1,0 +1,29 @@
+// Guía Práctica U4 — Pregunta 12: los números primos del intervalo [inicio, fin).
+Funcion EsPrimo(n Como Entero): Logico
+    Definir divisor Como Entero;
+    Si n < 2 Entonces
+        Retornar Falso;
+    FinSi
+    Para divisor <- 2 Hasta Trunc(RC(n)) Hacer
+        Si n MOD divisor = 0 Entonces
+            Retornar Falso;
+        FinSi
+    FinPara
+    Retornar Verdadero;
+FinFuncion
+
+Proceso PrimosEnIntervalo
+    Definir inicio, fin, actual Como Entero;
+    Escribir "Inicio: ";
+    Leer inicio;
+    Escribir "Fin: ";
+    Leer fin;
+    Para actual <- inicio Hasta fin - 1 Hacer
+        Si No EsPrimo(actual) Entonces
+            Continuar;
+        FinSi
+        Escribir Sin Saltar actual;
+        Escribir Sin Saltar " ";
+    FinPara
+    Escribir "";
+FinProceso

@@ -1,0 +1,7 @@
+// expect: E3016
+// U5 Matrices P1: se indexa un arreglo de una dimensión como si fuera matriz.
+Proceso IndicesDeMas
+    Definir a Como Entero[10];
+    Leer a[1, 1];
+    Escribir a[1];
+FinProceso

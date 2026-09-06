@@ -1,0 +1,18 @@
+// Guía Práctica U4 — Pregunta 16: la conjetura de Collatz paso a paso.
+Proceso Collatz
+    Definir n, pasos Como Entero;
+    Escribir "Introduce numero: ";
+    Leer n;
+    pasos <- 0;
+    Mientras Que n > 1 Hacer
+        Escribir n;
+        Si n MOD 2 = 0 Entonces
+            n <- n DIV 2;
+        Sino
+            n <- 3 * n + 1;
+        FinSi
+        pasos <- pasos + 1;
+    FinMientras
+    Escribir n;
+    Escribir "Llego a 1 en ", pasos, " pasos";
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "two values swapped through by-reference parameters",
+      "inputs": ["7", "3"],
+      "output": "Introduce A: \nIntroduce B: \nMuestro A: 3\nMuestro B: 7\n"
+    }
+  ]
+}

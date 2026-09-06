@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "a four-by-four mosaic of alternating colours",
+      "inputs": ["4"],
+      "output": "Introduce lado: \nABAB\nBABA\nABAB\nBABA\n"
+    }
+  ]
+}

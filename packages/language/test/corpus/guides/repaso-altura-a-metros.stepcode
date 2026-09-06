@@ -1,0 +1,31 @@
+// Guía de Repaso — Pregunta 8: altura en pies a metros y clasificación por género biológico.
+Proceso AlturaEnMetros
+    Constante PieEnMetros <- 0.3048;
+    Definir genero Como Cadena;
+    Definir pies, metros Como Real;
+    Escribir "Introduce Genero: ";
+    Leer genero;
+    Escribir "Introduce Altura (ft): ";
+    Leer pies;
+    metros <- pies * PieEnMetros;
+    genero <- Minusculas(genero);
+    Si genero = "masculino" Entonces
+        Si metros > 1.80 Entonces
+            Escribir "Al medir ", metros, " metros eres alto";
+        Sino Si metros > 1.70 Entonces
+            Escribir "Al medir ", metros, " metros eres normal";
+        Sino
+            Escribir "Al medir ", metros, " metros eres bajo";
+        FinSi
+    Sino Si genero = "femenino" Entonces
+        Si metros > 1.70 Entonces
+            Escribir "Al medir ", metros, " metros eres alta";
+        Sino Si metros > 1.60 Entonces
+            Escribir "Al medir ", metros, " metros eres normal";
+        Sino
+            Escribir "Al medir ", metros, " metros eres baja";
+        FinSi
+    Sino
+        Escribir "Genero no reconocido";
+    FinSi
+FinProceso

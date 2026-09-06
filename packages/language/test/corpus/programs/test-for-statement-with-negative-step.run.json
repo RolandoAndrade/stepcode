@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "test for statement with negative step",
+      "inputs": [],
+      "output": "5\n3\n1\n"
+    }
+  ]
+}

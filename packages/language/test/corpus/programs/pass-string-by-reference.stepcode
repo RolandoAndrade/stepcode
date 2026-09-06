@@ -1,0 +1,10 @@
+Procedimiento Despedida(saludo como Cadena por Referencia)
+      saludo ← "adios";
+    FinProcedimiento
+    Proceso ProgramaDespedida
+      Definir saludo Como Cadena;
+      saludo ← "hola";
+      Despedida(saludo);
+      Escribir saludo;
+    FinProceso
+    

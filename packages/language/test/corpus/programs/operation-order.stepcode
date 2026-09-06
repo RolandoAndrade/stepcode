@@ -1,0 +1,8 @@
+Proceso prueba
+      Definir a Como Entero;
+      a <- 10;
+      Escribir a + 2 * 3;
+      Escribir a * 2 + 3;
+      Escribir a ^ 2 * 2 + 3;
+      Escribir a * 2 ^ 2 + 3 * 2;
+      FinProceso

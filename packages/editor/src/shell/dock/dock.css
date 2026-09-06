@@ -1,0 +1,59 @@
+/* Spec §3.1: every dockview variable resolves to a token; no literal colors here. */
+.sc-dock {
+  --dv-group-view-background-color: var(--sc-bg);
+  --dv-tabs-and-actions-container-background-color: var(--sc-surface);
+  --dv-tabs-and-actions-container-height: 28px;
+  --dv-tabs-and-actions-container-font-size: 12px;
+  --dv-activegroup-visiblepanel-tab-background-color: var(--sc-surface);
+  --dv-activegroup-visiblepanel-tab-color: var(--sc-fg);
+  --dv-activegroup-hiddenpanel-tab-background-color: var(--sc-surface);
+  --dv-activegroup-hiddenpanel-tab-color: var(--sc-fg-muted);
+  --dv-inactivegroup-visiblepanel-tab-background-color: var(--sc-surface);
+  --dv-inactivegroup-visiblepanel-tab-color: var(--sc-fg-muted);
+  --dv-inactivegroup-hiddenpanel-tab-background-color: var(--sc-surface);
+  --dv-inactivegroup-hiddenpanel-tab-color: var(--sc-fg-muted);
+  --dv-tab-divider-color: var(--sc-border);
+  --dv-separator-border: var(--sc-border);
+  --dv-paneview-header-border-color: var(--sc-border);
+  --dv-drag-over-background-color: var(--sc-accent-soft);
+  --dv-drag-over-border-color: var(--sc-accent);
+  --dv-floating-box-shadow: 0 8px 24px var(--sc-shadow);
+  --dv-floating-border: 1px solid var(--sc-border);
+  --dv-sash-color: var(--sc-border);
+  --dv-active-sash-color: var(--sc-accent);
+  --dv-icon-hover-background-color: var(--sc-surface-raised);
+  --dv-scrollbar-background-color: var(--sc-border);
+  --dv-tab-border-radius: 0;
+  --dv-border-radius: 8px;
+}
+
+/* The React tab renders inside dockview's own tab wrapper, so the underline has to hang off our
+   own element: a selector compounding this class onto the wrapper could never match. */
+.sc-dock .sc-tab-active::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: var(--sc-accent);
+}
+
+/* Collapsing a group hides its grid view; dockview positions every view with inline `top`,
+   `left`, `width` and `height`, so transitioning those slides the grid instead of jumping it.
+   The class is only on while the shell hides or shows a group — never during a sash drag.
+   The easing is spelled out: `--ease-shell` is a Tailwind theme variable, and this file is
+   plain CSS that only ever reads the `--sc-*` tokens. */
+.sc-dock.sc-animating .dv-view,
+.sc-dock.sc-animating .dv-sash {
+  transition:
+    height 180ms cubic-bezier(0.2, 0, 0, 1),
+    width 180ms cubic-bezier(0.2, 0, 0, 1),
+    top 180ms cubic-bezier(0.2, 0, 0, 1),
+    left 180ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-dock.sc-animating .dv-view,
+  .sc-dock.sc-animating .dv-sash {
+    transition: none;
+  }
+}

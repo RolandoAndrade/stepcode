@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "parenthesis have more priority than all operations",
+      "inputs": [],
+      "output": "25\n16\n"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "every vowel dropped from a two-word phrase",
+      "inputs": ["Programacion Estructurada"],
+      "output": "Introduce texto: \nResultado: Prgrmcn strctrd\n"
+    }
+  ]
+}

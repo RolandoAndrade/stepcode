@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "both menu options, then zero leaves",
+      "inputs": ["1", "1000", "", "2", "10", "", "0"],
+      "output": "[1] Metros a kilometros\n[2] Libras a kilogramos\n[0] Salir\nIntroduce opcion: \nIntroduce el valor: \nSon 1 km\nPulsa una tecla para continuar\n[1] Metros a kilometros\n[2] Libras a kilogramos\n[0] Salir\nIntroduce opcion: \nIntroduce el valor: \nSon 4.535923700000001 kg\nPulsa una tecla para continuar\n[1] Metros a kilometros\n[2] Libras a kilogramos\n[0] Salir\nIntroduce opcion: \nHasta pronto\n"
+    }
+  ]
+}

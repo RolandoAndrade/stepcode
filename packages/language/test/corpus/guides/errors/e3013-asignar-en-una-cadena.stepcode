@@ -1,0 +1,8 @@
+// expect: E3013
+// U5 Cadenas P5: se intenta escribir un carácter dentro de la cadena por índice.
+Proceso EscribirEnCadena
+    Definir frase Como Cadena;
+    Leer frase;
+    frase[1] <- "x";
+    Escribir frase;
+FinProceso

@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "forty-eight and eighteen, four levels of recursion",
+      "inputs": ["48", "18"],
+      "output": "Introduce a: \nIntroduce b: \nMCD(48,18) = 6\n"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+// expect: E3031
+// U4 P15: se usa Romper dentro de un Si, sin ciclo alrededor.
+Proceso RomperSinCiclo
+    Definir n Como Entero;
+    Leer n;
+    Si n = 0 Entonces
+        Romper;
+    FinSi
+    Escribir n;
+FinProceso

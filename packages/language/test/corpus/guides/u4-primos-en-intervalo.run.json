@@ -1,0 +1,9 @@
+{
+  "runs": [
+    {
+      "name": "the primes between ten and thirty",
+      "inputs": ["10", "30"],
+      "output": "Inicio: \nFin: \n11 13 17 19 23 29 \n"
+    }
+  ]
+}
