@@ -6,12 +6,20 @@ import {
   isMultiWord,
   symbolAlternation,
   WORD_END,
+  WORD_GAP,
   WORD_START,
   type WordOptions,
   wordAlternation,
   wordRule,
 } from './regex'
-import { OPERATOR_FAMILIES, PATTERN_ORDER, SCOPES, WORD_FAMILIES, type WordSection } from './scopes'
+import {
+  DEFINITION_SCOPE,
+  OPERATOR_FAMILIES,
+  PATTERN_ORDER,
+  SCOPES,
+  WORD_FAMILIES,
+  type WordSection,
+} from './scopes'
 import type { GenerateOptions, TextMateGrammar, TextMateRule } from './types'
 
 export function wordOptions(profile: ResolvedProfile): WordOptions {
@@ -96,6 +104,58 @@ function symbolRules(profile: ResolvedProfile, repository: Record<string, TextMa
   repository.identifier = { name: SCOPES.identifier, match: `${WORD_START}${IDENT}${WORD_END}` }
 }
 
+function structureRules(profile: ResolvedProfile, repository: Record<string, TextMateRule>): void {
+  const options = wordOptions(profile)
+  const keyword = (keys: readonly string[]): string[] => spellingsOf(profile, 'keywords', keys)
+  const head = (spellings: readonly string[]): string =>
+    `${caseFlag(options)}${WORD_START}(${wordAlternation(spellings, options)})${WORD_END}${WORD_GAP}`
+
+  const subprogram = keyword(['function', 'procedure'])
+  if (subprogram.length > 0) {
+    const assign = profile.operators.assign
+    if (assign.length > 0) {
+      repository.subprogram = {
+        match: `${head(subprogram)}(?:(${IDENT})[ \\t]*(${symbolAlternation(assign)})[ \\t]*)?(${IDENT})${WORD_END}`,
+        captures: {
+          '1': { name: DEFINITION_SCOPE },
+          '2': { name: SCOPES.definedVariable },
+          '3': { name: SCOPES.assignment },
+          '4': { name: SCOPES.subprogramName },
+        },
+      }
+    } else {
+      repository.subprogram = {
+        match: `${head(subprogram)}(${IDENT})${WORD_END}`,
+        captures: { '1': { name: DEFINITION_SCOPE }, '2': { name: SCOPES.subprogramName } },
+      }
+    }
+  }
+
+  const program = keyword(['program'])
+  if (program.length > 0) {
+    repository.program = {
+      match: `${head(program)}(${IDENT})${WORD_END}`,
+      captures: { '1': { name: DEFINITION_SCOPE }, '2': { name: SCOPES.subprogramName } },
+    }
+  }
+
+  const define = keyword(['define'])
+  if (define.length > 0) {
+    repository.definition = {
+      match: `${head(define)}((?:${IDENT}[ \\t]*,[ \\t]*)*${IDENT})${WORD_END}`,
+      captures: {
+        '1': { name: DEFINITION_SCOPE },
+        '2': { patterns: [{ name: SCOPES.definedVariable, match: IDENT }] },
+      },
+    }
+  }
+
+  repository.call = {
+    match: `${WORD_START}(${IDENT})(?=[ \\t]*\\()`,
+    captures: { '1': { name: SCOPES.callName } },
+  }
+}
+
 export function generateGrammar(
   profile: ResolvedProfile,
   options: GenerateOptions,
@@ -103,6 +163,7 @@ export function generateGrammar(
   const repository: Record<string, TextMateRule> = {}
   wordFamilyRules(profile, repository)
   symbolRules(profile, repository)
+  structureRules(profile, repository)
   const grammar: TextMateGrammar = {
     name: options.name,
     scopeName: options.scopeName,

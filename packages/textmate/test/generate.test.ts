@@ -1,7 +1,14 @@
 import { builtinProfiles, profiles, resolveProfile } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
 import { generateGrammar } from '../src/generate'
-import { symbolAlternation, WORD_END, WORD_START, wordAlternation, wordRule } from '../src/regex'
+import {
+  IDENT,
+  symbolAlternation,
+  WORD_END,
+  WORD_START,
+  wordAlternation,
+  wordRule,
+} from '../src/regex'
 import type { TextMateRule } from '../src/types'
 
 const options = { name: 'stepcode', scopeName: 'source.stepcode' }
@@ -248,5 +255,96 @@ describe('symbol rules', () => {
     )
     const grammar = generateGrammar(dashes, options)
     expect(rule(grammar, 'comment').match).toBe('(?:--).*$')
+  })
+})
+
+describe('structural rules', () => {
+  const definitionKeyword = { name: 'storage.type.stepcode' }
+  it('subprogram: keyword, optional return variable and arrow, then the name', () => {
+    const sub = rule(es, 'subprogram')
+    const head = wordAlternation(['SubProceso', 'SubAlgoritmo', 'Procedimiento', 'Funcion'], folded)
+    expect(sub.match).toBe(
+      `(?i)${WORD_START}(${head})${WORD_END}[ \\t]+(?:(${IDENT})[ \\t]*(<-|←)[ \\t]*)?(${IDENT})${WORD_END}`,
+    )
+    expect(sub.captures).toEqual({
+      '1': definitionKeyword,
+      '2': { name: 'variable.other.definition.stepcode' },
+      '3': { name: 'keyword.operator.assignment.stepcode' },
+      '4': { name: 'entity.name.function.stepcode' },
+    })
+  })
+  it('program: keyword then the name', () => {
+    const program = rule(es, 'program')
+    const head = wordAlternation(['Proceso', 'Algoritmo'], folded)
+    expect(program.match).toBe(`(?i)${WORD_START}(${head})${WORD_END}[ \\t]+(${IDENT})${WORD_END}`)
+    expect(program.captures).toEqual({
+      '1': definitionKeyword,
+      '2': { name: 'entity.name.function.stepcode' },
+    })
+  })
+  it('definition: keyword then a comma list of names, each scoped through nested patterns', () => {
+    const definition = rule(es, 'definition')
+    const head = wordAlternation(['Definir'], folded)
+    expect(definition.match).toBe(
+      `(?i)${WORD_START}(${head})${WORD_END}[ \\t]+((?:${IDENT}[ \\t]*,[ \\t]*)*${IDENT})${WORD_END}`,
+    )
+    expect(definition.captures).toEqual({
+      '1': definitionKeyword,
+      '2': { patterns: [{ name: 'variable.other.definition.stepcode', match: IDENT }] },
+    })
+  })
+  it('call: an identifier followed by an opening paren', () => {
+    expect(rule(es, 'call')).toEqual({
+      match: `${WORD_START}(${IDENT})(?=[ \\t]*\\()`,
+      captures: { '1': { name: 'entity.name.function.call.stepcode' } },
+    })
+  })
+  it('patterns follow the spec order exactly for es', () => {
+    expect(includes(es)).toEqual([
+      '#comment',
+      '#string',
+      '#subprogram',
+      '#program',
+      '#definition',
+      '#multiword',
+      '#keyword-control',
+      '#keyword-definition',
+      '#keyword-io',
+      '#keyword-operator',
+      '#boolean',
+      '#type',
+      '#builtin',
+      '#number',
+      '#call',
+      '#operator-assignment',
+      '#operator-comparison',
+      '#operator-arithmetic',
+      '#punctuation',
+      '#identifier',
+    ])
+  })
+  it('patterns follow the spec order exactly for en, including keyword-modifier', () => {
+    expect(includes(en)).toEqual([
+      '#comment',
+      '#string',
+      '#subprogram',
+      '#program',
+      '#definition',
+      '#keyword-control',
+      '#keyword-definition',
+      '#keyword-modifier',
+      '#keyword-io',
+      '#keyword-operator',
+      '#boolean',
+      '#type',
+      '#builtin',
+      '#number',
+      '#call',
+      '#operator-assignment',
+      '#operator-comparison',
+      '#operator-arithmetic',
+      '#punctuation',
+      '#identifier',
+    ])
   })
 })
