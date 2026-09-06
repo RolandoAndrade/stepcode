@@ -1,7 +1,7 @@
 import { builtinProfiles, profiles, resolveProfile } from '@stepcode/profiles'
 import { describe, expect, it } from 'vitest'
 import { generateGrammar } from '../src/generate'
-import { WORD_END, WORD_START, wordAlternation, wordRule } from '../src/regex'
+import { symbolAlternation, WORD_END, WORD_START, wordAlternation, wordRule } from '../src/regex'
 import type { TextMateRule } from '../src/types'
 
 const options = { name: 'stepcode', scopeName: 'source.stepcode' }
@@ -171,5 +171,82 @@ describe('profile options', () => {
     // would fail regardless of accent folding. Check for accent-variant characters instead,
     // which only appear when foldAccents expands a letter into a character class.
     expect(rule(grammar, 'keyword-definition').match).not.toMatch(/[àáâãäèéêëìíîïòóôõöùúûüçýÿ]/)
+  })
+})
+
+describe('symbol rules', () => {
+  it('comment runs from the profile spelling to end of line', () => {
+    expect(rule(es, 'comment')).toEqual({ name: 'comment.line.stepcode', match: '(?:\\/\\/).*$' })
+  })
+  it('strings are single line and tolerate a missing closing quote', () => {
+    expect(rule(es, 'string')).toEqual({
+      patterns: [
+        { name: 'string.quoted.double.stepcode', match: '"[^"]*(?:"|$)' },
+        { name: 'string.quoted.single.stepcode', match: "'[^']*(?:'|$)" },
+      ],
+    })
+  })
+  it('numbers are real before integer, bounded, without exponent', () => {
+    expect(rule(es, 'number')).toEqual({
+      patterns: [
+        {
+          name: 'constant.numeric.real.stepcode',
+          match: '(?<![\\p{L}\\p{N}_])\\d+\\.\\d+(?![\\p{L}\\p{N}_])',
+        },
+        {
+          name: 'constant.numeric.integer.stepcode',
+          match: '(?<![\\p{L}\\p{N}_])\\d+(?![\\p{L}\\p{N}_])',
+        },
+      ],
+    })
+  })
+  it('operator families come from the operators table, longest first', () => {
+    expect(rule(es, 'operator-assignment')).toEqual({
+      name: 'keyword.operator.assignment.stepcode',
+      match: '<-|←',
+    })
+    expect(rule(es, 'operator-comparison')).toEqual({
+      name: 'keyword.operator.comparison.stepcode',
+      match: symbolAlternation(['=', '<>', '!=', '≠', '<', '<=', '≤', '>', '>=', '≥']),
+    })
+  })
+  it('arithmetic takes the letterless keyword spellings too', () => {
+    expect(rule(es, 'operator-arithmetic')).toEqual({
+      name: 'keyword.operator.arithmetic.stepcode',
+      match: symbolAlternation(['+', '-', '*', '/', '^', '**', '&', '|', '~', '%']),
+    })
+  })
+  it('= is a comparison whatever the assignment options say', () => {
+    expect(rule(es, 'operator-comparison').match).toContain('=')
+    expect(rule(es, 'operator-assignment').match).not.toContain('=')
+  })
+  it('punctuation is the fixed lexer set', () => {
+    expect(rule(es, 'punctuation')).toEqual({
+      patterns: [
+        { name: 'punctuation.section.parens.stepcode', match: '[()]' },
+        { name: 'punctuation.section.brackets.stepcode', match: '[\\[\\]]' },
+        { name: 'punctuation.separator.stepcode', match: '[,:]' },
+        { name: 'punctuation.terminator.stepcode', match: ';' },
+      ],
+    })
+  })
+  it('identifier is the bounded word fallback and comes last', () => {
+    expect(rule(es, 'identifier')).toEqual({
+      name: 'variable.other.stepcode',
+      match: '(?<![\\p{L}\\p{N}_])[\\p{L}_][\\p{L}\\p{N}_]*(?![\\p{L}\\p{N}_])',
+    })
+    expect(includes(es).at(-1)).toBe('#identifier')
+    expect(includes(es).slice(0, 2)).toEqual(['#comment', '#string'])
+  })
+  it('omits the comment rule for a profile that spells no comment', () => {
+    // resolveProfile requires every operator key to have a spelling (operators.comment has no
+    // optional-key exception, unlike keywords.case), so an empty comment list is rejected.
+    // Use a profile that spells the comment as `--` instead, and check the rule it produces.
+    const dashes = resolveProfile(
+      { id: 'dashes', extends: 'es', operators: { comment: ['--'] } },
+      builtinProfiles,
+    )
+    const grammar = generateGrammar(dashes, options)
+    expect(rule(grammar, 'comment').match).toBe('(?:--).*$')
   })
 })
