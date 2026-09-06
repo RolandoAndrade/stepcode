@@ -44,7 +44,12 @@ describe('word families', () => {
   it('scopes every family', () => {
     expect(rule(es, 'keyword-control').name).toBe('keyword.control.stepcode')
     expect(rule(es, 'keyword-definition').name).toBe('storage.type.stepcode')
-    expect(rule(es, 'keyword-modifier').name).toBe('storage.modifier.stepcode')
+    // es's byRef/byValue are both multi-word ("Por Referencia", "Por Valor"), so the family
+    // has no single-word list of its own; its scope reaches the grammar only through the
+    // multiword rule's captures (see the "multiword rule" block below).
+    expect(es.repository['keyword-modifier']).toBeUndefined()
+    // en's ByRef/ByValue are single words, so en does get a keyword-modifier rule.
+    expect(rule(en, 'keyword-modifier').name).toBe('storage.modifier.stepcode')
     expect(rule(es, 'keyword-io').name).toBe('keyword.other.io.stepcode')
     expect(rule(es, 'keyword-operator').name).toBe('keyword.operator.word.stepcode')
     expect(rule(es, 'boolean').name).toBe('constant.language.boolean.stepcode')
@@ -132,6 +137,13 @@ describe('multiword rule', () => {
       '3': { name: 'keyword.other.io.stepcode' },
     })
     expect(multi.name).toBeUndefined()
+  })
+  it('carries a family scope that has no rule of its own only through its capture group', () => {
+    // es's keyword-modifier family has only multi-word spellings, so it emits no
+    // keyword-modifier rule (see "scopes every family" above); its scope still reaches the
+    // grammar, through the multiword rule's second capture group.
+    expect(es.repository['keyword-modifier']).toBeUndefined()
+    expect(rule(es, 'multiword').captures?.['2']).toEqual({ name: 'storage.modifier.stepcode' })
   })
   it('is absent for a profile with no multi-word spelling', () => {
     expect(en.repository.multiword).toBeUndefined()

@@ -41,10 +41,8 @@ function wordFamilyRules(profile: ResolvedProfile, repository: Record<string, Te
       groups.push(`(${wordAlternation(multi, options)})`)
       captures[String(groups.length)] = { name: family.scope }
     }
-    if (spellings.length > 0) {
-      const rule: TextMateRule = { name: family.scope }
-      if (single.length > 0) rule.match = wordRule(single, options)
-      repository[family.id] = rule
+    if (single.length > 0) {
+      repository[family.id] = { name: family.scope, match: wordRule(single, options) }
     }
   }
   if (groups.length > 0) {
