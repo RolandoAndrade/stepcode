@@ -4,12 +4,11 @@ import { APP_VERSION } from '../version'
 import { Dialog } from './Dialog'
 
 const DEFAULT_REPOSITORY = 'https://github.com/RolandoAndrade/stepcode'
-const DEFAULT_ACADEMY = 'https://academy.rolandoandrade.me'
 
 /** Spec §8.6: version, licence and the project's public links. */
 export function About({
   repository = DEFAULT_REPOSITORY,
-  academy = DEFAULT_ACADEMY,
+  academy,
 }: {
   repository?: string
   academy?: string
@@ -26,9 +25,11 @@ export function About({
           <a href={repository} target="_blank" rel="noreferrer" className="text-accent underline">
             {strings.about.repository}
           </a>
-          <a href={academy} target="_blank" rel="noreferrer" className="text-accent underline">
-            {strings.about.academy}
-          </a>
+          {academy && (
+            <a href={academy} target="_blank" rel="noreferrer" className="text-accent underline">
+              {strings.about.academy}
+            </a>
+          )}
         </div>
         <p className="text-muted text-xs">{strings.about.licence}</p>
       </div>

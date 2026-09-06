@@ -13,8 +13,14 @@ describe('About', () => {
     expect(screen.getByRole('link', { name: 'Repositorio' }).getAttribute('href')).toContain(
       'github',
     )
+    expect(screen.queryByRole('link', { name: 'Academia' })).toBeNull()
+  })
+
+  it('shows the academy link when a URL is configured', () => {
+    const { store } = storeWith({ dialog: 'about' })
+    renderWithStore(<About academy="https://example.test" />, store)
     expect(screen.getByRole('link', { name: 'Academia' }).getAttribute('href')).toBe(
-      'https://academy.rolandoandrade.me',
+      'https://example.test',
     )
   })
 
