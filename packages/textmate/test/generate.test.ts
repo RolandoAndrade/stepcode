@@ -1,0 +1,163 @@
+import { builtinProfiles, profiles, resolveProfile } from '@stepcode/profiles'
+import { describe, expect, it } from 'vitest'
+import { generateGrammar } from '../src/generate'
+import { WORD_END, WORD_START, wordAlternation, wordRule } from '../src/regex'
+import type { TextMateRule } from '../src/types'
+
+const options = { name: 'stepcode', scopeName: 'source.stepcode' }
+const folded = { caseSensitive: false, foldAccents: true }
+const es = generateGrammar(profiles.es, options)
+const en = generateGrammar(profiles.en, options)
+
+const rule = (grammar: ReturnType<typeof generateGrammar>, id: string): TextMateRule => {
+  const found = grammar.repository[id]
+  if (found === undefined) throw new Error(`no rule ${id}`)
+  return found
+}
+
+const includes = (grammar: ReturnType<typeof generateGrammar>): string[] =>
+  grammar.patterns.map((p) => p.include ?? '?')
+
+describe('grammar shell', () => {
+  it('carries the registration fields', () => {
+    const grammar = generateGrammar(profiles.es, {
+      name: 'stepcode',
+      scopeName: 'source.stepcode',
+      displayName: 'StepCode',
+      aliases: ['pseudocode'],
+    })
+    expect(grammar.name).toBe('stepcode')
+    expect(grammar.scopeName).toBe('source.stepcode')
+    expect(grammar.displayName).toBe('StepCode')
+    expect(grammar.aliases).toEqual(['pseudocode'])
+  })
+  it('omits optional fields that were not given', () => {
+    expect('displayName' in es).toBe(false)
+    expect('aliases' in es).toBe(false)
+  })
+  it('is deterministic', () => {
+    expect(generateGrammar(profiles.es, options)).toEqual(es)
+  })
+})
+
+describe('word families', () => {
+  it('scopes every family', () => {
+    expect(rule(es, 'keyword-control').name).toBe('keyword.control.stepcode')
+    expect(rule(es, 'keyword-definition').name).toBe('storage.type.stepcode')
+    expect(rule(es, 'keyword-modifier').name).toBe('storage.modifier.stepcode')
+    expect(rule(es, 'keyword-io').name).toBe('keyword.other.io.stepcode')
+    expect(rule(es, 'keyword-operator').name).toBe('keyword.operator.word.stepcode')
+    expect(rule(es, 'boolean').name).toBe('constant.language.boolean.stepcode')
+    expect(rule(es, 'type').name).toBe('support.type.primitive.stepcode')
+    expect(rule(es, 'builtin').name).toBe('support.function.builtin.stepcode')
+  })
+  it('puts the single-word spellings of the family in its rule', () => {
+    // The spellings are read from packages/profiles/src/profiles/es.json by hand; the rule
+    // composition (sorting, boundaries, flag, accent classes) is regex.test.ts's job.
+    expect(rule(es, 'keyword-control').match).toBe(
+      wordRule(
+        [
+          'Si',
+          'Entonces',
+          'Sino',
+          'FinSi',
+          'Segun',
+          'FinSegun',
+          'Mientras',
+          'Hacer',
+          'FinMientras',
+          'Para',
+          'Hasta',
+          'FinPara',
+          'Repetir',
+          'Romper',
+          'Continuar',
+          'Retornar',
+        ],
+        folded,
+      ),
+    )
+    expect(rule(es, 'type').match).toBe(
+      wordRule(['Entero', 'Real', 'Cadena', 'Caracteres', 'Texto', 'Caracter', 'Logico'], folded),
+    )
+  })
+  it('does not repeat multi-word spellings in the family rule', () => {
+    expect(rule(es, 'keyword-control').match).not.toContain('Paso')
+    expect(rule(es, 'keyword-io').match).not.toContain('Saltar')
+  })
+  it('folds accents in es and expands the classes', () => {
+    expect(rule(es, 'keyword-definition').match).toContain('F[uùúûü]n[cç][iìíîï][oòóôõö]n')
+  })
+  it('leaves letterless spellings out of the word-operator rule', () => {
+    expect(rule(es, 'keyword-operator').match).toBe(
+      wordRule(['Y', 'O', 'No', 'MOD', 'DIV'], folded),
+    )
+  })
+  it('omits a family with no spelling at all', () => {
+    // byRef/byValue may not be empty (resolveProfile requires every keyword key but `case` to
+    // have a spelling); use letterless spellings instead so spellingsOf's hasLetter filter
+    // still yields no spelling for the family, without violating profile validation.
+    const bare = resolveProfile(
+      { id: 'bare', extends: 'es', keywords: { byRef: ['@'], byValue: ['#'] } },
+      builtinProfiles,
+    )
+    const grammar = generateGrammar(bare, options)
+    expect(grammar.repository['keyword-modifier']).toBeUndefined()
+    expect(includes(grammar)).not.toContain('#keyword-modifier')
+  })
+})
+
+describe('multiword rule', () => {
+  it('lists every multi-word spelling, one capture group per family, in family order', () => {
+    const multi = rule(es, 'multiword')
+    const control = wordAlternation(
+      ['Sino Si', 'De Otro Modo', 'Mientras Que', 'Con Paso', 'Hasta Que'],
+      folded,
+    )
+    const modifier = wordAlternation(['Por Referencia', 'Por Valor'], folded)
+    const io = wordAlternation(
+      [
+        'Escribir Sin Saltar',
+        'Mostrar Sin Saltar',
+        'Limpiar Pantalla',
+        'Borrar Pantalla',
+        'Esperar Tecla',
+      ],
+      folded,
+    )
+    expect(multi.match).toBe(`(?i)${WORD_START}(?:(${control})|(${modifier})|(${io}))${WORD_END}`)
+    expect(multi.captures).toEqual({
+      '1': { name: 'keyword.control.stepcode' },
+      '2': { name: 'storage.modifier.stepcode' },
+      '3': { name: 'keyword.other.io.stepcode' },
+    })
+    expect(multi.name).toBeUndefined()
+  })
+  it('is absent for a profile with no multi-word spelling', () => {
+    expect(en.repository.multiword).toBeUndefined()
+    expect(includes(en)).not.toContain('#multiword')
+  })
+  it('precedes every word-family rule in patterns', () => {
+    const order = includes(es)
+    expect(order.indexOf('#multiword')).toBeLessThan(order.indexOf('#keyword-control'))
+    expect(order.indexOf('#keyword-control')).toBeLessThan(order.indexOf('#builtin'))
+  })
+})
+
+describe('profile options', () => {
+  const strict = resolveProfile(
+    { id: 'strict', extends: 'en', options: { caseSensitive: true, foldAccents: false } },
+    builtinProfiles,
+  )
+  const grammar = generateGrammar(strict, options)
+  it('emits no case flag for a case-sensitive profile', () => {
+    expect(rule(grammar, 'keyword-control').match?.startsWith('(?<!')).toBe(true)
+  })
+  it('emits no accent classes when accents are not folded', () => {
+    expect(rule(grammar, 'keyword-definition').match).toContain('EndProcedure|')
+    // WORD_START/WORD_END always contain '[' (from `[\p{L}\p{N}_]`), so a literal '[' check
+    // would fail regardless of accent folding. Check for accent-variant characters instead,
+    // which only appear when foldAccents expands a letter into a character class.
+    expect(rule(grammar, 'keyword-definition').match).not.toMatch(/[àáâãäèéêëìíîïòóôõöùúûüçýÿ]/)
+  })
+})
