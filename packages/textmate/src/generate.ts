@@ -91,7 +91,26 @@ function symbolRules(profile: ResolvedProfile, repository: Record<string, TextMa
     const spellings = family.keys.flatMap((key) => profile.operators[key])
     if (family.id === 'operator-arithmetic') spellings.push(...symbolSpellingsOf(profile))
     if (spellings.length === 0) continue
-    repository[family.id] = { name: family.scope, match: symbolAlternation(spellings) }
+    const letters = spellings.filter(hasLetter)
+    const symbols = spellings.filter((spelling) => !hasLetter(spelling))
+    // A letter-bearing operator spelling (`elevado`, `REM`) is matched the way the lexer
+    // matches it: as a whole word, exactly and un-normalized, never folded like a keyword.
+    const letterMatch = `${WORD_START}(?:${wordAlternation(letters, {
+      caseSensitive: true,
+      foldAccents: false,
+    })})${WORD_END}`
+    if (letters.length > 0 && symbols.length > 0) {
+      repository[family.id] = {
+        patterns: [
+          { name: family.scope, match: letterMatch },
+          { name: family.scope, match: symbolAlternation(symbols) },
+        ],
+      }
+    } else if (letters.length > 0) {
+      repository[family.id] = { name: family.scope, match: letterMatch }
+    } else {
+      repository[family.id] = { name: family.scope, match: symbolAlternation(symbols) }
+    }
   }
   repository.punctuation = {
     patterns: [

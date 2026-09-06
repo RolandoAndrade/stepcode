@@ -223,6 +223,34 @@ describe('symbol rules', () => {
       match: symbolAlternation(['+', '-', '*', '/', '^', '**', '&', '|', '~', '%']),
     })
   })
+  it('bounds a letter-bearing operator spelling as a whole word, case-exact', () => {
+    // `elevado` must not match inside `elevadora`; the symbolic spellings of the same family
+    // keep the old unbounded alternation.
+    const letterop = resolveProfile(
+      { id: 'letterop', extends: 'en', operators: { power: ['elevado', '^', '**'] } },
+      builtinProfiles,
+    )
+    const grammar = generateGrammar(letterop, options)
+    const arithmetic = rule(grammar, 'operator-arithmetic')
+    if (arithmetic.patterns === undefined) throw new Error('expected a patterns array')
+    const [wordBranch, symbolBranch] = arithmetic.patterns
+    expect(wordBranch).toEqual({
+      name: 'keyword.operator.arithmetic.stepcode',
+      match: wordRule(['elevado'], { caseSensitive: true, foldAccents: false }),
+    })
+    expect(wordBranch?.match).toContain('(?<![\\p{L}\\p{N}_])(?:elevado)(?![\\p{L}\\p{N}_])')
+    expect(wordBranch?.match).not.toContain('(?i)')
+    expect(symbolBranch).toEqual({
+      name: 'keyword.operator.arithmetic.stepcode',
+      match: symbolAlternation(['^', '**', '+', '-', '*', '/', '&', '|', '~', '%']),
+    })
+  })
+  it('keeps the plain single-rule shape for a family with only symbolic spellings', () => {
+    expect(rule(es, 'operator-comparison')).toEqual({
+      name: 'keyword.operator.comparison.stepcode',
+      match: symbolAlternation(['=', '<>', '!=', '≠', '<', '<=', '≤', '>', '>=', '≥']),
+    })
+  })
   it('= is a comparison whatever the assignment options say', () => {
     expect(rule(es, 'operator-comparison').match).toContain('=')
     expect(rule(es, 'operator-assignment').match).not.toContain('=')

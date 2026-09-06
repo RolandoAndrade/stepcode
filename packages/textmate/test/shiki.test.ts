@@ -17,9 +17,17 @@ const strict = generateGrammar(
   { name: 'stepcode-strict', scopeName: 'source.stepcode.strict' },
 )
 
+const letterop = generateGrammar(
+  resolveProfile(
+    { id: 'letterop', extends: 'en', operators: { power: ['elevado', '^', '**'] } },
+    builtinProfiles,
+  ),
+  { name: 'stepcode-letterop', scopeName: 'source.stepcode.letterop' },
+)
+
 let highlighters: Record<EngineName, Highlighter>
 beforeAll(async () => {
-  highlighters = await makeHighlighters([...grammars, strict])
+  highlighters = await makeHighlighters([...grammars, strict, letterop])
 })
 
 const engines: EngineName[] = ['javascript', 'oniguruma']
@@ -138,6 +146,17 @@ describe.each(engines)('%s engine', (engine) => {
       expect(scopeOf(t, 'When')).toBe('keyword.control.stepcode')
       expect(scopeOf(t, 'if')).toBe('variable.other.stepcode')
       expect(scopeOf(t, 'Ábs')).toBe('entity.name.function.call.stepcode')
+    })
+  })
+
+  describe('letter-spelled operator', () => {
+    const tokens = () =>
+      scopesOf(highlighters[engine], 'stepcode-letterop', 'elevadora <- 2 elevado 3;')
+    it('a word that starts with the operator spelling stays an identifier', () => {
+      expect(scopeOf(tokens(), 'elevadora')).toBe('variable.other.stepcode')
+    })
+    it('the exact word is the arithmetic operator', () => {
+      expect(scopeOf(tokens(), 'elevado')).toBe('keyword.operator.arithmetic.stepcode')
     })
   })
 

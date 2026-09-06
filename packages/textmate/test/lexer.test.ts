@@ -19,6 +19,15 @@ const strict = generateGrammar(strictProfile, {
   scopeName: 'source.stepcode.strict',
 })
 
+const letteropProfile = resolveProfile(
+  { id: 'letterop', extends: 'en', operators: { power: ['elevado', '^', '**'] } },
+  builtinProfiles,
+)
+const letterop = generateGrammar(letteropProfile, {
+  name: 'stepcode-letterop',
+  scopeName: 'source.stepcode.letterop',
+})
+
 /** Which deepest-scope prefixes a lexer token kind may carry. */
 const FAMILIES: Partial<Record<TokenKind, readonly string[]>> = {
   keyword: ['keyword.', 'storage.', 'constant.language.boolean.'],
@@ -43,11 +52,12 @@ const cases: Case[] = [
   { sample: 'es', lang: 'stepcode-pseint', profile: profiles.pseint },
   { sample: 'en', lang: 'stepcode-en', profile: profiles.en },
   { sample: 'custom', lang: 'stepcode-strict', profile: strictProfile },
+  { sample: 'letterop', lang: 'stepcode-letterop', profile: letteropProfile },
 ]
 
 let highlighters: Record<EngineName, Highlighter>
 beforeAll(async () => {
-  highlighters = await makeHighlighters([...grammars, strict])
+  highlighters = await makeHighlighters([...grammars, strict, letterop])
 })
 
 /** Deepest scope at each source offset, from Shiki's per-line tokens. */
