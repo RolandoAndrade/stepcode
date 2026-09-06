@@ -105,7 +105,9 @@ describe.each(engines)('%s engine', (engine) => {
       expect(scopeOf(t, 'nombre', 7)).toBe('variable.other.stepcode')
     })
     it('never leaves a keyword inside an identifier', () => {
-      expect(tokens().filter((t) => t.text === 'Si' && t.line === 36)).toEqual([])
+      const t = scopesOf(highlighters[engine], 'stepcode', 'Escribir SiNoValido, Si;')
+      expect(scopeOf(t, 'SiNoValido')).toBe('variable.other.stepcode')
+      expect(scopeOf(t, 'Si')).toBe('keyword.control.stepcode')
     })
   })
 
