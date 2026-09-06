@@ -45,4 +45,6 @@ FinFuncion
 
 SubProceso Saludar(quien Por Referencia Como Cadena)
     Escribir "Hola ", quien;
+    Dimension marcas[3];
+    marcas[1] <- Longitud(quien);
 FinSubProceso

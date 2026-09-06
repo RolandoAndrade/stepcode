@@ -76,6 +76,10 @@ describe.each(engines)('%s engine', (engine) => {
       [';', 'punctuation.terminator.stepcode'],
       [',', 'punctuation.separator.stepcode'],
       ['(', 'punctuation.section.parens.stepcode'],
+      ['[', 'punctuation.section.brackets.stepcode'],
+      [']', 'punctuation.section.brackets.stepcode'],
+      ['Dimension', 'storage.type.stepcode'],
+      ['Longitud', 'support.function.builtin.stepcode'],
     ])('%s → %s', (text, scope) => {
       expect(scopeOf(tokens(), text)).toBe(scope)
     })
