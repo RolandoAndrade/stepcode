@@ -86,6 +86,9 @@ Receive:
 | `done` | when a run ends | `{ state: 'done' \| 'error' \| 'stopped' }` |
 | `error` | on a runtime error | `{ message, line }` |
 
+`ready`'s `version` is the StepCode language version (the `stepcode` package's version), not the
+editor's own build number.
+
 ```js
 const frame = document.querySelector('iframe')
 addEventListener('message', (event) => {
