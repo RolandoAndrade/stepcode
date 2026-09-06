@@ -165,12 +165,18 @@ mirrors that:
   `(?<![\p{L}\p{N}_])\d+(?![\p{L}\p{N}_])` as integer. No exponent, no sign, no hex, matching the
   lexer. A digit run glued to a letter (`12abc`) matches nothing, so it falls through
   unscoped, as an error would.
-- **Operators.** Symbolic spellings come from `profile.operators` (all keys except `comment`) and
-  from keyword spellings that contain no letter (`&`, `|`, `~`, `%` in `es`/`en`). Each family
-  is one `match` rule with an alternation sorted longest first, so `<=` is tried before `<` and
-  `**` before `*`. Symbol rules have no word-boundary wrapper. Under `assignWithEquals: true`
-  the profile spells `=` as both `assign` and `equal`; the grammar scopes it as comparison, which
-  is what the lexer reports, and does not try to guess the statement.
+- **Operators.** Spellings come from `profile.operators` (all keys except `comment`) and from
+  keyword spellings that contain no letter (`&`, `|`, `~`, `%` in `es`/`en`). A family's
+  symbolic spellings (no letter, e.g. `<=`, `**`) are one `match` rule with an alternation
+  sorted longest first, so `<=` is tried before `<` and `**` before `*`; symbol rules have no
+  word-boundary wrapper. A family's letter-bearing spellings (`elevado`, `REM`) are matched the
+  way the lexer matches an operator: as a whole word (`WORD_START`/`WORD_END`), exactly and
+  un-normalized — case-exact and accent-exact whatever the profile's `caseSensitive` and
+  `foldAccents` options say, never folded like a keyword. When a family has both kinds, its
+  repository entry is `{ patterns: [word rule, symbol rule] }` with the word rule first; a
+  family with only one kind keeps a single `{ name, match }` rule. Under `assignWithEquals:
+  true` the profile spells `=` as both `assign` and `equal`; the grammar scopes it as
+  comparison, which is what the lexer reports, and does not try to guess the statement.
 - **Punctuation.** `(`, `)` → `punctuation.section.parens`; `[`, `]` →
   `punctuation.section.brackets`; `,` `:` → `punctuation.separator`; `;` →
   `punctuation.terminator`. Fixed set, same as the lexer's.
@@ -208,8 +214,12 @@ both the repository and the list.
 
 The three structural rules sit ahead of `multiword` because they capture a whole statement
 head and scope the keyword inside it themselves; no builtin profile has a multi-word spelling
-that starts with a `function`, `procedure`, `program` or `define` spelling, and a custom profile
-that does would only lose the structural scope on that line, never the keyword's colour.
+that starts with a `function`, `procedure`, `program` or `define` spelling. A custom profile
+that does would lose the multi-word keyword's own colour on that line instead: the structural
+rule matches first and consumes only the first word as its head, so the keyword's later words
+fall through to whatever matches them next (typically `variable.other.definition` inside a
+`subprogram`/`program` capture, or `entity.name.function` as the captured name), never the
+multi-word keyword's scope.
 
 ## 5. Scopes
 
@@ -335,3 +345,6 @@ work for the academy, not this sub-project.
   first token that is not a name or comma. No folding, no block matching.
 - Bare `generateGrammar` output for a profile whose spellings collide is undefined; profiles
   refuse to resolve such input first, so the generator never sees it.
+- A type or builtin spelling with no letter (legal per the profile schema) gets no rule at all:
+  symbolic spellings are supported only for operators and for the word-operator keywords (`&`,
+  `|`, `~`, `%`), never for a bare-symbol type or builtin.

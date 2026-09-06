@@ -59,5 +59,7 @@ in `.stepcode`.
 The grammar is line-based: a multi-word keyword split across lines is not matched. Accent
 folding covers the Latin-1 marks (`á`, `è`, `ô`, `ü`, `ç`…). Calls and definitions are
 heuristics (an identifier before `(`, the names after `Definir`); there are no folding markers.
+A type or builtin spelling must contain a letter to be highlighted; symbolic spellings are
+supported only for operators and for the word-operator keywords (`&`, `|`, `~`, `%`).
 
 See `docs/superpowers/specs/2026-09-06-textmate-design.md` for the design.
