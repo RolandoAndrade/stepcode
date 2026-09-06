@@ -72,8 +72,10 @@ Out: deploying the academy; registering npm trusted publishers and connecting Wo
   links shared under the old name keep working; its source lives in the monorepo under
   `packages/editor/redirect/` (a two-file Worker: `wrangler.jsonc` and `index.js`), deployed by
   hand.
-- **About links.** The academy link becomes `https://academy.rolandoandrade.me` (the Astro
-  `site`); the repository link is unchanged.
+- **About links.** The academy hostname (`academy.rolandoandrade.me`, the Astro `site`) has
+  no DNS record until the academy deploys, so the About dialog renders the academy link only
+  when a URL is configured, and none is configured at release; the repository link is
+  unchanged. Re-enabling it is a one-line default once the academy is live.
 - **Academy dependency.** `"@stepcode/textmate": "^2.0.0"`, `pnpm install`, `pnpm build`
   succeeds and the built HTML for a StepCode code block contains Shiki tokens (no
   `language-pascal`); committed locally, not deployed.
@@ -85,7 +87,7 @@ Out: deploying the academy; registering npm trusted publishers and connecting Wo
 | `packages/{profiles,codemirror,textmate}/package.json` | `"version": "2.0.0-dev.0"` |
 | `packages/{language,codemirror,textmate}/package.json` | internal `dependencies` from `workspace:*` to `workspace:^`, so pnpm publishes them as `^2.0.0` rather than the exact `2.0.0` (the editor's and the dev dependencies stay `workspace:*`) |
 | `packages/editor/vite.config.ts` | read `../language/package.json` for `__APP_VERSION__`; comment says why |
-| `packages/editor/src/dialogs/About.tsx`, `test/About.test.tsx` | `DEFAULT_ACADEMY = 'https://academy.rolandoandrade.me'` |
+| `packages/editor/src/dialogs/About.tsx`, `test/About.test.tsx` | `academy` becomes an optional prop with no default; the link renders only when given |
 | `packages/editor/wrangler.jsonc` | `routes` with the custom domain; `workers_dev` stays on for previews |
 | `packages/editor/redirect/{wrangler.jsonc,index.js}` | the redirect Worker (`name: "stepcode-subdomain"`, custom domain `stepcode.rolandoandrade.me`) |
 | `packages/editor/test/deploy.test.ts` | asserts the route and that the redirect config names the old hostname |
@@ -104,26 +106,36 @@ Every step that publishes, merges, or changes Cloudflare waits for the user's ex
 step names its verification; a failed verification stops the runbook.
 
 1. **Login.** User: `npm login` on the VPS (`! npm login` in the session). Check: `npm whoami`.
-2. **Version.** `pnpm changeset version` on the branch; inspect the diff: four `package.json`
-   at `2.0.0`, four new `CHANGELOG.md`, `.changeset/*.md` consumed, the editor's
-   `stepcode`/`@stepcode/*` workspace ranges untouched (`workspace:*`). Commit
+2. **Version.** First `pnpm changeset status --verbose` (the only dry run changesets has):
+   four packages predicted at `2.0.0`, the editor absent. Then
+   `GITHUB_TOKEN=$(gh auth token) pnpm changeset version`: the GitHub changelog generator
+   throws without a token. Inspect the diff: four `package.json` at `2.0.0`, four new
+   `CHANGELOG.md`, `.changeset/*.md` consumed, the internal ranges untouched (`workspace:^` in
+   language/codemirror/textmate, `workspace:*` in the editor). Commit
    `chore: version packages for 2.0.0`, push.
-3. **Publish.** `pnpm build`, then `pnpm changeset publish --no-git-tag` with
-   `NPM_CONFIG_PROVENANCE=false`; changesets calls `pnpm publish`, which rewrites `workspace:^`
-   to `^2.0.0` in the published manifests. Check: `npm view <name> version` is `2.0.0` for the four; `npm pack --dry-run`
+3. **Publish.** `pnpm build`; then verify the manifest pnpm will publish before the
+   irreversible step: `pnpm --filter @stepcode/codemirror exec pnpm pack --out <tmp>/cm.tgz`
+   and read `package/package.json` from the tarball: `dependencies` must show
+   `"stepcode": "^2.0.0"`, `"@stepcode/profiles": "^2.0.0"` and caret `@codemirror/*` ranges,
+   with no `workspace:` or `catalog:` left, and `exports` must have no `development` condition.
+   Then `pnpm changeset publish --no-git-tag` with `NPM_CONFIG_PROVENANCE=false`; changesets
+   calls `pnpm publish`, which rewrites `workspace:^` to `^2.0.0`. If the npm account enforces
+   2FA, pass `--otp <code>` (an expired code midway is the partial-publish case of §8). Check: `npm view <name> version` is `2.0.0` for the four; `npm pack --dry-run`
    is not needed because `files` and `publishConfig.exports` were reviewed in their
-   sub-projects. Then `pnpm changeset tag` and `git push --tags`.
+   sub-projects. Then `pnpm changeset git-tag` (`changeset tag` is a deprecated alias) and `git push --tags`.
 4. **Merge.** `gh pr ready 1`, wait for CI green on the branch head, `gh pr merge 1 --merge`.
    Check: `master` head is the merge commit; `release.yml` on `master` completes without
    publishing; `ci.yml` on `master` is green.
 5. **Domain move.** (a) Remove `stepcode.online` from the Pages project's custom domains (API).
    (b) From `master` in the main checkout: `pnpm install --frozen-lockfile`, `pnpm --filter
-   @stepcode/editor... build`, `npx wrangler deploy --config packages/editor/wrangler.jsonc`;
-   wrangler attaches the custom domain and creates the DNS record. Check: `curl -sI
+   @stepcode/editor... build`, `pnpm --filter @stepcode/editor exec wrangler deploy --config
+   wrangler.jsonc` in an interactive terminal (attaching a custom domain whose DNS record still
+   exists prompts for confirmation; a non-TTY run fails instead); wrangler attaches the custom
+   domain and creates the DNS record. Check: `curl -sI
    https://stepcode.online/` is 200 with the SPA `index.html`, `/embed` is 200, the About
    dialog on the site shows `Versión 2.0.0` (check `__APP_VERSION__` in the served bundle).
-   (c) Deploy the redirect Worker: `npx wrangler deploy --config
-   packages/editor/redirect/wrangler.jsonc`. Check: `curl -sI
+   (c) Deploy the redirect Worker: `pnpm --filter @stepcode/editor exec wrangler deploy
+   --dry-run --config redirect/wrangler.jsonc`, then the same without `--dry-run`. Check: `curl -sI
    https://stepcode.rolandoandrade.me/?example=x` is 301 to
    `https://stepcode.online/?example=x`. (d) Delete the Pages project `stepcode-editor` (API).
    Check: `stepcode-editor.pages.dev` no longer resolves to the v1 editor; `stepcode.online`
