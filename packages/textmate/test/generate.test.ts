@@ -290,7 +290,12 @@ describe('structural rules', () => {
     )
     expect(definition.captures).toEqual({
       '1': definitionKeyword,
-      '2': { patterns: [{ name: 'variable.other.definition.stepcode', match: IDENT }] },
+      '2': {
+        patterns: [
+          { name: 'variable.other.definition.stepcode', match: IDENT },
+          { name: 'punctuation.separator.stepcode', match: ',' },
+        ],
+      },
     })
   })
   it('call: an identifier followed by an opening paren', () => {

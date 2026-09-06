@@ -295,6 +295,9 @@ importers:
       shiki:
         specifier: ^4.4.3
         version: 4.4.3
+      stepcode:
+        specifier: workspace:*
+        version: link:../language
       tsdown:
         specifier: 'catalog:'
         version: 0.22.14(typescript@7.0.2)

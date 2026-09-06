@@ -209,6 +209,10 @@
             {
               "name": "variable.other.definition.stepcode",
               "match": "[\\p{L}_][\\p{L}\\p{N}_]*"
+            },
+            {
+              "name": "punctuation.separator.stepcode",
+              "match": ","
             }
           ]
         }

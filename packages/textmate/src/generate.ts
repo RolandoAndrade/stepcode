@@ -145,7 +145,12 @@ function structureRules(profile: ResolvedProfile, repository: Record<string, Tex
       match: `${head(define)}((?:${IDENT}[ \\t]*,[ \\t]*)*${IDENT})${WORD_END}`,
       captures: {
         '1': { name: DEFINITION_SCOPE },
-        '2': { patterns: [{ name: SCOPES.definedVariable, match: IDENT }] },
+        '2': {
+          patterns: [
+            { name: SCOPES.definedVariable, match: IDENT },
+            { name: SCOPES.separator, match: ',' },
+          ],
+        },
       },
     }
   }

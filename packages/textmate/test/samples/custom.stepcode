@@ -8,4 +8,10 @@ Program Strict
         Write "never";
     EndIf
     Write Ábs(x);
+    Dimension arr[3];
+    For i <- 1 To 3 Step 1
+        arr[i] <- i * 2;
+    EndFor
+    y <- x + 1.5 - 2 / 4 ^ 2;
+    Write "sum: ", y, arr[1];
 EndProgram
