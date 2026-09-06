@@ -71,9 +71,12 @@ export function wordPattern(spelling: string, options: WordOptions): string {
 
 const wordCount = (spelling: string): number => spelling.trim().split(/\s+/).length
 
+/** Code-point comparison: deterministic across Node builds, unlike `localeCompare`. */
+const compareCodePoints = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0)
+
 export function sortSpellings(spellings: readonly string[]): string[] {
   return [...spellings].sort(
-    (a, b) => wordCount(b) - wordCount(a) || b.length - a.length || a.localeCompare(b, 'en'),
+    (a, b) => wordCount(b) - wordCount(a) || b.length - a.length || compareCodePoints(a, b),
   )
 }
 
@@ -93,7 +96,7 @@ export function wordRule(spellings: readonly string[], options: WordOptions): st
 
 export function symbolAlternation(spellings: readonly string[]): string {
   return [...spellings]
-    .sort((a, b) => b.length - a.length || a.localeCompare(b, 'en'))
+    .sort((a, b) => b.length - a.length || compareCodePoints(a, b))
     .map(escapeRegex)
     .join('|')
 }

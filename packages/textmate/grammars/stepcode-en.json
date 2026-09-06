@@ -130,11 +130,11 @@
     },
     "operator-comparison": {
       "name": "keyword.operator.comparison.stepcode",
-      "match": "!=|<=|<>|>=|<|=|≠|>|≤|≥"
+      "match": "!=|<=|<>|>=|<|=|>|≠|≤|≥"
     },
     "operator-arithmetic": {
       "name": "keyword.operator.arithmetic.stepcode",
-      "match": "\\*\\*|-|\\*|\\/|&|%|\\^|\\+|\\||~"
+      "match": "\\*\\*|%|&|\\*|\\+|-|\\/|\\^|\\||~"
     },
     "punctuation": {
       "patterns": [
