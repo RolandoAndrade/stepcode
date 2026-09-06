@@ -1,0 +1,14 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "stepcode-subdomain",
+  "main": "./index.js",
+  "compatibility_date": "2026-09-05",
+  "routes": [
+    {
+      "pattern": "stepcode.rolandoandrade.me",
+      "zone_name": "rolandoandrade.me",
+      "custom_domain": true
+    }
+  ],
+  "workers_dev": false
+}
