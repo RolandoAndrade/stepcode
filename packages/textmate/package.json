@@ -37,7 +37,7 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "generate": "vitest run test/grammars.test.ts -u"
+    "generate": "vitest run --root ../.. test/grammars.test.ts -u"
   },
   "dependencies": {
     "@stepcode/profiles": "workspace:*"
