@@ -5,8 +5,10 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { configDefaults, defineConfig } from 'vitest/config'
 
+// The About dialog shows the language version (`stepcode`), which changesets maintains; the
+// editor package itself is private and stays at 0.0.0.
 const { version } = JSON.parse(
-  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+  readFileSync(new URL('../language/package.json', import.meta.url), 'utf8'),
 ) as {
   version: string
 }

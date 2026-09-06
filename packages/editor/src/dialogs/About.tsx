@@ -4,7 +4,7 @@ import { APP_VERSION } from '../version'
 import { Dialog } from './Dialog'
 
 const DEFAULT_REPOSITORY = 'https://github.com/RolandoAndrade/stepcode'
-const DEFAULT_ACADEMY = 'https://stepcode.online'
+const DEFAULT_ACADEMY = 'https://academy.rolandoandrade.me'
 
 /** Spec §8.6: version, licence and the project's public links. */
 export function About({

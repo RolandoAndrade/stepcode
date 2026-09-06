@@ -8,16 +8,13 @@ import { renderWithStore, storeWith } from './render'
 describe('About', () => {
   it('shows version and links', () => {
     const { store } = storeWith({ dialog: 'about' })
-    renderWithStore(
-      <About
-        repository="https://github.com/RolandoAndrade/stepcode"
-        academy="https://stepcode.online"
-      />,
-      store,
-    )
+    renderWithStore(<About repository="https://github.com/RolandoAndrade/stepcode" />, store)
     expect(screen.getByText(`Versión ${APP_VERSION}`)).toBeDefined()
     expect(screen.getByRole('link', { name: 'Repositorio' }).getAttribute('href')).toContain(
       'github',
+    )
+    expect(screen.getByRole('link', { name: 'Academia' }).getAttribute('href')).toBe(
+      'https://academy.rolandoandrade.me',
     )
   })
 
