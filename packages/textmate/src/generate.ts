@@ -66,12 +66,14 @@ function wordFamilyRules(profile: ResolvedProfile, repository: Record<string, Te
 /** Letterless keyword spellings (`&`, `%`) are symbols and read as arithmetic operators. */
 export function symbolSpellingsOf(profile: ResolvedProfile): string[] {
   return WORD_FAMILIES.filter((family) => family.section === 'keywords')
-    .flatMap((family) => family.keys.flatMap((key) => profile.keywords[key as KeywordKey]))
+    .flatMap((family) => family.keys.flatMap((key) => profile.keywords[key as KeywordKey] ?? []))
     .filter((spelling) => !hasLetter(spelling))
 }
 
 function symbolRules(profile: ResolvedProfile, repository: Record<string, TextMateRule>): void {
   const comment = profile.operators.comment
+  // Every operator key (comment included) currently requires at least one spelling, so this
+  // guard is unreachable; kept for a future schema that allows an empty operator list.
   if (comment.length > 0) {
     repository.comment = { name: SCOPES.comment, match: `(?:${symbolAlternation(comment)}).*$` }
   }
@@ -90,6 +92,8 @@ function symbolRules(profile: ResolvedProfile, repository: Record<string, TextMa
   for (const family of OPERATOR_FAMILIES) {
     const spellings = family.keys.flatMap((key) => profile.operators[key])
     if (family.id === 'operator-arithmetic') spellings.push(...symbolSpellingsOf(profile))
+    // Every family's operator keys currently require at least one spelling, so `spellings` is
+    // never empty; kept for a future schema that allows an empty operator list.
     if (spellings.length === 0) continue
     const letters = spellings.filter(hasLetter)
     const symbols = spellings.filter((spelling) => !hasLetter(spelling))
@@ -143,6 +147,8 @@ function structureRules(profile: ResolvedProfile, repository: Record<string, Tex
         },
       }
     } else {
+      // `operators.assign` currently requires at least one spelling, so this branch is
+      // unreachable; kept for a future schema that allows an empty operator list.
       repository.subprogram = {
         match: `${head(subprogram)}(${IDENT})${WORD_END}`,
         captures: { '1': { name: DEFINITION_SCOPE }, '2': { name: SCOPES.subprogramName } },
@@ -180,6 +186,7 @@ function structureRules(profile: ResolvedProfile, repository: Record<string, Tex
   }
 }
 
+/** Builds the full grammar (word, symbol and structural rules) for one resolved profile. */
 export function generateGrammar(
   profile: ResolvedProfile,
   options: GenerateOptions,
