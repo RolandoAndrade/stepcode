@@ -162,7 +162,7 @@ unchanged). Monaco still lists mobile browsers as unsupported.
 ## 4. Editor
 
 Stack: React 19, Vite 8 (Rolldown), Tailwind 4, `vite-plugin-pwa`, Zustand, dockview
-(`dockview-react`), CodeMirror 6. Hosted on Cloudflare Pages.
+(`dockview-react`), CodeMirror 6. Hosted on Cloudflare Workers (static assets) at stepcode.online.
 
 ### 4.1 Layout
 
@@ -229,7 +229,7 @@ worker → editor: diagnostics · output{text} · input-request{prompt} · pause
 | Tests | Vitest workspace; browser mode for `codemirror`; Playwright smoke for the editor |
 | Library builds | tsdown; a `development` export condition points at `src/` so the editor's dev server needs no builds |
 | Versioning | Changesets; independent semver |
-| CI | GitHub Actions: lint, typecheck, test, build on PR; publish on tag |
+| CI | GitHub Actions: lint, typecheck, test, build on PR; publish from `master` through changesets |
 | Node | 24 LTS, `.nvmrc` + `packageManager` |
 
 Published: `stepcode` (keeps the existing npm name), `@stepcode/profiles`,
@@ -261,8 +261,10 @@ Each item is its own spec → plan → implementation cycle.
 4. **Editor shell** — in parallel with 3, against a stub runtime; integration is the last task.
 5. **codemirror** — after 3's AST exists.
 6. **textmate** — anytime after 2.
-7. **Release** — `stepcode@2.0.0`, merge `RolandoAndrade/v2` to `master`, repoint Cloudflare
-   Pages, delete the `stepcode-subdomain` worker, update the academy.
+7. **Release** — `stepcode@2.0.0` and `@stepcode/*@2.0.0` published, `RolandoAndrade/v2`
+   merged to `master`, `stepcode.online` moved to the Worker, the `stepcode-subdomain` worker
+   turned into a redirect, the academy on the published grammar. Done 2026-09-06; see
+   `2026-09-06-release-design.md`.
 
 ## 8. History and branches
 

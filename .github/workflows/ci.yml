@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, RolandoAndrade/v2]
+    branches: [master]
   pull_request:
 
 concurrency:

@@ -2,8 +2,7 @@
 
 StepCode is a pseudocode language for learning to program, compatible with
 [PSeInt](http://pseint.sourceforge.net/) and available in Spanish, English, and any
-keyword profile you define. This repository is the v2 monorepo; v1 (0.12.0) lives on `master`
-until v2 reaches parity.
+keyword profile you define. Version 2 is a rewrite as a pnpm monorepo; the editor runs at https://stepcode.online and the packages are on npm.
 
 ## Packages
 
@@ -13,7 +12,7 @@ until v2 reaches parity.
 | `@stepcode/profiles` | `packages/profiles` | Keyword profiles (`es`, `en`, `pseint`) and their schema |
 | `@stepcode/codemirror` | `packages/codemirror` | CodeMirror 6 language support and debug extensions |
 | `@stepcode/textmate` | `packages/textmate` | TextMate grammar generator for Shiki / VS Code |
-| `@stepcode/editor` | `packages/editor` | The web editor (private, deployed to Cloudflare Pages) |
+| `@stepcode/editor` | `packages/editor` | The web editor (private, deployed to Cloudflare Workers at stepcode.online) |
 
 Dependencies flow one way: `profiles ← language ← codemirror ← editor`, `profiles ← textmate`.
 
@@ -35,9 +34,10 @@ never need a build. Published packages resolve to `dist/`.
 
 ## Releasing
 
-`pnpm changeset` records a change; merging the generated "Version Packages" PR publishes to npm.
-Changesets diffs against `master` and the release workflow runs only on `master`, so versioning
-and publishing are not available from `RolandoAndrade/v2` until it merges.
+`pnpm changeset` records a change. On `master`, the release workflow opens or updates a
+"Version Packages" PR; merging that PR bumps versions and changelogs and publishes the four
+packages with npm provenance through trusted publishing (no token in the repository). The
+first 2.0.0 publish was done by hand; see `docs/superpowers/specs/2026-09-06-release-design.md`.
 
 ## Design
 
