@@ -1,6 +1,6 @@
 {
   "name": "@stepcode/textmate",
-  "version": "2.0.0-dev.0",
+  "version": "2.0.0",
   "description": "TextMate grammars for StepCode, generated from keyword profiles (Shiki, VS Code)",
   "license": "MIT",
   "author": "Rolando Andrade",
