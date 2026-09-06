@@ -43,7 +43,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@stepcode/profiles": "workspace:*"
+    "@stepcode/profiles": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "catalog:",

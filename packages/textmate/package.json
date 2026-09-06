@@ -1,6 +1,6 @@
 {
   "name": "@stepcode/textmate",
-  "version": "0.0.0",
+  "version": "2.0.0-dev.0",
   "description": "TextMate grammars for StepCode, generated from keyword profiles (Shiki, VS Code)",
   "license": "MIT",
   "author": "Rolando Andrade",
@@ -40,7 +40,7 @@
     "generate": "vitest run --root ../.. test/grammars.test.ts -u"
   },
   "dependencies": {
-    "@stepcode/profiles": "workspace:*"
+    "@stepcode/profiles": "workspace:^"
   },
   "devDependencies": {
     "@types/node": "catalog:",

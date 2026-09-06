@@ -102,10 +102,10 @@ importers:
         specifier: 'catalog:'
         version: 1.2.3
       '@stepcode/profiles':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../profiles
       stepcode:
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../language
     devDependencies:
       '@types/node':
@@ -248,7 +248,7 @@ importers:
   packages/language:
     dependencies:
       '@stepcode/profiles':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../profiles
     devDependencies:
       '@types/node':
@@ -286,7 +286,7 @@ importers:
   packages/textmate:
     dependencies:
       '@stepcode/profiles':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../profiles
     devDependencies:
       '@types/node':
