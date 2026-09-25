@@ -165,7 +165,7 @@ Ctrl+, settings · Escape closes the open dialog.
 ## Deployment
 
 `wrangler.jsonc` describes an assets-only Worker named `stepcode-editor`: `dist/` is served with
-single-page-application fallback, `stepcode.online` is its custom domain (Cloudflare manages
+single-page-application fallback, `stepcode.letsbuildsolutions.com` is its custom domain (Cloudflare manages
 the DNS record and certificate), and preview URLs on `workers.dev` stay on. Workers Builds (git
 integration) builds and deploys it; the settings are entered once in the Cloudflare dashboard
 (Workers & Pages → Create → connect `RolandoAndrade/stepcode`):
@@ -184,6 +184,9 @@ bundle resolves them through their `default` export (`dist`), not the `developme
 the dev server uses. CI runs `wrangler deploy --dry-run` after every build so a broken
 configuration fails before Cloudflare sees it.
 
-`redirect/` is a second, hand-deployed Worker (`stepcode-subdomain`) that answers the v1
-hostname `stepcode.rolandoandrade.me` with a permanent redirect to `stepcode.online`, path and
-query preserved: `pnpm --filter @stepcode/editor exec wrangler deploy --config redirect/wrangler.jsonc`.
+`redirect/` is a second, hand-deployed Worker (`stepcode-subdomain`) that answers the old
+hostnames `stepcode.online` and `stepcode.rolandoandrade.me` with a permanent redirect to
+`stepcode.letsbuildsolutions.com`, path and query preserved. It answers `/sw.js` with a service
+worker that unregisters itself, so browsers that installed the PWA on an old hostname stop
+serving the cached app and reach the redirect:
+`pnpm --filter @stepcode/editor exec wrangler deploy --config redirect/wrangler.jsonc`.

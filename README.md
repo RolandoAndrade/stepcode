@@ -2,7 +2,7 @@
 
 StepCode is a pseudocode language for learning to program, compatible with
 [PSeInt](http://pseint.sourceforge.net/) and available in Spanish, English, and any
-keyword profile you define. Version 2 is a rewrite as a pnpm monorepo; the editor runs at https://stepcode.online and the packages are on npm.
+keyword profile you define. Version 2 is a rewrite as a pnpm monorepo; the editor runs at https://stepcode.letsbuildsolutions.com and the packages are on npm.
 
 ## Packages
 
@@ -12,7 +12,7 @@ keyword profile you define. Version 2 is a rewrite as a pnpm monorepo; the edito
 | `@stepcode/profiles` | `packages/profiles` | Keyword profiles (`es`, `en`, `pseint`) and their schema |
 | `@stepcode/codemirror` | `packages/codemirror` | CodeMirror 6 language support and debug extensions |
 | `@stepcode/textmate` | `packages/textmate` | TextMate grammar generator for Shiki / VS Code |
-| `@stepcode/editor` | `packages/editor` | The web editor (private, deployed to Cloudflare Workers at stepcode.online) |
+| `@stepcode/editor` | `packages/editor` | The web editor (private, deployed to Cloudflare Workers at stepcode.letsbuildsolutions.com) |
 
 Dependencies flow one way: `profiles ← language ← codemirror ← editor`, `profiles ← textmate`.
 

@@ -5,6 +5,11 @@
   "compatibility_date": "2026-09-05",
   "routes": [
     {
+      "pattern": "stepcode.online",
+      "zone_name": "stepcode.online",
+      "custom_domain": true
+    },
+    {
       "pattern": "stepcode.rolandoandrade.me",
       "zone_name": "rolandoandrade.me",
       "custom_domain": true

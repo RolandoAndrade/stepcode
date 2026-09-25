@@ -7,7 +7,11 @@
     "not_found_handling": "single-page-application"
   },
   "routes": [
-    { "pattern": "stepcode.online", "zone_name": "stepcode.online", "custom_domain": true }
+    {
+      "pattern": "stepcode.letsbuildsolutions.com",
+      "zone_name": "letsbuildsolutions.com",
+      "custom_domain": true
+    }
   ],
   "preview_urls": true,
   "workers_dev": true

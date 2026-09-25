@@ -26,9 +26,13 @@ describe('wrangler.jsonc', () => {
     expect(pkg.devDependencies.wrangler).toMatch(/^\d+\.\d+\.\d+$/)
   })
 
-  it('serves stepcode.online as a custom domain and keeps workers.dev for previews', () => {
+  it('serves stepcode.letsbuildsolutions.com as a custom domain and keeps workers.dev for previews', () => {
     expect(config.routes).toEqual([
-      { pattern: 'stepcode.online', zone_name: 'stepcode.online', custom_domain: true },
+      {
+        pattern: 'stepcode.letsbuildsolutions.com',
+        zone_name: 'letsbuildsolutions.com',
+        custom_domain: true,
+      },
     ])
     expect(config.workers_dev).toBe(true)
   })
