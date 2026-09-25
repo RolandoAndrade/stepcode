@@ -1,0 +1,25 @@
+{
+  "name": "stepcode-promo",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Vertical promo video for StepCode v2, built with Remotion",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts StepCodePromo out/stepcode-v2-promo.mp4 --codec=h264 --crf=18",
+    "stills": "node scripts/stills.mjs",
+    "screens": "node scripts/capture-screens.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.529",
+    "@remotion/google-fonts": "4.0.529",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.529"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "playwright-core": "1.63.0",
+    "typescript": "7.0.2"
+  }
+}
